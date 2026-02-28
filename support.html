@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridWatchMatch // Support — WarSignalLabs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --neon-cyan: #00f0ff;
+  --neon-magenta: #ff00aa;
+  --neon-green: #39ff14;
+  --neon-amber: #ffaa00;
+  --grid-blue: #0a1628;
+  --grid-deep: #050d1a;
+  --grid-surface: #0c1f3a;
+  --grid-line: rgba(0, 240, 255, 0.07);
+  --text-primary: #c8d6e5;
+  --text-bright: #e8f0fe;
+  --text-dim: #5a7a9a;
+  --border-glow: rgba(0, 240, 255, 0.25);
+  --scan-line: rgba(0, 240, 255, 0.03);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--grid-deep);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 60px 60px;
+  z-index: -2;
+  animation: gridDrift 20s linear infinite;
+}
+
+@keyframes gridDrift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(60px, 60px); }
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    var(--scan-line) 2px,
+    var(--scan-line) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* ═══ BACK LINK ═══ */
+.back-bar {
+  padding: 1.5rem 0 0;
+}
+
+.back-link {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: var(--neon-cyan);
+  text-decoration: none;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.back-link::before { content: '←'; }
+.back-link:hover { opacity: 1; }
+
+/* ═══ HEADER ═══ */
+header {
+  padding: 3rem 0 2rem;
+  border-bottom: 1px solid var(--border-glow);
+  margin-bottom: 3rem;
+}
+
+.app-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--neon-magenta);
+  margin-bottom: 0.75rem;
+}
+.app-label::before { content: '// '; }
+
+h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
+  font-weight: 900;
+  color: var(--text-bright);
+  line-height: 1.1;
+  margin-bottom: 0.75rem;
+}
+
+h1 span {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 20px rgba(0,240,255,0.5);
+}
+
+.header-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.2em;
+  color: var(--text-dim);
+}
+
+/* ═══ SECTIONS ═══ */
+.support-section {
+  margin-bottom: 3rem;
+}
+
+.section-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  opacity: 0.7;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.section-label::before { content: '//'; color: var(--neon-magenta); }
+
+h2 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 1.5rem;
+}
+
+/* ═══ CONTACT CARD ═══ */
+.contact-card {
+  background: var(--grid-surface);
+  border: 1px solid var(--border-glow);
+  border-left: 3px solid var(--neon-cyan);
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.contact-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--neon-cyan), transparent);
+  opacity: 0.4;
+}
+
+.contact-type {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  color: var(--neon-cyan);
+  margin-bottom: 0.5rem;
+}
+
+.contact-email {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 0.5rem;
+}
+
+.contact-email a {
+  color: var(--neon-cyan);
+  text-decoration: none;
+  transition: text-shadow 0.2s;
+}
+.contact-email a:hover {
+  text-shadow: 0 0 12px rgba(0,240,255,0.7);
+}
+
+.contact-note {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+}
+
+/* ═══ FAQ ═══ */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.faq-item {
+  background: rgba(12, 31, 58, 0.6);
+  border: 1px solid rgba(0, 240, 255, 0.1);
+  border-left: 2px solid var(--neon-magenta);
+  padding: 1.5rem;
+}
+
+.faq-q {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 0.75rem;
+  line-height: 1.4;
+}
+
+.faq-a {
+  font-size: 1rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.faq-a a {
+  color: var(--neon-cyan);
+  text-decoration: none;
+}
+.faq-a a:hover {
+  text-decoration: underline;
+}
+
+/* ═══ NEON DIVIDER ═══ */
+.neon-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-magenta), transparent);
+  margin: 2.5rem 0;
+  opacity: 0.4;
+}
+
+/* ═══ FOOTER ═══ */
+footer {
+  border-top: 1px solid var(--border-glow);
+  padding: 2rem 0;
+  margin-top: 4rem;
+  text-align: center;
+}
+
+.footer-brand {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--neon-cyan);
+  letter-spacing: 0.3em;
+  margin-bottom: 0.75rem;
+}
+
+.footer-links {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--neon-cyan); }
+
+.footer-copy {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  opacity: 0.5;
+  letter-spacing: 0.1em;
+}
+
+@media (max-width: 600px) {
+  header { padding: 2rem 0 1.5rem; }
+  .contact-card { padding: 1.5rem; }
+  .faq-item { padding: 1.25rem; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- BACK -->
+  <div class="back-bar">
+    <a href="https://warsignallabs.net" class="back-link">WARSIGNALLABS</a>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="app-label">APP SUPPORT</div>
+    <h1><span>GridWatchMatch</span></h1>
+    <div class="header-sub">BUG REPORTS · QUESTIONS · FEEDBACK</div>
+  </header>
+
+  <!-- CONTACT -->
+  <section class="support-section">
+    <div class="section-label">ESTABLISH LINK</div>
+    <h2>Contact</h2>
+    <div class="contact-card">
+      <div class="contact-type">// EMAIL</div>
+      <div class="contact-email">
+        <a href="mailto:rmeadows@warsignallabs.net">rmeadows@warsignallabs.net</a>
+      </div>
+      <div class="contact-note">RESPONSE WITHIN 48 HOURS · MON–FRI</div>
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- FAQ -->
+  <section class="support-section">
+    <div class="section-label">KNOWLEDGE BASE</div>
+    <h2>Frequently Asked Questions</h2>
+    <div class="faq-list">
+
+      <div class="faq-item">
+        <div class="faq-q">The app crashes on launch or freezes during gameplay.</div>
+        <div class="faq-a">
+          Force-close the app, restart your device, and relaunch. If the issue persists, ensure your iOS version is up to date and that you have at least 200MB of free storage. If the problem continues after a reinstall, email us with your device model and iOS version.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">I lost my progress after reinstalling the app.</div>
+        <div class="faq-a">
+          Progress is stored on-device in the current version. Uninstalling the app will delete local save data. We recommend playing through iCloud-linked accounts when available. A cloud save feature is planned for a future update.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">How do I report a bug or submit feedback?</div>
+        <div class="faq-a">
+          Email <a href="mailto:rmeadows@warsignallabs.net">rmeadows@warsignallabs.net</a> with a description of the issue, your device model, iOS version, and any steps to reproduce the problem. Screenshots or screen recordings are always helpful.
+        </div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-q">I was charged for an in-app purchase but didn't receive it.</div>
+        <div class="faq-a">
+          All purchases are processed by Apple. For billing issues, refund requests, or missing purchases, visit
+          <a href="https://reportaproblem.apple.com" target="_blank" rel="noopener">reportaproblem.apple.com</a>.
+          Apple handles all transaction disputes directly.
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-brand">WARSIGNALLABS</div>
+    <div class="footer-links">
+      <a href="https://warsignallabs.net">Home</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="mailto:rmeadows@warsignallabs.net">Contact</a>
+    </div>
+    <div class="footer-copy">© 2026 WarSignalLabs. All rights reserved.</div>
+  </footer>
+
+</div>
+
+</body>
+</html>
