@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WarSignal Vision — WarSignalLabs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --neon-cyan:#00f0ff;
+  --neon-magenta:#ff00aa;
+  --neon-green:#39ff14;
+  --neon-amber:#ffaa00;
+  --grid-deep:#050d1a;
+  --grid-line:rgba(0,240,255,0.07);
+  --text-primary:#c8d6e5;
+  --text-bright:#e8f0fe;
+  --text-dim:#5a7a9a;
+  --border-glow:rgba(0,240,255,0.25);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+
+body{
+  font-family:'Rajdhani',sans-serif;
+  background:var(--grid-deep);
+  color:var(--text-primary);
+  line-height:1.6;
+}
+
+body::before{
+  content:'';
+  position:fixed;inset:0;
+  background:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size:60px 60px;
+  z-index:-1;
+}
+
+.container{max-width:1000px;margin:0 auto;padding:0 2rem;}
+
+nav{
+  position:fixed;top:0;left:0;width:100%;
+  background:rgba(5,13,26,.95);
+  border-bottom:1px solid var(--border-glow);
+  padding:.85rem 2rem;
+  display:flex;justify-content:space-between;align-items:center;
+  z-index:1000;
+}
+
+.nav-brand{
+  font-family:'Orbitron',sans-serif;
+  font-weight:900;
+  color:var(--neon-cyan);
+  text-decoration:none;
+  letter-spacing:.15em;
+}
+
+.nav-links{
+  display:flex;gap:1.25rem;list-style:none;
+}
+
+.nav-links a{
+  font-family:'Share Tech Mono',monospace;
+  font-size:.75rem;
+  color:var(--text-dim);
+  text-decoration:none;
+  text-transform:uppercase;
+  letter-spacing:.12em;
+}
+
+.nav-links a:hover{
+  color:var(--neon-cyan);
+}
+
+.hero{
+  padding:7rem 0 3rem;
+}
+
+.kicker{
+  font-family:'Share Tech Mono',monospace;
+  font-size:.75rem;
+  color:var(--neon-green);
+  letter-spacing:.35em;
+  text-transform:uppercase;
+  margin-bottom:1rem;
+}
+.kicker::before{content:'// ';color:var(--neon-magenta);}
+
+h1{
+  font-family:'Orbitron',sans-serif;
+  font-size:clamp(2rem,5vw,3rem);
+  font-weight:900;
+  color:var(--text-bright);
+  margin-bottom:.75rem;
+}
+
+.subhead{
+  font-family:'Share Tech Mono',monospace;
+  color:var(--text-dim);
+  margin-bottom:1.5rem;
+  letter-spacing:.12em;
+}
+
+.panel{
+  background:rgba(12,31,58,.5);
+  border:1px solid var(--border-glow);
+  padding:1.5rem;
+}
+
+.section{padding:3rem 0;}
+
+.section-label{
+  font-family:'Share Tech Mono',monospace;
+  font-size:.7rem;
+  letter-spacing:.3em;
+  text-transform:uppercase;
+  color:var(--neon-cyan);
+  margin-bottom:.5rem;
+}
+.section-label::before{content:'// ';color:var(--neon-magenta);}
+
+.section-title{
+  font-family:'Orbitron',sans-serif;
+  font-size:1.4rem;
+  margin-bottom:1rem;
+  color:var(--text-bright);
+}
+
+.grid-2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:1.25rem;
+}
+
+.card{
+  background:rgba(12,31,58,.4);
+  border:1px solid rgba(0,240,255,.15);
+  padding:1.5rem;
+}
+
+.card h3{
+  font-family:'Orbitron',sans-serif;
+  font-size:1rem;
+  margin-bottom:.5rem;
+  color:var(--text-bright);
+}
+
+.list{
+  list-style:none;
+  margin-top:.5rem;
+}
+
+.list li{
+  position:relative;
+  padding-left:1rem;
+  margin-bottom:.4rem;
+}
+
+.list li::before{
+  content:'▸';
+  position:absolute;
+  left:0;
+  color:var(--neon-cyan);
+}
+
+.btn{
+  font-family:'Share Tech Mono',monospace;
+  font-size:.75rem;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  padding:.7rem 1.5rem;
+  border:1px solid var(--neon-cyan);
+  color:var(--neon-cyan);
+  text-decoration:none;
+  display:inline-block;
+  margin-top:1rem;
+}
+
+.btn:hover{
+  background:rgba(0,240,255,.1);
+}
+
+footer{
+  border-top:1px solid var(--border-glow);
+  padding:2rem 0;
+  text-align:center;
+  margin-top:3rem;
+}
+
+.footer-links{
+  font-family:'Share Tech Mono',monospace;
+  font-size:.75rem;
+  letter-spacing:.15em;
+  display:flex;
+  justify-content:center;
+  gap:1.5rem;
+  flex-wrap:wrap;
+  margin-bottom:1rem;
+}
+
+.footer-links a{
+  color:var(--text-dim);
+  text-decoration:none;
+}
+
+.footer-links a:hover{color:var(--neon-cyan);}
+
+.footer-copy{
+  font-family:'Share Tech Mono',monospace;
+  font-size:.7rem;
+  color:var(--text-dim);
+  opacity:.6;
+}
+
+@media(max-width:900px){
+  .grid-2{grid-template-columns:1fr;}
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+  <a class="nav-brand" href="/index.html">WARSIGNALLABS</a>
+
+  <!-- Nav policy: NO Support/Privacy -->
+  <ul class="nav-links">
+    <li><a href="/warsignal-vision.html">Vision</a></li>
+    <li><a href="/services.html">Services</a></li>
+    <li><a href="/gridwatch-enterprise.html">GridWatch</a></li>
+    <li><a href="/labs.html">Interactive</a></li>
+    <li><a href="/index.html#stack">Stack</a></li>
+    <li><a href="/index.html#connect">Contact</a></li>
+  </ul>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="kicker">WAR SIGNAL VISION</div>
+    <h1>One Lab. Two Engines. Security-First Execution.</h1>
+    <div class="subhead">AI Security Architecture · Enterprise Platforms · Interactive Systems R&amp;D</div>
+
+    <div class="panel">
+      <p>
+        WarSignalLabs is a security-first systems lab building hardened network architectures,
+        secure data platforms, and controlled AI workflows for modern organizations —
+        while operating a cyberpunk interactive systems lab to sharpen execution.
+      </p>
+    </div>
+  </div>
+</header>
+
+<div class="section">
+  <div class="container">
+    <div class="section-label">THE TWO ENGINES</div>
+    <div class="section-title">Enterprise Engineering + Interactive Systems</div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>AI Security & Enterprise Platforms</h3>
+        <ul class="list">
+          <li>Segmentation-first network architecture</li>
+          <li>FastAPI + PostgreSQL secure platform builds</li>
+          <li>Supabase RLS + RBAC enforcement</li>
+          <li>Controlled OpenAI / Anthropic integrations</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>Interactive Systems Division</h3>
+        <ul class="list">
+          <li>SwiftUI cyberpunk mobile builds</li>
+          <li>Telemetry + retention loop experimentation</li>
+          <li>Performance & stability discipline</li>
+          <li>Systems balance & economy modeling</li>
+        </ul>
+
+        <!-- Support/Privacy allowed here -->
+        <a class="btn" href="/support.html">GridWatchMatch Support</a>
+        <a class="btn" href="/privacy.html" style="margin-left:.5rem;">Privacy</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="/warsignal-vision.html">Vision</a>
+    <a href="/services.html">Services</a>
+    <a href="/gridwatch-enterprise.html">GridWatch Enterprise</a>
+    <a href="/deployed-systems.html">Deployed Systems</a>
+    <a href="/labs.html">Labs</a>
+    <a href="/support.html">GridWatchMatch Support</a>
+    <a href="/privacy.html">GridWatchMatch Privacy</a>
+  </div>
+  <div class="footer-copy">© 2026 WarSignalLabs. All rights reserved.</div>
+</footer>
+
+</body>
+</html>
