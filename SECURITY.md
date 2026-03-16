@@ -11,7 +11,7 @@ Older versions, stale branches, snapshots, and archived repositories may not rec
 
 ## Reporting a Vulnerability
 
-Please report security issues privately to `rmeadows@warsignallabs.net`.
+Please report security issues privately to `remeadows@warsignallabs.net`.
 
 Do not open public GitHub issues, discussions, or pull requests for vulnerabilities that could expose users, systems, credentials, or operational details.
 
