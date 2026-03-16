@@ -1,13 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>WarSignal Vision — WarSignalLabs</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; object-src 'none'; form-action 'self'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>WarSignalLabs // Cybersecurity &amp; Network Defense</title>
+<meta name="description" content="WarSignalLabs — Security-first systems engineering for DoD and enterprise environments. Network hardening, STIG compliance, and custom security platforms.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
+/* ═══════════════════════════════════════════════
+   WAR SIGNAL LABS — CYBERPUNK THEME
+   Grid aesthetic · Neon accents · Terminal feel
+   ═══════════════════════════════════════════════ */
+
 :root {
   --neon-cyan: #00f0ff;
   --neon-magenta: #ff00aa;
@@ -24,7 +33,7 @@
   --scan-line: rgba(0, 240, 255, 0.03);
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 
 body {
@@ -33,12 +42,14 @@ body {
   color: var(--text-primary);
   overflow-x: hidden;
   line-height: 1.6;
-  min-height: 100vh;
 }
 
+/* ═══ ANIMATED GRID BACKGROUND ═══ */
 body::before {
   content: '';
-  position: fixed; inset: 0;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   background:
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
@@ -46,14 +57,18 @@ body::before {
   z-index: -2;
   animation: gridDrift 20s linear infinite;
 }
+
 @keyframes gridDrift {
   0% { transform: translate(0, 0); }
   100% { transform: translate(60px, 60px); }
 }
 
+/* Scanline overlay */
 body::after {
   content: '';
-  position: fixed; inset: 0;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
   background: repeating-linear-gradient(
     0deg,
     transparent,
@@ -65,124 +80,235 @@ body::after {
   z-index: 9999;
 }
 
+/* ═══ UTILITY ═══ */
 .container {
-  max-width: 980px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 0 2rem;
 }
 
-/* NAV (no Support/Privacy in top nav) */
+.section-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--neon-cyan);
+  opacity: 0.7;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.section-label::before {
+  content: '//';
+  color: var(--neon-magenta);
+}
+
+.section-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.neon-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-magenta), transparent);
+  margin: 0;
+  opacity: 0.5;
+}
+
+/* ═══ NAVIGATION ═══ */
 nav {
-  position: fixed; top: 0; left: 0; width: 100%;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
   z-index: 1000;
   background: rgba(5, 13, 26, 0.92);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-glow);
 }
+
 nav .container {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.85rem 2rem;
+  padding-top: 0.8rem;
+  padding-bottom: 0.8rem;
 }
+
 .nav-brand {
   font-family: 'Orbitron', sans-serif;
   font-weight: 900;
-  font-size: 1rem;
+  font-size: 1.1rem;
   color: var(--neon-cyan);
   text-decoration: none;
   letter-spacing: 0.15em;
-  text-shadow: 0 0 18px rgba(0, 240, 255, 0.35);
+  text-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
+
+.nav-brand .nav-logo {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+}
+
 .nav-links {
   display: flex;
-  gap: 1.25rem;
+  gap: 1.75rem;
   list-style: none;
 }
+
 .nav-links a {
   font-family: 'Share Tech Mono', monospace;
   font-size: 0.75rem;
   color: var(--text-dim);
   text-decoration: none;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
-  transition: color 0.2s, text-shadow 0.2s;
+  transition: all 0.3s;
+  position: relative;
 }
+
 .nav-links a:hover {
   color: var(--neon-cyan);
-  text-shadow: 0 0 10px rgba(0,240,255,0.5);
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
 }
 
-/* HERO */
-.hero { padding: 7rem 0 3rem; }
-
-.kicker {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--neon-green);
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  opacity: 0.9;
-  margin-bottom: 1rem;
-}
-.kicker::before { content: "// "; color: var(--neon-magenta); }
-
-h1 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(2rem, 5vw, 3.2rem);
-  font-weight: 900;
-  color: var(--text-bright);
-  line-height: 1.08;
-  margin-bottom: 0.75rem;
-}
-
-.subhead {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.9rem;
-  color: var(--text-dim);
-  letter-spacing: 0.12em;
-  margin-bottom: 1.75rem;
-}
-
-.hero-panel {
-  background: rgba(12, 31, 58, 0.55);
-  border: 1px solid var(--border-glow);
-  padding: 1.5rem;
-  position: relative;
-  overflow: hidden;
-}
-.hero-panel::before {
+.nav-links a::after {
   content: '';
-  position: absolute; top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta), transparent);
-  opacity: 0.6;
+  position: absolute;
+  bottom: -4px; left: 0;
+  width: 0; height: 1px;
+  background: var(--neon-cyan);
+  transition: width 0.3s;
 }
-.hero-panel p {
-  font-size: 1.05rem;
-  color: var(--text-primary);
-  line-height: 1.75;
-  margin-bottom: 0.9rem;
-}
-.hero-panel p:last-child { margin-bottom: 0; }
+.nav-links a:hover::after { width: 100%; }
 
-.cta-row {
+/* Mobile menu toggle */
+.nav-toggle {
+  display: none;
+  background: none;
+  border: 1px solid var(--border-glow);
+  color: var(--neon-cyan);
+  padding: 0.4rem 0.6rem;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+/* ═══ HERO ═══ */
+.hero {
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6rem 2rem 4rem;
+  position: relative;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(0, 240, 255, 0.04) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-content {
+  max-width: 800px;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-logo {
+  width: 220px;
+  height: auto;
+  margin: 0 auto 2rem;
+  display: block;
+  border-radius: 12px;
+  border: 2px solid rgba(0, 240, 255, 0.2);
+  box-shadow: 0 0 40px rgba(0, 240, 255, 0.1), 0 0 80px rgba(0, 240, 255, 0.05);
+}
+
+.hero-tag {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.35em;
+  color: var(--neon-green);
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  opacity: 0.9;
+}
+
+.hero-title {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(2.5rem, 7vw, 4.5rem);
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 1.5rem;
+  letter-spacing: 0.08em;
+}
+
+.hero-title .war { color: var(--neon-cyan); text-shadow: 0 0 30px rgba(0, 240, 255, 0.5); }
+.hero-title .signal { color: var(--text-bright); }
+.hero-title .labs { color: var(--neon-magenta); text-shadow: 0 0 30px rgba(255, 0, 170, 0.4); }
+
+.hero-sub {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hero-sub .highlight {
+  color: var(--neon-amber);
+  font-weight: 600;
+}
+
+.cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: var(--neon-cyan);
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+  margin-left: 2px;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+.hero-buttons {
   display: flex;
   gap: 1rem;
+  justify-content: center;
   flex-wrap: wrap;
-  margin-top: 1.25rem;
 }
 
+/* ═══ BUTTONS ═══ */
 .btn {
   font-family: 'Share Tech Mono', monospace;
   font-size: 0.78rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  padding: 0.8rem 1.5rem;
+  padding: 0.85rem 1.8rem;
   text-decoration: none;
-  transition: all 0.25s;
+  transition: all 0.3s;
   display: inline-block;
 }
+
 .btn-primary {
   background: transparent;
   color: var(--neon-cyan);
@@ -191,8 +317,9 @@ h1 {
 }
 .btn-primary:hover {
   background: rgba(0, 240, 255, 0.1);
-  box-shadow: 0 0 18px rgba(0, 240, 255, 0.2), inset 0 0 18px rgba(0, 240, 255, 0.05);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25), inset 0 0 20px rgba(0, 240, 255, 0.05);
 }
+
 .btn-secondary {
   background: transparent;
   color: var(--neon-magenta);
@@ -203,369 +330,809 @@ h1 {
   border-color: var(--neon-magenta);
 }
 
-/* SECTIONS */
-.section { padding: 3rem 0; }
-.divider {
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-magenta), transparent);
-  opacity: 0.35;
-  margin: 1.5rem 0;
-}
-.section-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--neon-cyan);
-  opacity: 0.75;
-  margin-bottom: 0.75rem;
-}
-.section-label::before { content: "// "; color: var(--neon-magenta); }
+/* ═══ ABOUT / OPERATOR ═══ */
+.about { padding: 5rem 0; }
 
-h2 {
+.about-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+.operator-card {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: rgba(12, 31, 58, 0.5);
+  border: 1px solid var(--border-glow);
+}
+
+.operator-photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 6px;
+  border: 2px solid rgba(0, 240, 255, 0.3);
+  object-fit: cover;
+}
+
+.operator-name {
   font-family: 'Orbitron', sans-serif;
-  font-size: 1.35rem;
-  font-weight: 800;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: var(--text-bright);
-  margin-bottom: 1rem;
+  letter-spacing: 0.1em;
 }
 
-p {
+.operator-role {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  color: var(--neon-amber);
+  font-weight: 500;
+}
+
+.operator-callsign {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.15em;
+  margin-top: 0.2rem;
+}
+
+.about-text p {
   font-size: 1.05rem;
   color: var(--text-primary);
   line-height: 1.75;
-  margin-bottom: 0.9rem;
+  margin-bottom: 1rem;
 }
 
-.grid-2 {
+.about-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.25rem;
 }
 
-.card {
-  background: rgba(12, 31, 58, 0.5);
-  border: 1px solid rgba(0, 240, 255, 0.12);
+.stat-card {
+  background: rgba(12, 31, 58, 0.6);
+  border: 1px solid var(--border-glow);
   padding: 1.5rem;
   position: relative;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
 }
-.card::before {
+
+.stat-card::before {
   content: '';
-  position: absolute; top: 0; left: 0;
-  width: 3px; height: 100%;
-  background: var(--neon-cyan);
-  opacity: 0.8;
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 2px;
+  background: linear-gradient(90deg, var(--neon-cyan), transparent);
 }
-.card .card-kicker {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--neon-amber);
-  margin-bottom: 0.5rem;
-}
-.card h3 {
+
+.stat-value {
   font-family: 'Orbitron', sans-serif;
-  font-size: 1rem;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+}
+
+.stat-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 0.3rem;
+}
+
+/* ═══ SERVICES ═══ */
+.services { padding: 5rem 0; }
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.service-card {
+  background: rgba(12, 31, 58, 0.4);
+  border: 1px solid rgba(0, 240, 255, 0.1);
+  padding: 1.75rem;
+  transition: all 0.4s;
+  position: relative;
+  overflow: hidden;
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 0;
+  background: var(--neon-cyan);
+  transition: height 0.4s;
+}
+
+.service-card:hover {
+  border-color: var(--border-glow);
+  background: rgba(12, 31, 58, 0.7);
+  transform: translateY(-2px);
+}
+
+.service-card:hover::before { height: 100%; }
+
+.service-icon {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--neon-magenta);
+  letter-spacing: 0.2em;
+  margin-bottom: 0.8rem;
+}
+
+.service-card h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
   color: var(--text-bright);
   margin-bottom: 0.7rem;
 }
 
-.list {
-  list-style: none;
-  margin: 0.75rem 0 0;
-  padding: 0;
-  display: grid;
-  gap: 0.4rem;
-}
-.list li {
-  position: relative;
-  padding-left: 1.25rem;
-  color: var(--text-primary);
-  font-size: 1rem;
-}
-.list li::before {
-  content: '▸';
-  position: absolute; left: 0; top: 0.1rem;
-  color: var(--neon-cyan);
-  font-size: 0.75rem;
+.service-card p {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  line-height: 1.55;
 }
 
-/* STACK */
-.stack-block {
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(0, 240, 255, 0.10);
-  padding: 1.25rem;
+.service-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+}
+
+.tag {
   font-family: 'Share Tech Mono', monospace;
-  font-size: 0.8rem;
-  line-height: 1.85;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  color: var(--neon-cyan);
+  opacity: 0.7;
+}
+
+.services-cta {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+/* ═══ GRIDWATCH PRODUCT ═══ */
+.product {
+  padding: 5rem 0;
+  background: linear-gradient(180deg, transparent, rgba(255, 0, 170, 0.02), transparent);
+}
+
+.product-showcase {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+.product-visual {
+  background: rgba(12, 31, 58, 0.5);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  padding: 1.75rem;
+  position: relative;
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.product-visual::before {
+  content: 'GRIDWATCH://ENTERPRISE';
+  position: absolute;
+  top: -10px;
+  left: 20px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--neon-green);
+  letter-spacing: 0.2em;
+  background: var(--grid-deep);
+  padding: 0 0.5rem;
+}
+
+.terminal-block {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(0, 240, 255, 0.08);
+  padding: 1.1rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.72rem;
+  line-height: 1.8;
   color: var(--neon-green);
   overflow-x: auto;
 }
-.stack-block strong { color: var(--neon-cyan); font-weight: 700; }
-.stack-block .dim { color: var(--text-dim); }
+.terminal-block:last-child { margin-bottom: 0; }
 
-/* FOOTER */
-footer {
-  border-top: 1px solid var(--border-glow);
-  padding: 2rem 0;
-  margin-top: 3rem;
-  text-align: center;
+.terminal-block .comment { color: var(--text-dim); }
+.terminal-block .prompt { color: var(--neon-cyan); }
+.terminal-block .value { color: var(--neon-green); font-weight: 600; }
+
+.product-info p {
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  line-height: 1.7;
+  margin-bottom: 1rem;
 }
-.footer-brand {
+
+.product-info h3 {
   font-family: 'Orbitron', sans-serif;
   font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin: 1.5rem 0 0.75rem;
+}
+
+.feature-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+}
+
+.feature-line .marker {
+  color: var(--neon-cyan);
+  font-size: 0.7rem;
+}
+.feature-line .marker::before { content: '▸'; }
+
+/* ═══ APPS SECTION ═══ */
+.apps-section { padding: 5rem 0; }
+
+.app-card {
+  background: var(--grid-surface);
+  border: 1px solid var(--border-glow);
+  border-top: 3px solid var(--neon-cyan);
+  padding: 2rem;
+  max-width: 480px;
+}
+
+.app-card h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 0.75rem;
+}
+
+.app-card p {
+  font-size: 1rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
+}
+
+.app-links {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* ═══ DEPLOYED SYSTEMS ═══ */
+.deployed { padding: 5rem 0; }
+
+.deployed-card {
+  background: rgba(12, 31, 58, 0.5);
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  padding: 2rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.deployed-card h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 0.75rem;
+}
+
+.deployed-card p {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  line-height: 1.65;
+}
+
+.deployed-stack {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--neon-green);
+  line-height: 1.9;
+  background: rgba(0,0,0,0.3);
+  padding: 1rem;
+  border: 1px solid rgba(0, 240, 255, 0.08);
+}
+
+/* ═══ CONNECT ═══ */
+.connect { padding: 5rem 0; }
+
+.connect-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.connect-card {
+  background: rgba(12, 31, 58, 0.5);
+  border: 1px solid rgba(0, 240, 255, 0.12);
+  padding: 1.75rem;
+  text-decoration: none;
+  transition: all 0.3s;
+  display: block;
+}
+
+.connect-card:hover {
+  border-color: var(--neon-cyan);
+  background: rgba(12, 31, 58, 0.8);
+  transform: translateY(-2px);
+}
+
+.connect-card .card-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--neon-magenta);
+  margin-bottom: 0.75rem;
+}
+
+.connect-card svg {
+  width: 24px;
+  height: 24px;
+  fill: var(--neon-cyan);
+  opacity: 0.5;
+  margin-bottom: 0.5rem;
+  transition: opacity 0.3s;
+}
+.connect-card:hover svg { opacity: 1; }
+
+.connect-card .card-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.85rem;
+  color: var(--text-bright);
+  margin-bottom: 0.5rem;
+}
+
+.connect-card .card-desc {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ═══ FOOTER ═══ */
+footer {
+  border-top: 1px solid var(--border-glow);
+  padding: 3rem 0 2rem;
+  text-align: center;
+}
+
+.footer-brand {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
   font-weight: 900;
   color: var(--neon-cyan);
   letter-spacing: 0.3em;
-  margin-bottom: 0.75rem;
+  text-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+  margin-bottom: 0.5rem;
 }
-.footer-links {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.75rem;
-  letter-spacing: 0.15em;
-  color: var(--text-dim);
-  margin-bottom: 1rem;
-  display: flex;
-  justify-content: center;
-  gap: 1.75rem;
-  flex-wrap: wrap;
-}
-.footer-links a {
-  color: var(--text-dim);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.footer-links a:hover { color: var(--neon-cyan); }
-.footer-copy {
+
+.footer-line {
   font-family: 'Share Tech Mono', monospace;
   font-size: 0.7rem;
   color: var(--text-dim);
-  opacity: 0.55;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.15em;
+  margin-bottom: 0.75rem;
 }
 
+.footer-domain {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--neon-cyan);
+  letter-spacing: 0.2em;
+  margin-bottom: 1rem;
+}
+
+.footer-status {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--neon-green);
+  letter-spacing: 0.15em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--neon-green);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--neon-green);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.footer-nav {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.footer-nav a {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  transition: color 0.2s;
+}
+.footer-nav a:hover { color: var(--neon-cyan); }
+
+/* ═══ FADE-IN ANIMATION ═══ */
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ═══ RESPONSIVE ═══ */
 @media (max-width: 900px) {
-  .grid-2 { grid-template-columns: 1fr; }
-  nav .container { padding: 0.85rem 1rem; }
-  .container { padding: 0 1rem; }
+  .about-grid,
+  .product-showcase,
+  .deployed-card { grid-template-columns: 1fr; gap: 2rem; }
+
+  .hero-title { font-size: clamp(2rem, 8vw, 3.5rem); }
+  .hero-logo { width: 160px; }
+
+  .nav-links { display: none; }
+  .nav-toggle { display: block; }
+  .nav-links.open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: rgba(5, 13, 26, 0.97);
+    border-bottom: 1px solid var(--border-glow);
+    padding: 1rem 2rem;
+    gap: 0.8rem;
+  }
+
+  .container { padding: 0 1.25rem; }
 }
 </style>
 </head>
 
 <body>
+
+<!-- ═══ NAVIGATION ═══ -->
 <nav>
   <div class="container">
-    <a class="nav-brand" href="/index.html">WARSIGNALLABS</a>
-
-    <!-- Top nav only: no Support/Privacy -->
-    <ul class="nav-links">
+    <a href="/index.html" class="nav-brand">
+      <img src="/WarSignalLabs.webp" alt="WarSignalLabs" class="nav-logo" width="32" height="32">
+      WARSIGNALLABS
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">[ MENU ]</button>
+    <ul class="nav-links" id="site-nav">
+      <li><a href="/services.html">Services</a></li>
+      <li><a href="/gridwatch-enterprise.html">GridWatch</a></li>
+      <li><a href="/labs.html">Labs</a></li>
+      <li><a href="/deployed-systems.html">Deployed</a></li>
       <li><a href="/warsignal-vision.html">Vision</a></li>
-      <li><a href="/index.html#consulting">Consulting</a></li>
-      <li><a href="/index.html#gridwatch">GridWatch</a></li>
-      <li><a href="/index.html#interactive">Interactive</a></li>
-      <li><a href="/index.html#stack">Stack</a></li>
-      <li><a href="/index.html#connect">Contact</a></li>
+      <li><a href="#connect">Connect</a></li>
     </ul>
   </div>
 </nav>
 
-<header class="hero">
+<!-- ═══ HERO ═══ -->
+<section class="hero" id="home">
+  <div class="hero-content">
+    <img src="/WarSignal2.webp" alt="WarSignalLabs" class="hero-logo" width="220" height="220">
+    <div class="hero-tag">// NETWORK DEFENSE · SECURITY ENGINEERING · SOFTWARE DEVELOPMENT</div>
+    <h1 class="hero-title">
+      <span class="war">WAR</span><span class="signal">SIGNAL</span><span class="labs">LABS</span>
+    </h1>
+    <p class="hero-sub">
+      Securing mission-critical networks in <span class="highlight">DoD</span> and enterprise environments.<br>
+      Building the tools that defenders need.<span class="cursor"></span>
+    </p>
+    <div class="hero-buttons">
+      <a href="/services.html" class="btn btn-primary">EXPLORE CAPABILITIES</a>
+      <a href="#connect" class="btn btn-secondary">ESTABLISH LINK</a>
+    </div>
+  </div>
+</section>
+
+<div class="neon-divider"></div>
+
+<!-- ═══ ABOUT ═══ -->
+<section class="about" id="about">
   <div class="container">
-    <div class="kicker">WAR SIGNAL VISION</div>
-    <h1>One Lab. Two Engines. Security-First Execution.</h1>
-    <div class="subhead">AI Security Architecture · Enterprise Platforms · Interactive Systems R&amp;D</div>
-
-    <div class="hero-panel">
-      <p>
-        WarSignalLabs is a security-first systems lab focused on building resilient architectures
-        and intelligent platforms for modern organizations — and exploring applied systems design
-        through cyberpunk interactive experiences.
-      </p>
-      <p>
-        We operate with a simple rule: <strong>Harden the foundation first.</strong> Then layer automation,
-        intelligence, and adaptive workflows on top — with strict control boundaries, clarity of intent,
-        and operational reliability.
-      </p>
-
-      <div class="cta-row">
-        <a class="btn btn-primary" href="/index.html#consulting">Engage Consulting</a>
-        <a class="btn btn-secondary" href="/index.html#gridwatch">Explore GridWatch</a>
+    <div class="about-grid">
+      <div class="about-text fade-in">
+        <div class="section-label">OPERATOR PROFILE</div>
+        <h2 class="section-title">Network Security<br>Engineering</h2>
+        <div class="operator-card">
+          <img src="/Rusty.webp" alt="Russ Meadows" class="operator-photo" width="72" height="72">
+          <div>
+            <div class="operator-name">RUSS MEADOWS</div>
+            <div class="operator-role">Network Security Engineer</div>
+            <div class="operator-callsign">// FOUNDER — WARSIGNALLABS</div>
+          </div>
+        </div>
+        <p>WarSignalLabs is the professional practice of a Network Security Engineer operating in Department of Defense and enterprise environments. We specialize in hardening infrastructure, achieving STIG compliance, and building custom software solutions that fill the gaps commercial tools leave behind.</p>
+        <p>From air-gapped enclaves to connected enterprise networks, we bring deep hands-on experience with Aruba CX, Arista EOS, Juniper SRX, pfSense, and the full stack of DoD security frameworks — translating complex requirements into actionable, audit-ready configurations.</p>
+        <p>When off-the-shelf solutions fall short, we build our own. <strong style="color:var(--neon-cyan);">GridWatch Enterprise</strong> is the flagship product — a unified network management platform engineered from the ground up for the environments that need it most.</p>
+      </div>
+      <div class="about-stats fade-in">
+        <div class="stat-card">
+          <div class="stat-value">DoD</div>
+          <div class="stat-label">Clearance Environments</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">STIG</div>
+          <div class="stat-label">Compliance Expertise</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">NET</div>
+          <div class="stat-label">Infrastructure Security</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">DEV</div>
+          <div class="stat-label">Custom Tool Development</div>
+        </div>
       </div>
     </div>
   </div>
-</header>
+</section>
 
-<main>
-  <section class="section">
-    <div class="container">
-      <div class="section-label">UNIFIED PURPOSE</div>
-      <h2>Why WarSignalLabs Exists</h2>
-      <p>
-        Modern infrastructure is complex, distributed, and constantly under pressure — from threat actors,
-        brittle integrations, compliance requirements, and accelerating AI adoption.
-      </p>
-      <p>
-        WarSignalLabs exists to design systems that stay stable under stress: networks that segment cleanly,
-        platforms that enforce access correctly, and workflows that remain auditable even when powered by AI.
-      </p>
-      <div class="divider"></div>
-      <p style="color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:0.85rem;letter-spacing:0.08em;">
-        PRINCIPLE: SECURITY IS NOT A FEATURE — IT IS THE OPERATING CONDITION.
-      </p>
-    </div>
-  </section>
+<div class="neon-divider"></div>
 
-  <section class="section">
-    <div class="container">
-      <div class="section-label">THE TWO ENGINES</div>
-      <h2>Enterprise Engineering + Interactive Systems</h2>
+<!-- ═══ SERVICES ═══ -->
+<section class="services" id="services">
+  <div class="container">
+    <div class="section-label">CAPABILITY MATRIX</div>
+    <h2 class="section-title">What We Do</h2>
+    <div class="services-grid">
 
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-kicker">ENGINE 01</div>
-          <h3>AI Security &amp; Enterprise Platforms</h3>
-          <p>
-            We build hardened architectures and production systems with clear boundaries, secure defaults,
-            and operational resilience.
-          </p>
-          <ul class="list">
-            <li>Security architecture and segmentation strategy</li>
-            <li>Secure platform engineering (data + APIs)</li>
-            <li>Compliance-aligned implementation (NIST / STIG)</li>
-            <li>AI workflow integration with controlled data boundaries</li>
-          </ul>
-        </div>
-
-        <div class="card" style="border-color: rgba(255,0,170,0.18);">
-          <div class="card-kicker" style="color:var(--neon-magenta);">ENGINE 02</div>
-          <h3>Interactive Systems Division</h3>
-          <p>
-            Cyberpunk mobile games are both <strong>for fun</strong> and an <strong>income stream</strong> — and a deliberate
-            skill-building lab for UI, telemetry, performance, and systems design.
-          </p>
-          <ul class="list">
-            <li>SwiftUI UX execution and iteration speed</li>
-            <li>Telemetry thinking: events, funnels, retention loops</li>
-            <li>Performance and stability discipline</li>
-            <li>Cyberpunk world-building + systems economy design</li>
-          </ul>
+      <div class="service-card fade-in">
+        <div class="service-icon">SVC_001</div>
+        <h3>Network Security &amp; Hardening</h3>
+        <p>Enterprise network architecture, firewall policy design, segmentation strategies, and security hardening for mission-critical infrastructure.</p>
+        <div class="service-tags">
+          <span class="tag">FIREWALL</span>
+          <span class="tag">SEGMENTATION</span>
+          <span class="tag">AIR-GAP</span>
+          <span class="tag">ZERO TRUST</span>
         </div>
       </div>
 
-      <div class="divider"></div>
-
-      <p style="margin-bottom:0;">
-        <strong>GridWatchMatch</strong> is the first public interactive system — supported by dedicated Support and Privacy pages
-        that apply specifically to the mobile app.
-      </p>
-
-      <!-- Support/Privacy allowed here (Vision page content + footer), but not in top nav -->
-      <div class="cta-row" style="margin-top:1rem;">
-        <a class="btn btn-primary" href="/support.html">GridWatchMatch Support</a>
-        <a class="btn btn-secondary" href="/privacy.html">GridWatchMatch Privacy</a>
-      </div>
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="container">
-      <div class="section-label">OPERATING PRINCIPLES</div>
-      <h2>How We Build</h2>
-
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-kicker">SECURE BY DEFAULT</div>
-          <h3>Controls First, Always</h3>
-          <ul class="list">
-            <li>Least privilege and explicit access paths</li>
-            <li>Defensible network segmentation</li>
-            <li>RLS / RBAC and auditability in data systems</li>
-            <li>Threat modeling as a baseline habit</li>
-          </ul>
-        </div>
-
-        <div class="card">
-          <div class="card-kicker">OPERATIONAL REALITY</div>
-          <h3>Deployable, Maintainable Systems</h3>
-          <ul class="list">
-            <li>Clarity over cleverness</li>
-            <li>Versioned changes and rollback awareness</li>
-            <li>Measurable outcomes and observability</li>
-            <li>Failure modes treated as design inputs</li>
-          </ul>
+      <div class="service-card fade-in">
+        <div class="service-icon">SVC_002</div>
+        <h3>STIG Compliance &amp; ATO</h3>
+        <p>DISA STIG assessment, CKL checklist generation, POA&amp;M documentation, and Authority to Operate support with dual-audience deliverables.</p>
+        <div class="service-tags">
+          <span class="tag">DISA STIG</span>
+          <span class="tag">POA&amp;M</span>
+          <span class="tag">ATO</span>
+          <span class="tag">RMF</span>
         </div>
       </div>
+
+      <div class="service-card fade-in">
+        <div class="service-icon">SVC_003</div>
+        <h3>Infrastructure Management</h3>
+        <p>Multi-vendor network device management, configuration analysis, and operational support across enterprise switching and routing platforms.</p>
+        <div class="service-tags">
+          <span class="tag">ARUBA CX</span>
+          <span class="tag">ARISTA</span>
+          <span class="tag">JUNIPER</span>
+          <span class="tag">PFSENSE</span>
+        </div>
+      </div>
+
+      <div class="service-card fade-in">
+        <div class="service-icon">SVC_004</div>
+        <h3>Security Software Development</h3>
+        <p>Custom enterprise tooling, automated compliance workflows, and network management applications built for real operational problems.</p>
+        <div class="service-tags">
+          <span class="tag">PYTHON</span>
+          <span class="tag">FASTAPI</span>
+          <span class="tag">DOCKER</span>
+          <span class="tag">SWIFTUI</span>
+        </div>
+      </div>
+
     </div>
-  </section>
+    <div class="services-cta">
+      <a href="/services.html" class="btn btn-primary">VIEW FULL SERVICES</a>
+    </div>
+  </div>
+</section>
 
-  <section class="section" id="stack">
-    <div class="container">
-      <div class="section-label">STACK PROFILE</div>
-      <h2>Tools We Ship With</h2>
+<div class="neon-divider"></div>
 
-      <div class="stack-block">
-        <span class="dim">// STACK</span><br><br>
+<!-- ═══ GRIDWATCH ENTERPRISE ═══ -->
+<section class="product" id="gridwatch">
+  <div class="container">
+    <div class="section-label">FLAGSHIP PRODUCT</div>
+    <h2 class="section-title">GridWatch Enterprise</h2>
+    <div class="product-showcase">
+      <div class="product-visual fade-in">
+        <div class="terminal-block">
+          <span class="comment"># GridWatch Enterprise — Unified Network Management</span><br>
+          <span class="prompt">gridwatch$</span> status --all<br><br>
+          <span class="comment"># ── IPAM Module ──</span><br>
+          ipam.discovery &nbsp;&nbsp;&nbsp; <span class="value">[ACTIVE]</span><br>
+          ipam.allocation &nbsp;&nbsp; <span class="value">[ACTIVE]</span><br>
+          ipam.dns_sync &nbsp;&nbsp;&nbsp;&nbsp; <span class="value">[ACTIVE]</span><br><br>
+          <span class="comment"># ── NPM Module ──</span><br>
+          npm.polling &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="value">[ACTIVE]</span><br>
+          npm.alerting &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="value">[ACTIVE]</span><br>
+          npm.topology &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="value">[ACTIVE]</span><br><br>
+          <span class="comment"># ── Platform ──</span><br>
+          services: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="value">14/14 healthy</span><br>
+          uptime: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span class="value">99.97%</span><br>
+          nodes_monitored: &nbsp; <span class="value">2,847</span>
+        </div>
+        <div class="terminal-block">
+          <span class="prompt">gridwatch$</span> arch --overview<br><br>
+          stack: &nbsp;&nbsp; <span class="value">containerized microservices</span><br>
+          deploy: &nbsp; <span class="value">docker-compose / k8s</span><br>
+          env: &nbsp;&nbsp;&nbsp;&nbsp; <span class="value">air-gap compatible</span><br>
+          license: &nbsp;<span class="value">enterprise</span>
+        </div>
+      </div>
+      <div class="product-info fade-in">
+        <p>GridWatch Enterprise is a unified IPAM and Network Performance Management platform, purpose-built as an enterprise alternative to tools like SolarWinds. It merges IP address management and network monitoring into a single, containerized platform that deploys anywhere — including air-gapped enclaves.</p>
 
-        <strong>Backend:</strong><br>
-        FastAPI · PostgreSQL · Supabase<br><br>
+        <h3>Core Capabilities</h3>
+        <div class="feature-line"><span class="marker"></span> Unified IPAM + NPM in a single platform</div>
+        <div class="feature-line"><span class="marker"></span> Containerized microservices architecture</div>
+        <div class="feature-line"><span class="marker"></span> Air-gapped and connected deployment modes</div>
+        <div class="feature-line"><span class="marker"></span> Multi-vendor device discovery &amp; monitoring</div>
+        <div class="feature-line"><span class="marker"></span> Automated STIG compliance checking</div>
+        <div class="feature-line"><span class="marker"></span> Real-time topology mapping &amp; alerting</div>
+        <div class="feature-line"><span class="marker"></span> Role-based access with DoD-ready audit trails</div>
 
-        <strong>Edge &amp; Hosting:</strong><br>
-        Cloudflare · Netlify<br><br>
-
-        <strong>Infrastructure &amp; Ops:</strong><br>
-        Docker<br><br>
-
-        <strong>Network Engineering:</strong><br>
-        Cisco · Arista · NetGate · HPE Aruba · Juniper<br><br>
-
-        <strong>Security Frameworks:</strong><br>
-        NIST · STIG<br><br>
-
-        <strong>Mobile Development:</strong><br>
-        SwiftUI<br><br>
-
-        <strong>AI Systems:</strong><br>
-        OpenAI · Anthropic
+        <div style="margin-top: 1.5rem;">
+          <a href="/gridwatch-enterprise.html" class="btn btn-primary">EXPLORE GRIDWATCH</a>
+        </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section class="section" id="connect">
-    <div class="container">
-      <div class="section-label">ENGAGEMENT</div>
-      <h2>How to Work With WarSignalLabs</h2>
-      <p>
-        Engagements are structured to move fast without losing control:
-        discovery, architecture, execution, and hardening — with clear deliverables and clean boundaries.
-      </p>
+<div class="neon-divider"></div>
 
-      <div class="cta-row" style="margin-top:1rem;">
-        <a class="btn btn-primary" href="mailto:rmeadows@warsignallabs.net">Initiate Contact</a>
-        <a class="btn btn-secondary" href="/index.html">Return Home</a>
+<!-- ═══ APPLICATIONS ═══ -->
+<section class="apps-section" id="apps">
+  <div class="container">
+    <div class="section-label">DEPLOYED APPLICATIONS</div>
+    <h2 class="section-title">Interactive Systems</h2>
+    <div class="app-card fade-in">
+      <div class="section-label" style="margin-bottom: 0.5rem;">iOS · PUZZLE / STRATEGY</div>
+      <h3>GridWatchMatch</h3>
+      <p>A tactical grid-based puzzle game built for iOS. Match patterns, manage power, and defend the network against escalating threats. Part of the Interactive Systems Division — a deliberate skill-building lab for UI, telemetry, and systems design.</p>
+      <div class="app-links">
+        <a href="/labs.html" class="btn btn-primary">EXPLORE LABS</a>
+        <a href="/support.html" class="btn btn-secondary">SUPPORT</a>
+        <a href="/privacy.html" class="btn btn-secondary">PRIVACY</a>
       </div>
     </div>
-  </section>
-</main>
+  </div>
+</section>
 
+<div class="neon-divider"></div>
+
+<!-- ═══ DEPLOYED SYSTEMS ═══ -->
+<section class="deployed" id="deployed">
+  <div class="container">
+    <div class="section-label">CASE STUDY</div>
+    <h2 class="section-title">Deployed Systems</h2>
+    <div class="deployed-card fade-in">
+      <div>
+        <h3>Blueprint Advisory — Survey Platform</h3>
+        <p>Executive coaching survey platform built on FastAPI + PostgreSQL + Supabase, deployed to production with RLS, secure auth, and full operational runbooks. Demonstrates end-to-end delivery from architecture through hardening and handoff.</p>
+        <div style="margin-top: 1.25rem;">
+          <a href="/deployed-systems.html" class="btn btn-primary">VIEW CASE STUDY</a>
+        </div>
+      </div>
+      <div class="deployed-stack">
+        <span style="color:var(--text-dim);">// STACK</span><br><br>
+        <strong style="color:var(--neon-cyan);">Backend:</strong> FastAPI + PostgreSQL<br>
+        <strong style="color:var(--neon-cyan);">Platform:</strong> Supabase (RLS + Auth)<br>
+        <strong style="color:var(--neon-cyan);">Hosting:</strong> Netlify + Cloudflare<br>
+        <strong style="color:var(--neon-cyan);">Security:</strong> RLS / RBAC / CSP<br>
+        <strong style="color:var(--neon-cyan);">Status:</strong> <span style="color:var(--neon-green);">PRODUCTION</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="neon-divider"></div>
+
+<!-- ═══ CONNECT ═══ -->
+<section class="connect" id="connect">
+  <div class="container">
+    <div class="section-label">ESTABLISH LINK</div>
+    <h2 class="section-title">Connect</h2>
+    <div class="connect-grid">
+
+      <a href="mailto:rmeadows@warsignallabs.net" class="connect-card fade-in">
+        <div class="card-label">// EMAIL</div>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        <div class="card-value">rmeadows@warsignallabs.net</div>
+        <div class="card-desc">Direct line for inquiries, proposals, and collaboration.</div>
+      </a>
+
+      <a href="https://github.com/remeadows" target="_blank" rel="noopener noreferrer" class="connect-card fade-in">
+        <div class="card-label">// GITHUB</div>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        <div class="card-value">github.com/remeadows</div>
+        <div class="card-desc">Open source projects, GridWatch development, and code repositories.</div>
+      </a>
+
+      <a href="https://www.linkedin.com/in/russell-meadows-1abb5994/" target="_blank" rel="noopener noreferrer" class="connect-card fade-in">
+        <div class="card-label">// LINKEDIN</div>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        <div class="card-value">Russell Meadows</div>
+        <div class="card-desc">Professional background, certifications, and network connections.</div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
 <footer>
   <div class="container">
     <div class="footer-brand">WARSIGNALLABS</div>
-
-    <div class="footer-links">
-      <a href="/warsignal-vision.html">Vision</a>
-      <a href="/index.html#consulting">Consulting</a>
-      <a href="/index.html#gridwatch">GridWatch</a>
-      <a href="/index.html#interactive">Interactive</a>
-      <a href="/index.html#stack">Stack</a>
-      <a href="/index.html#connect">Contact</a>
-      <a href="/support.html">GridWatchMatch Support</a>
-      <a href="/privacy.html">GridWatchMatch Privacy</a>
+    <div class="footer-line">CYBERSECURITY · NETWORK DEFENSE · SOFTWARE ENGINEERING</div>
+    <div class="footer-domain">warsignallabs.net</div>
+    <div class="footer-status">
+      <span class="status-dot"></span>
+      ALL SYSTEMS OPERATIONAL
     </div>
-
-    <div class="footer-copy">© 2026 WarSignalLabs. All rights reserved.</div>
+    <div class="footer-nav">
+      <a href="/services.html">Services</a>
+      <a href="/gridwatch-enterprise.html">GridWatch</a>
+      <a href="/labs.html">Labs</a>
+      <a href="/deployed-systems.html">Deployed</a>
+      <a href="/warsignal-vision.html">Vision</a>
+      <a href="/support.html">App Support</a>
+      <a href="/privacy.html">Privacy Policy</a>
+    </div>
+    <div class="footer-line">© 2026 WarSignalLabs. All rights reserved.</div>
   </div>
 </footer>
+
+<script src="/site.js" defer></script>
 
 </body>
 </html>

@@ -3,8 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; object-src 'none'; form-action 'self'; upgrade-insecure-requests" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
 <title>Labs — WarSignalLabs</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
@@ -106,6 +109,31 @@ nav .container{
   text-decoration:none;
   letter-spacing:.15em;
   text-shadow:0 0 18px rgba(0,240,255,.35);
+  display:flex;
+  align-items:center;
+  gap:0.6rem;
+}
+.nav-logo{
+  width:32px;
+  height:32px;
+  object-fit:cover;
+  border-radius:4px;
+  border:1px solid rgba(0,240,255,0.3);
+}
+.nav-toggle{
+  background:transparent;
+  border:1px solid rgba(0,240,255,0.3);
+  color:var(--neon-cyan);
+  font-family:'Share Tech Mono',monospace;
+  font-size:.75rem;
+  padding:.5rem 1rem;
+  cursor:pointer;
+  letter-spacing:.12em;
+  transition:all .2s;
+}
+.nav-toggle:hover{
+  border-color:var(--neon-cyan);
+  box-shadow:0 0 10px rgba(0,240,255,.3);
 }
 .nav-links{
   display:flex;gap:1.25rem;
@@ -388,16 +416,18 @@ footer{
 <body>
 <nav>
   <div class="container">
-    <a class="nav-brand" href="/index.html">WARSIGNALLABS</a>
-
-    <!-- Nav policy: no Support/Privacy -->
-    <ul class="nav-links">
+    <a href="/index.html" class="nav-brand">
+      <img src="/WarSignalLabs.webp" alt="WarSignalLabs" class="nav-logo" width="32" height="32">
+      WARSIGNALLABS
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">[ MENU ]</button>
+    <ul class="nav-links" id="site-nav">
+      <li><a href="/services.html">Services</a></li>
+      <li><a href="/gridwatch-enterprise.html">GridWatch</a></li>
+      <li><a href="/labs.html">Labs</a></li>
+      <li><a href="/deployed-systems.html">Deployed</a></li>
       <li><a href="/warsignal-vision.html">Vision</a></li>
-      <li><a href="/index.html#consulting">Consulting</a></li>
-      <li><a href="/index.html#gridwatch">GridWatch</a></li>
-      <li><a href="/index.html#interactive">Interactive</a></li>
-      <li><a href="/index.html#stack">Stack</a></li>
-      <li><a href="/index.html#connect">Contact</a></li>
+      <li><a href="/index.html#connect">Connect</a></li>
     </ul>
   </div>
 </nav>
