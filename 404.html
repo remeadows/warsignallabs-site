@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; object-src 'none'; form-action 'self'; upgrade-insecure-requests">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>404 — Signal Lost — WarSignalLabs</title>
+<meta name="description" content="Page not found. The requested resource does not exist on WarSignalLabs.net.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+
+<style>
+/* 404 PAGE-SPECIFIC STYLES */
+
+.error-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+}
+
+.error-code {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(6rem, 20vw, 12rem);
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  filter: drop-shadow(0 0 30px rgba(0, 240, 255, 0.3));
+  animation: glitch 3s infinite;
+}
+
+@keyframes glitch {
+  0%, 92%, 100% { opacity: 1; transform: translate(0); }
+  93% { opacity: 0.8; transform: translate(-2px, 1px); }
+  94% { opacity: 1; transform: translate(2px, -1px); }
+  95% { opacity: 0.6; transform: translate(-1px, -2px); }
+  96% { opacity: 1; transform: translate(0); }
+}
+
+.error-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--neon-magenta);
+  margin-bottom: 2rem;
+}
+
+.error-label::before { content: '// '; color: var(--neon-cyan); }
+
+.error-message {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  max-width: 480px;
+  line-height: 1.8;
+  margin-bottom: 2.5rem;
+}
+
+.error-message code {
+  color: var(--neon-amber);
+  background: rgba(255, 170, 0, 0.08);
+  padding: 0.15em 0.4em;
+  border-radius: 2px;
+}
+
+.error-nav {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.error-nav .btn {
+  margin-top: 0;
+}
+
+.btn-primary {
+  background: rgba(0, 240, 255, 0.08);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+}
+
+.btn-primary:hover {
+  background: rgba(0, 240, 255, 0.18);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
+}
+
+.terminal-line {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  opacity: 0.4;
+  margin-top: 3rem;
+  letter-spacing: 0.15em;
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+  <div class="container">
+    <a href="/index.html" class="nav-brand">
+      <img src="/WarSignalLabs.webp" alt="WarSignalLabs" class="nav-logo" width="32" height="32">
+      WARSIGNALLABS
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">[ MENU ]</button>
+    <ul class="nav-links" id="site-nav">
+      <li><a href="/services.html">Services</a></li>
+      <li><a href="/gridwatch-enterprise.html">GridWatch</a></li>
+      <li><a href="/labs.html">Labs</a></li>
+      <li><a href="/deployed-systems.html">Deployed</a></li>
+      <li><a href="/warsignal-vision.html">Vision</a></li>
+      <li><a href="/index.html#connect">Connect</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="error-container">
+  <div class="error-code">404</div>
+  <div class="error-label">SIGNAL LOST</div>
+  <div class="error-message">
+    The requested resource could not be located on this network.<br>
+    Target <code>PATH_NOT_FOUND</code> — verify coordinates and retry.
+  </div>
+  <div class="error-nav">
+    <a href="/index.html" class="btn btn-primary">RETURN TO BASE</a>
+    <a href="/services.html" class="btn">VIEW SERVICES</a>
+    <a href="/index.html#connect" class="btn">ESTABLISH LINK</a>
+  </div>
+  <div class="terminal-line">warsignallabs.net // route_handler :: ERR_404_NO_ROUTE</div>
+</main>
+
+<footer>
+  <div class="footer-links">
+    <a href="/services.html">Services</a>
+    <a href="/gridwatch-enterprise.html">GridWatch</a>
+    <a href="/labs.html">Labs</a>
+    <a href="/deployed-systems.html">Deployed</a>
+    <a href="/warsignal-vision.html">Vision</a>
+    <a href="/support.html">App Support</a>
+    <a href="/privacy.html">Privacy Policy</a>
+  </div>
+  <div class="footer-copy">&copy; 2026 WarSignalLabs. All rights reserved.</div>
+</footer>
+
+</body>
+</html>
