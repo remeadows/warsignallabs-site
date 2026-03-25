@@ -1,0 +1,342 @@
+# WarSignalLabs Client Portal — Architecture (Machine-Readable)
+# Version: 2.0 | Date: 2026-03-25 | Owner: Russ Meadows
+# Classification: Internal — Business Sensitive
+# Demo: Sunday March 29, 2026 — Blueprint Advisory (Chris DePalma)
+
+meta:
+  version: "2.0"
+  date: "2026-03-25"
+  owner: "Russ Meadows"
+  domain: "warsignallabs.net"
+  demo_date: "2026-03-29"
+  demo_audience: "Chris DePalma, Blueprint Advisory"
+
+stack:
+  frontend: { service: "Cloudflare Pages", framework: "React 18 + Vite", tier: "free" }
+  backend: { service: "Cloudflare Workers", limit: "100K req/day", tier: "free" }
+  database: { service: "Cloudflare D1", engine: "SQLite", limit: "5 GB", tier: "free" }
+  storage: { service: "Cloudflare R2", limit: "10 GB / 10M reads / 1M writes", tier: "free" }
+  auth: { service: "Clerk", limit: "10K MAU", tier: "free", mfa: "TOTP mandatory for admin" }
+  cdn: { service: "Cloudflare", tier: "free" }
+
+subdomains:
+  marketing: "warsignallabs.net"
+  portal: "portal.warsignallabs.net"
+  api: "api.warsignallabs.net"
+
+# ──────────────────────────────────────────────
+# ACCOUNTS & ROLES
+# ──────────────────────────────────────────────
+
+roles:
+  administrator:
+    count: 2
+    scope: global
+    privileges: [system_config, user_management, role_assignment, workspace_crud, db_management, emergency_access]
+    mfa: required_totp
+  owner:
+    count: 1
+    user: "Russ Meadows"
+    scope: global
+    privileges: [client_management, workspace_access_all, content_crud]
+    cannot: [system_config, auth_infrastructure]
+  client:
+    count: per_org
+    scope: assigned_workspaces_only
+    privileges: [view, download, upload_to_assigned]
+    cannot: [other_workspaces, admin, system_settings]
+
+accounts:
+  - { username: "armeadows", role: admin, mfa: "TOTP", access: "full", notes: "Primary admin" }
+  - { username: "emergency-acct", role: admin, mfa: "TOTP (offline seed)", access: "full", notes: "Break-glass only" }
+  - { username: "rmeadows", role: owner, mfa: optional, access: "write all workspaces, no admin" }
+  - { username: "cdepalma", role: client, mfa: optional, access: "write Lunch out of Landfills + Blueprint Advisory only" }
+
+account_lifecycle:
+  provisioning: "Owner creates → Clerk enrollment email → password + TOTP setup"
+  deactivation: "Owner toggles inactive → immediate access loss → data retained"
+  expiration: "Optional expiry date → Clerk auto-deactivates"
+  deletion: "Administrator only → permanent removal + optional data purge"
+
+# ──────────────────────────────────────────────
+# WORKSPACES
+# ──────────────────────────────────────────────
+
+workspaces:
+  - name: "WarSignalLabs"
+    slug: "warsignallabs"
+    color: "#00f0ff"
+    access: [armeadows, emergency-acct, rmeadows]
+    notes: "Internal company docs"
+  - name: "Lunch out of Landfills"
+    slug: "lunch-out-of-landfills"
+    color: "#39ff14"
+    access: [armeadows, emergency-acct, rmeadows, cdepalma]
+    notes: "Shared client workspace"
+  - name: "Blueprint Advisory"
+    slug: "blueprint-advisory"
+    color: "#ffaa00"
+    access: [armeadows, emergency-acct, rmeadows, cdepalma]
+    notes: "Blueprint Advisory shared workspace"
+
+workspace_model:
+  isolation: "container per workspace"
+  categories: [invoices, documents, deliverables, reports]
+  storage:
+    quota_per_workspace_mb: 2048
+    total_r2_gb: 10
+    allocation: "2GB × 4 workspaces = 8GB + 2GB reserve"
+    file_types: [pdf, docx, xlsx, png, zip]
+    naming: "/{workspace_id}/{category}/{uuid}_{filename}"
+
+# ──────────────────────────────────────────────
+# DATABASE
+# ──────────────────────────────────────────────
+
+database:
+  engine: "D1 (SQLite)"
+  tables:
+    workspaces:
+      pk: "id TEXT (UUID)"
+      fields: [name, slug, color, storage_quota_mb, storage_used_mb, created_at, updated_at]
+    users:
+      pk: "id TEXT (Clerk ID)"
+      fields: [username, email, role, status, created_at, updated_at]
+    user_workspaces:
+      pk: "id TEXT"
+      fk: ["user_id → users", "workspace_id → workspaces"]
+      fields: [permission, created_at]
+      notes: "Junction table — controls per-user workspace access"
+    files:
+      pk: "id TEXT (UUID)"
+      fk: "workspace_id → workspaces"
+      fields: [category, filename, r2_key, size_bytes, content_type, uploaded_by, created_at]
+    audit_log:
+      pk: "id TEXT (UUID)"
+      fields: [user_id, action, resource_type, resource_id, metadata_json, ip_address, created_at]
+
+# ──────────────────────────────────────────────
+# API ROUTES
+# ──────────────────────────────────────────────
+
+api_routes:
+  auth:
+    - { method: POST, path: "/api/auth/webhook", auth: "Clerk webhook secret", desc: "Sync user create/delete from Clerk" }
+  workspaces:
+    - { method: GET, path: "/api/workspaces", auth: "Any authenticated", desc: "List workspaces (filtered by role)" }
+    - { method: GET, path: "/api/workspaces/:id", auth: "Owner, Admin, Client (assigned)", desc: "Get workspace detail" }
+    - { method: POST, path: "/api/workspaces", auth: "Admin", desc: "Create workspace" }
+    - { method: PATCH, path: "/api/workspaces/:id", auth: "Admin", desc: "Update workspace" }
+  files:
+    - { method: GET, path: "/api/workspaces/:id/files", auth: "Owner, Admin, Client (assigned)", desc: "List files in workspace" }
+    - { method: POST, path: "/api/workspaces/:id/files", auth: "Owner, Admin, Client (assigned + write)", desc: "Upload file" }
+    - { method: GET, path: "/api/files/:id/download", auth: "Owner, Admin, Client (assigned)", desc: "Presigned R2 URL (5-min TTL)" }
+    - { method: DELETE, path: "/api/files/:id", auth: "Admin", desc: "Delete file" }
+  users:
+    - { method: GET, path: "/api/users", auth: "Owner, Admin", desc: "List users" }
+    - { method: POST, path: "/api/users/:id/deactivate", auth: "Owner, Admin", desc: "Deactivate user" }
+    - { method: POST, path: "/api/users/:id/activate", auth: "Owner, Admin", desc: "Reactivate user" }
+    - { method: PATCH, path: "/api/users/:id/workspaces", auth: "Admin", desc: "Update workspace assignments" }
+  admin:
+    - { method: GET, path: "/api/admin/analytics", auth: "Admin", desc: "System stats (users, storage, workspaces)" }
+    - { method: GET, path: "/api/audit-log", auth: "Admin", desc: "Filterable audit trail" }
+  health:
+    - { method: GET, path: "/api/health", auth: "None", desc: "Health check" }
+
+# ──────────────────────────────────────────────
+# FRONTEND
+# ──────────────────────────────────────────────
+
+frontend:
+  framework: "React 18 + Vite"
+  styling: "CSS custom properties — no component library"
+  fonts: [Orbitron, "Share Tech Mono", Rajdhani, Inter, "DM Sans"]
+  auth_sdk: "@clerk/clerk-react"
+  routing: "React Router (client-side)"
+
+  routes:
+    - { path: "/login", desc: "Clerk sign-in + TOTP", access: "public" }
+    - { path: "/dashboard", desc: "Role-based landing (workspace cards + activity)", access: "authenticated" }
+    - { path: "/workspace/:slug", desc: "File list with category tabs", access: "assigned users" }
+    - { path: "/admin/users", desc: "User management", access: "admin" }
+    - { path: "/admin/workspaces", desc: "Workspace management", access: "admin" }
+    - { path: "/admin/audit-log", desc: "Security event timeline", access: "admin" }
+    - { path: "/settings", desc: "Clerk UserProfile (password, TOTP, sessions)", access: "authenticated" }
+
+  layout:
+    top_nav: "Logo + portal name | username + avatar"
+    sidebar: "Navigation, workspaces (role-filtered), admin section (admin only), settings"
+    main_content: "Route-based content area"
+
+  theming:
+    system: "CSS custom properties with theme file swap"
+    default_theme: "dark-professional"
+    themes:
+      dark-professional:
+        description: "Dark navy/charcoal — Linear/Vercel aesthetic. Default for WSL portal."
+        bg_primary: "#0a1628"
+        bg_surface: "#0c1f3a"
+        text_primary: "#e8f0fe"
+        text_secondary: "#8899aa"
+        accent: "#00c8d4"
+        accent_secondary: "#ff6b9d"
+        font_body: "Inter"
+        font_mono: "Share Tech Mono"
+        font_heading: "DM Sans"
+      cyberpunk:
+        description: "Full neon cyberpunk — warsignallabs.net marketing aesthetic."
+        bg_primary: "#050d1a"
+        bg_surface: "#0c1f3a"
+        text_primary: "#e8f0fe"
+        accent: "#00f0ff"
+        accent_secondary: "#ff00aa"
+        font_body: "Rajdhani"
+        font_mono: "Share Tech Mono"
+        font_heading: "Orbitron"
+        extras: [grid_background, scanlines, neon_glow]
+      client_template:
+        description: "Light professional — clone-ready for client deployments."
+        bg_primary: "#f8f9fa"
+        bg_surface: "#ffffff"
+        text_primary: "#1a1a2e"
+        text_secondary: "#6b7280"
+        accent: "{client_brand_color}"
+        font_body: "Inter"
+        font_heading: "DM Sans"
+    env_vars: [PORTAL_THEME, PORTAL_NAME, BRAND_COLOR, BRAND_LOGO_URL]
+
+# ──────────────────────────────────────────────
+# SECURITY
+# ──────────────────────────────────────────────
+
+security:
+  auth:
+    provider: "Clerk"
+    jwt_ttl: "5 minutes"
+    refresh: "automatic"
+    admin_mfa: "TOTP required"
+    session_management: "Clerk-managed expiry and refresh"
+    emergency: "Break-glass admin with offline TOTP backup"
+  api:
+    middleware_chain: [cors, auth, rbac, handler]
+    rbac: "Server-side on every request — UI hides controls, Worker enforces"
+    file_upload: { max_size_mb: 50, mime_validation: true, path_traversal_scan: true }
+    presigned_urls: { ttl_minutes: 5 }
+    rate_limit: "100 req/min per user via CF rate limiting"
+  data:
+    queries: "Parameterized only — no string interpolation"
+    r2_bucket: "Private — no public access"
+    r2_keys: "{workspace_id}/{category}/{uuid}_{filename}"
+    workspace_isolation: "Every query includes WHERE workspace_id = ?"
+  network:
+    transport: "HTTPS via Cloudflare auto-TLS"
+    cors: "portal.warsignallabs.net only"
+    waf: "CF WAF rules enabled"
+    csp: "No inline scripts, no external resources except Clerk JS"
+    headers: [X-Content-Type-Options, X-Frame-Options, Strict-Transport-Security]
+
+# ──────────────────────────────────────────────
+# SPRINT PLAN — 4 Days to Sunday Demo
+# ──────────────────────────────────────────────
+
+sprint:
+  day_1_tue_mar_25:
+    name: "Foundation"
+    tasks:
+      - "Finalize plan + update architecture.yaml"
+      - "Scaffold portal: npm create vite@latest portal -- --template react"
+      - "Set up CF Pages project + portal.warsignallabs.net DNS"
+      - "Create D1 database + run schema migration"
+      - "Create R2 bucket (wsl-portal-files)"
+      - "Set up Clerk application + configure TOTP"
+      - "Deploy skeleton Worker with /api/health"
+      - "Set up CSS custom properties theming system"
+    goal: "portal.warsignallabs.net returns skeleton + Worker responds on /api/health"
+
+  day_2_wed_mar_26:
+    name: "Auth + API Core"
+    tasks:
+      - "Integrate Clerk React SDK (login/logout/session)"
+      - "Create 4 user accounts in Clerk + set metadata"
+      - "Enable 2FA on armeadows + emergency-acct"
+      - "Build Worker auth middleware (JWT verify + role extraction)"
+      - "Build RBAC middleware (workspace access check)"
+      - "API: GET /workspaces, GET /workspace/:id/files"
+      - "Seed D1 with 3 workspaces + user_workspaces"
+    goal: "Login as rmeadows → 3 workspaces. Login as cdepalma → 2 workspaces."
+
+  day_3_thu_mar_27:
+    name: "File Management + Admin"
+    tasks:
+      - "File upload endpoint: validate → R2 put → D1 record → audit log"
+      - "File download endpoint: access check → presigned URL → redirect"
+      - "File delete endpoint (admin only)"
+      - "Workspace detail page with category tabs + file list"
+      - "Drag-and-drop upload component"
+      - "Admin pages: user management, workspace management"
+      - "Audit log page with filterable timeline"
+    goal: "Upload PDF to Blueprint Advisory as rmeadows → download as cdepalma."
+
+  day_4_fri_mar_28:
+    name: "Polish + Security Hardening"
+    tasks:
+      - "CSS polish: animations, transitions, loading states, responsive"
+      - "Add 'Enter Portal' link to warsignallabs.net nav"
+      - "Security headers (CSP, HSTS, X-Frame-Options)"
+      - "Error boundaries + 403/404 pages"
+      - "Upload demo content (2-3 docs per workspace)"
+      - "Full walkthrough as all 4 accounts"
+    goal: "Full end-to-end demo rehearsal. Every click polished."
+
+  day_5_sat_mar_29:
+    name: "Buffer + Dress Rehearsal"
+    tasks:
+      - "Fix anything from Friday testing"
+      - "Run exact demo script start to finish"
+      - "Verify cdepalma credentials (send Chris creds securely)"
+      - "Clear audit log → seed fresh demo activity"
+    goal: "Zero surprises on Sunday."
+
+# ──────────────────────────────────────────────
+# DEMO SCRIPT — Sunday March 29
+# ──────────────────────────────────────────────
+
+demo_script:
+  duration: "15 minutes"
+  steps:
+    - "Start at warsignallabs.net → click 'Enter Portal' in nav"
+    - "Login as armeadows (Admin) → show 2FA challenge"
+    - "Admin dashboard → all 3 workspaces, system stats, recent activity"
+    - "Open Blueprint Advisory workspace → category tabs, upload doc live"
+    - "Admin pages → user management, workspace config, audit log"
+    - "Logout → hand Chris the keyboard"
+    - "Chris logs in as cdepalma → sees only 2 workspaces, no admin"
+    - "Chris downloads the doc just uploaded → proves the loop"
+    - "The pitch: edge-hosted, your brand, your domain, built in a week"
+
+# ──────────────────────────────────────────────
+# CLONE-READY ARCHITECTURE
+# ──────────────────────────────────────────────
+
+clone_deployment:
+  description: "Env-driven — same codebase, different config per client"
+  env_vars:
+    - { name: "CLERK_PUBLISHABLE_KEY", desc: "Client's Clerk app" }
+    - { name: "D1_DATABASE_ID", desc: "Client's D1 instance" }
+    - { name: "R2_BUCKET_NAME", desc: "Client's R2 bucket" }
+    - { name: "PORTAL_NAME", desc: "Client's portal display name" }
+    - { name: "BRAND_COLOR", desc: "Client's primary accent hex" }
+    - { name: "DOMAIN", desc: "Client's portal subdomain" }
+  steps:
+    - "New CF account (or sub-zone) + D1 + R2 + Worker"
+    - "New Clerk app with client branding"
+    - "Set 6 env vars"
+    - "Deploy — same codebase, different config"
+
+future:
+  - "Email notifications (Clerk/Resend) on new uploads"
+  - "Client self-service uploads"
+  - "D1 → Hyperdrive + Postgres if data grows"
+  - "Clerk appearance API for branded login"
+  - "API keys for GW-OS pipeline integration"
+  - "Portal-as-a-service: managed hosting for consultant clients"
