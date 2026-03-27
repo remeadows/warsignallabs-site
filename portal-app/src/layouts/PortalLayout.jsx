@@ -1,0 +1,112 @@
+import { Outlet, NavLink, useLocation } from 'react-router-dom'
+import { UserButton, useUser } from '@clerk/clerk-react'
+import { useState, useEffect } from 'react'
+import './PortalLayout.css'
+
+const PORTAL_NAME = import.meta.env.VITE_PORTAL_NAME || 'WARSIGNALLABS PORTAL'
+
+const workspaces = [
+  { slug: 'warsignallabs', name: 'WarSignalLabs', color: 'var(--ws-warsignallabs)' },
+  { slug: 'lunch-out-of-landfills', name: 'Lunch out of Landfills', color: 'var(--ws-landfills)' },
+  { slug: 'blueprint-advisory', name: 'Blueprint Advisory', color: 'var(--ws-blueprint)' },
+]
+
+export default function PortalLayout() {
+  const { user } = useUser()
+  const location = useLocation()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  const role = user?.publicMetadata?.role || 'client'
+  const allowedWorkspaces = user?.publicMetadata?.workspace_slugs || []
+  const isAdmin = role === 'admin'
+  const isOwner = role === 'owner'
+
+  const visibleWorkspaces = (isAdmin || isOwner)
+    ? workspaces
+    : workspaces.filter(ws => allowedWorkspaces.includes(ws.slug))
+
+  // Close sidebar on route change
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
+
+  return (
+    <div className="portal-layout">
+      {/* Top Nav */}
+      <header className="topnav">
+        <div className="topnav__brand">
+          <button
+            className="sidebar-toggle"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle menu"
+          >
+            {sidebarOpen ? '[ CLOSE ]' : '[ MENU ]'}
+          </button>
+          <div className="topnav__logo" />
+          <span className="topnav__name">{PORTAL_NAME}</span>
+        </div>
+        <div className="topnav__user">
+          <span className="topnav__username mono">{user?.username || user?.firstName || 'User'}</span>
+          <UserButton afterSignOutUrl="/login" />
+        </div>
+      </header>
+
+      <div className="portal-body">
+        {/* Mobile overlay */}
+        {sidebarOpen && (
+          <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+        )}
+
+        {/* Sidebar */}
+        <nav className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`}>
+          <div className="sidebar__section">
+            <span className="sidebar__label label">Navigation</span>
+            <NavLink to="/dashboard" className={({ isActive }) => `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`}>
+              Dashboard
+            </NavLink>
+          </div>
+
+          <div className="sidebar__section">
+            <span className="sidebar__label label">Workspaces</span>
+            {visibleWorkspaces.map(ws => (
+              <NavLink
+                key={ws.slug}
+                to={`/workspace/${ws.slug}`}
+                className={({ isActive }) => `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`}
+              >
+                <span className="sidebar__dot" style={{ background: ws.color }} />
+                {ws.name}
+              </NavLink>
+            ))}
+          </div>
+
+          {(isAdmin || isOwner) && (
+            <div className="sidebar__section">
+              <span className="sidebar__label label">Admin</span>
+              <NavLink to="/admin/users" className={({ isActive }) => `sidebar__link sidebar__link--admin ${isActive ? 'sidebar__link--active' : ''}`}>
+                Users
+              </NavLink>
+              <NavLink to="/admin/workspaces" className={({ isActive }) => `sidebar__link sidebar__link--admin ${isActive ? 'sidebar__link--active' : ''}`}>
+                Workspaces
+              </NavLink>
+              <NavLink to="/admin/audit-log" className={({ isActive }) => `sidebar__link sidebar__link--admin ${isActive ? 'sidebar__link--active' : ''}`}>
+                Audit Log
+              </NavLink>
+            </div>
+          )}
+
+          <div className="sidebar__section sidebar__section--bottom">
+            <NavLink to="/settings" className={({ isActive }) => `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`}>
+              Settings
+            </NavLink>
+          </div>
+        </nav>
+
+        {/* Main Content */}
+        <main className="main-content fade-in">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  )
+}

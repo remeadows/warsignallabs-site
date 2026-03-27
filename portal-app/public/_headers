@@ -1,0 +1,7 @@
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clerk.accounts.dev https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://*.clerk.accounts.dev; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.clerk.accounts.dev https://img.clerk.com; connect-src 'self' https://*.clerk.accounts.dev https://api.clerk.com https://wsl-portal-api.russell-meadows.workers.dev https://api.warsignallabs.net; frame-src https://*.clerk.accounts.dev https://challenges.cloudflare.com; worker-src 'self' blob:

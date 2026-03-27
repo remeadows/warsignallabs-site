@@ -1,0 +1,195 @@
+.workspace__header {
+  margin-bottom: 1.5rem;
+}
+
+.workspace__header .label {
+  margin-bottom: 0.3rem;
+}
+
+.workspace__header h1 {
+  margin-top: 0.3rem;
+}
+
+.workspace__meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 0.3rem;
+}
+
+.workspace__tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.workspace__tab {
+  padding: 0.6rem 1.2rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.workspace__tab:hover {
+  color: var(--text-primary);
+}
+
+.workspace__tab--active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.workspace__content {
+  min-height: 300px;
+  position: relative;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.workspace__content--dragover {
+  border-color: var(--accent) !important;
+  background: rgba(0, 200, 212, 0.03);
+}
+
+.workspace__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.workspace__upload-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.workspace__upload-status {
+  font-size: 0.75rem;
+  color: var(--accent);
+}
+
+.workspace__files-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+}
+
+.workspace-not-found {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 2rem;
+}
+
+.workspace__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  min-height: 300px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.workspace__error {
+  color: var(--error);
+  font-size: 0.85rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.workspace__alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+.workspace__alert--error {
+  background: rgba(255, 77, 77, 0.1);
+  color: var(--error);
+  border: 1px solid rgba(255, 77, 77, 0.2);
+}
+
+.workspace__alert-dismiss {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0 0.3rem;
+}
+
+/* ── File List ── */
+
+.file-type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 24px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  border-radius: var(--radius-sm);
+  background: var(--accent-muted);
+  color: var(--accent);
+}
+
+.file-name {
+  font-weight: 500;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.btn--sm {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+}
+
+/* ── Drop Overlay ── */
+
+.workspace__drop-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 22, 40, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.workspace__drop-message {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  color: var(--accent);
+  padding: 2rem 3rem;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}

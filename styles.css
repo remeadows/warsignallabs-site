@@ -178,6 +178,25 @@ nav .container {
 }
 .nav-links a:hover::after { width: 100%; }
 
+/* Portal link — accent button style */
+.nav-portal {
+  color: var(--neon-cyan) !important;
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.nav-portal:hover {
+  background: rgba(0, 240, 255, 0.1);
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+}
+
+.nav-portal::after {
+  display: none !important;
+}
+
 /* Mobile menu toggle */
 .nav-toggle {
   display: none;

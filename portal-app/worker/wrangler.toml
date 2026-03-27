@@ -1,0 +1,30 @@
+name = "wsl-portal-api"
+main = "index.js"
+compatibility_date = "2026-03-25"
+workers_dev = true
+
+# ── Custom Domain ──
+routes = [
+  { pattern = "api.warsignallabs.net/*", zone_name = "warsignallabs.net" }
+]
+
+# ── D1 Database ──
+[[d1_databases]]
+binding = "DB"
+database_name = "wsl-portal"
+database_id = "9b47800b-5435-4e2c-890b-e38d2eea3f6a"
+
+# ── R2 Storage ──
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "wsl-portal-files"
+
+# ── Environment Variables ──
+[vars]
+ENVIRONMENT = "production"
+PORTAL_NAME = "WarSignalLabs Portal"
+CLERK_FRONTEND_API = "https://sharing-gator-67.clerk.accounts.dev"
+
+# ── Secrets (set via `wrangler secret put`) ──
+# CLERK_SECRET_KEY
+# CLERK_WEBHOOK_SECRET
