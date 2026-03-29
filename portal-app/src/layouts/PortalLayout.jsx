@@ -1,29 +1,40 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { UserButton, useUser } from '@clerk/clerk-react'
 import { useState, useEffect } from 'react'
+import { useApiClient } from '../api/client'
 import './PortalLayout.css'
 
 const PORTAL_NAME = import.meta.env.VITE_PORTAL_NAME || 'WARSIGNALLABS PORTAL'
 
-const workspaces = [
-  { slug: 'warsignallabs', name: 'WarSignalLabs', color: 'var(--ws-warsignallabs)' },
-  { slug: 'lunch-out-of-landfills', name: 'Lunch out of Landfills', color: 'var(--ws-landfills)' },
-  { slug: 'blueprint-advisory', name: 'Blueprint Advisory', color: 'var(--ws-blueprint)' },
-]
-
 export default function PortalLayout() {
   const { user } = useUser()
   const location = useLocation()
+  const api = useApiClient()
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
-  const role = user?.publicMetadata?.role || 'client'
-  const allowedWorkspaces = user?.publicMetadata?.workspace_slugs || []
+  // D1-authoritative user data (fetched from /api/me)
+  const [d1User, setD1User] = useState(null)
+  // Workspace catalog driven by API (no hardcoded list)
+  const [workspaces, setWorkspaces] = useState([])
+
+  useEffect(() => {
+    let cancelled = false
+    // Fetch D1 user profile and workspace catalog in parallel
+    Promise.all([
+      api.getMe(),
+      api.listWorkspaces(),
+    ]).then(([meData, wsData]) => {
+      if (cancelled) return
+      setD1User(meData)
+      setWorkspaces(wsData.workspaces || [])
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // D1 is authoritative — no Clerk publicMetadata fallback
+  const role = d1User?.role || 'client'
   const isAdmin = role === 'admin'
   const isOwner = role === 'owner'
-
-  const visibleWorkspaces = (isAdmin || isOwner)
-    ? workspaces
-    : workspaces.filter(ws => allowedWorkspaces.includes(ws.slug))
 
   // Close sidebar on route change
   useEffect(() => {
@@ -44,6 +55,7 @@ export default function PortalLayout() {
           </button>
           <div className="topnav__logo" />
           <span className="topnav__name">{PORTAL_NAME}</span>
+          <span className="topnav__version mono">v0.1.0</span>
         </div>
         <div className="topnav__user">
           <span className="topnav__username mono">{user?.username || user?.firstName || 'User'}</span>
@@ -68,13 +80,13 @@ export default function PortalLayout() {
 
           <div className="sidebar__section">
             <span className="sidebar__label label">Workspaces</span>
-            {visibleWorkspaces.map(ws => (
+            {workspaces.map(ws => (
               <NavLink
                 key={ws.slug}
                 to={`/workspace/${ws.slug}`}
                 className={({ isActive }) => `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`}
               >
-                <span className="sidebar__dot" style={{ background: ws.color }} />
+                <span className="sidebar__dot" style={{ background: ws.color || 'var(--accent)' }} />
                 {ws.name}
               </NavLink>
             ))}

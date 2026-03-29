@@ -33,6 +33,10 @@ export default function App() {
           }
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="login" element={<Navigate to="/dashboard" replace />} />
+          <Route path="login/*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="sign-in" element={<Navigate to="/dashboard" replace />} />
+          <Route path="sign-in/*" element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="workspace/:slug" element={<WorkspaceDetail />} />
           <Route path="admin/users" element={<AdminUsers />} />

@@ -43,6 +43,15 @@
   color: var(--accent);
 }
 
+.topnav__version {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+  letter-spacing: 0.05em;
+  margin-left: 0.5rem;
+  align-self: center;
+}
+
 .topnav__user {
   display: flex;
   align-items: center;

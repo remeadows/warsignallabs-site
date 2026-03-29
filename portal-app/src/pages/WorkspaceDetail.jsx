@@ -37,7 +37,6 @@ export default function WorkspaceDetail() {
   const api = useApiClient()
 
   const role = user?.publicMetadata?.role || 'client'
-  const canUpload = role === 'admin' || role === 'owner'
   const canDelete = role === 'admin'
 
   const [workspace, setWorkspace] = useState(null)
@@ -45,6 +44,10 @@ export default function WorkspaceDetail() {
   const [activeTab, setActiveTab] = useState('documents')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Upload permission: admin/owner by role, or workspace-level write/admin permission
+  const canUpload = role === 'admin' || role === 'owner' ||
+    (workspace?.userPermission === 'write' || workspace?.userPermission === 'admin')
 
   // Upload state
   const [uploading, setUploading] = useState(false)

@@ -67,6 +67,9 @@ export function useApiClient() {
   const { getToken } = useAuth()
 
   return useMemo(() => ({
+    // Current user (D1-authoritative role + permissions)
+    getMe: () => apiFetch('/api/me', getToken),
+
     // Health
     health: () => apiFetch('/api/health', getToken),
 

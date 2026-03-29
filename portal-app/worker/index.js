@@ -229,85 +229,130 @@ async function requireAuth(request, env) {
 
   const clerkUserId = payload.sub
 
-  // 1. Try JWT claims (if session token template includes publicMetadata)
+  // JWT claims — used as fallback only when user is NOT in D1
   const publicMetadata = payload.publicMetadata || payload.metadata?.publicMetadata || {}
-  let role = publicMetadata.role || null
-  let workspaceSlugs = publicMetadata.workspace_slugs || null
 
   // Track the D1 user.id for foreign key references
   let dbUserId = null
+  let role = null
+  let workspaceSlugs = null
+  let workspacePermissions = null
 
-  // 2. Always try D1 lookup to resolve dbUserId (needed for audit log + file FK)
+  // 1. D1 is authoritative — always try D1 lookup first (by clerk_id)
   const dbUser = await env.DB.prepare(
-    'SELECT id, role, username, email FROM users WHERE clerk_id = ?',
+    'SELECT id, role, username, email, status FROM users WHERE clerk_id = ?',
   )
     .bind(clerkUserId)
     .first()
 
   if (dbUser) {
+    // Block deactivated accounts
+    if (dbUser.status === 'inactive') {
+      throw errorResponse('Account has been deactivated. Contact your administrator.', 403)
+    }
     dbUserId = dbUser.id
-    role = role || dbUser.role
-    if (!workspaceSlugs) {
-      const wsResult = await env.DB.prepare(
-        `SELECT w.slug FROM workspaces w
-         INNER JOIN user_workspaces uw ON uw.workspace_id = w.id
-         WHERE uw.user_id = ?`,
-      )
-        .bind(dbUser.id)
-        .all()
-      workspaceSlugs = wsResult.results.map((r) => r.slug)
+    // D1 role is authoritative — overrides Clerk publicMetadata
+    role = dbUser.role
+    // Always load workspace assignments + permissions from D1
+    const wsResult = await env.DB.prepare(
+      `SELECT w.slug, uw.permission FROM workspaces w
+       INNER JOIN user_workspaces uw ON uw.workspace_id = w.id
+       WHERE uw.user_id = ?`,
+    )
+      .bind(dbUser.id)
+      .all()
+    workspaceSlugs = wsResult.results.map((r) => r.slug)
+    workspacePermissions = {}
+    for (const r of wsResult.results) {
+      workspacePermissions[r.slug] = r.permission || 'read'
     }
   }
 
-  // 3. If no D1 match by clerk_id, try matching by email to auto-map
+  // 2. If no D1 match by clerk_id, try matching by email to auto-map
   if (!dbUserId) {
-    // Collect email candidates from JWT and Clerk API
     const emailCandidates = [
       payload.email,
       payload.primaryEmail,
     ].filter(Boolean)
 
-    // Also try Clerk Backend API for email
-    if (emailCandidates.length === 0 && !role) {
+    // Try Clerk Backend API for email if no candidates yet
+    if (emailCandidates.length === 0) {
       const clerkUser = await fetchClerkUser(clerkUserId, env)
       if (clerkUser) {
-        role = role || clerkUser.role
-        workspaceSlugs = workspaceSlugs || clerkUser.workspaceSlugs
         if (clerkUser.email) emailCandidates.push(clerkUser.email)
       }
     }
 
     for (const email of emailCandidates) {
       const matched = await env.DB.prepare(
-        'SELECT id, role FROM users WHERE LOWER(email) = LOWER(?)',
+        'SELECT id, role, status FROM users WHERE LOWER(email) = LOWER(?)',
       )
         .bind(email)
         .first()
       if (matched) {
+        if (matched.status === 'inactive') {
+          throw errorResponse('Account has been deactivated. Contact your administrator.', 403)
+        }
         dbUserId = matched.id
-        role = role || matched.role
+        role = matched.role  // D1 is authoritative
         await env.DB.prepare('UPDATE users SET clerk_id = ? WHERE id = ?')
           .bind(clerkUserId, matched.id).run()
         console.log(`Auto-mapped Clerk ${clerkUserId} → ${matched.id} via email`)
+
+        // Always load workspace assignments + permissions from D1
+        const wsResult = await env.DB.prepare(
+          `SELECT w.slug, uw.permission FROM workspaces w
+           INNER JOIN user_workspaces uw ON uw.workspace_id = w.id
+           WHERE uw.user_id = ?`,
+        )
+          .bind(matched.id)
+          .all()
+        workspaceSlugs = wsResult.results.map((r) => r.slug)
+        workspacePermissions = {}
+        for (const r of wsResult.results) {
+          workspacePermissions[r.slug] = r.permission || 'read'
+        }
         break
       }
     }
 
-    // 4. If still no match, try Clerk username → D1 username
+    // 3. If still no match, try Clerk username → D1 username
     if (!dbUserId) {
       const clerkUsername = publicMetadata.username || payload.username || null
       if (clerkUsername) {
         const matched = await env.DB.prepare(
-          'SELECT id, role FROM users WHERE username = ?',
+          'SELECT id, role, status FROM users WHERE username = ?',
         ).bind(clerkUsername).first()
         if (matched) {
+          if (matched.status === 'inactive') {
+            throw errorResponse('Account has been deactivated. Contact your administrator.', 403)
+          }
           dbUserId = matched.id
-          role = role || matched.role
+          role = matched.role  // D1 is authoritative
           await env.DB.prepare('UPDATE users SET clerk_id = ? WHERE id = ?')
             .bind(clerkUserId, matched.id).run()
           console.log(`Auto-mapped Clerk ${clerkUserId} → ${matched.id} via username`)
+
+          const wsResult = await env.DB.prepare(
+            `SELECT w.slug, uw.permission FROM workspaces w
+             INNER JOIN user_workspaces uw ON uw.workspace_id = w.id
+             WHERE uw.user_id = ?`,
+          )
+            .bind(matched.id)
+            .all()
+          workspaceSlugs = wsResult.results.map((r) => r.slug)
+          workspacePermissions = {}
+          for (const r of wsResult.results) {
+            workspacePermissions[r.slug] = r.permission || 'read'
+          }
         }
       }
+    }
+
+    // 4. No D1 match at all — fall back to Clerk publicMetadata
+    if (!dbUserId) {
+      role = publicMetadata.role || null
+      workspaceSlugs = publicMetadata.workspace_slugs || null
     }
   }
 
@@ -316,6 +361,7 @@ async function requireAuth(request, env) {
     dbUserId: dbUserId,
     role: role || 'client',
     workspaceSlugs: workspaceSlugs || [],
+    workspacePermissions: workspacePermissions || {},
     email: payload.email || null,
     claims: payload,
   }
@@ -337,6 +383,16 @@ function requireWorkspaceAccess(user, workspaceSlug) {
   if (!user.workspaceSlugs.includes(workspaceSlug)) {
     throw errorResponse('Forbidden: you do not have access to this workspace', 403)
   }
+}
+
+/**
+ * Check if user has write-level (or higher) permission on a specific workspace.
+ * Returns true for admin/owner roles (global access) or clients with 'write'/'admin' workspace permission.
+ */
+function hasWorkspaceWriteAccess(user, workspaceSlug) {
+  if (user.role === 'admin' || user.role === 'owner') return true
+  const perm = (user.workspacePermissions || {})[workspaceSlug]
+  return perm === 'write' || perm === 'admin'
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -473,11 +529,17 @@ async function handleGetWorkspace(request, env, user, params) {
     ipAddress: getClientIp(request),
   })
 
+  // Determine current user's effective permission on this workspace
+  const userPermission = (user.role === 'admin' || user.role === 'owner')
+    ? 'admin'
+    : (user.workspacePermissions || {})[params.slug] || 'read'
+
   return jsonResponse({
     workspace: {
       ...workspace,
       memberCount: memberCount?.count || 0,
       fileCount: fileCount?.count || 0,
+      userPermission,
     },
   })
 }
@@ -578,7 +640,13 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024
  * D1 schema: files(id, workspace_id, category, filename, r2_key, size_bytes, content_type, uploaded_by, created_at)
  */
 async function handleUploadFile(request, env, user, params) {
-  requireRole(user, 'admin', 'owner')
+  // Allow admin/owner roles OR clients with workspace-level write permission
+  if (!hasWorkspaceWriteAccess(user, params.slug)) {
+    throw errorResponse(
+      'Forbidden: you need write permission on this workspace to upload files',
+      403,
+    )
+  }
   requireWorkspaceAccess(user, params.slug)
 
   const workspace = await env.DB.prepare(
@@ -859,13 +927,10 @@ async function handleAdminAnalytics(request, env, user) {
   ] = await Promise.all([
     env.DB.prepare(
       `SELECT w.id, w.name, w.slug, w.color,
-              COUNT(f.id) AS file_count,
-              COALESCE(SUM(f.size_bytes), 0) AS total_bytes,
-              COUNT(DISTINCT uw.user_id) AS member_count
+              (SELECT COUNT(*) FROM files f WHERE f.workspace_id = w.id) AS file_count,
+              (SELECT COALESCE(SUM(f.size_bytes), 0) FROM files f WHERE f.workspace_id = w.id) AS total_bytes,
+              (SELECT COUNT(*) FROM user_workspaces uw WHERE uw.workspace_id = w.id) AS member_count
        FROM workspaces w
-       LEFT JOIN files f ON f.workspace_id = w.id
-       LEFT JOIN user_workspaces uw ON uw.workspace_id = w.id
-       GROUP BY w.id
        ORDER BY total_bytes DESC`,
     ).all(),
 
@@ -1213,6 +1278,17 @@ export default {
 
       if (pathname.startsWith('/api/')) {
         const user = await requireAuth(request, env)
+
+        // /api/me — returns the authenticated user's D1 role, workspaces, and permissions
+        if (pathname === '/api/me' && method === 'GET') {
+          return jsonResponse({
+            userId: user.dbUserId || user.userId,
+            role: user.role,
+            workspaceSlugs: user.workspaceSlugs,
+            workspacePermissions: user.workspacePermissions,
+            email: user.email,
+          })
+        }
 
         if (pathname === '/api/workspaces' && method === 'GET') {
           return handleListWorkspaces(request, env, user)
