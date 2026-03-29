@@ -544,7 +544,8 @@ function buildEmailHtml(title, bodyLines) {
 
 /**
  * Notify on a workspace event. Sends to admins + workspace members.
- * actorEmail is excluded from recipients to avoid self-notification.
+ * Admins always receive notifications (full visibility).
+ * Client actors are excluded from self-notification.
  * Uses ctx.waitUntil() for non-blocking delivery.
  */
 function notifyWorkspaceEvent(env, ctx, { eventType, workspaceId, workspaceName, title, bodyLines, actorEmail, metadata }) {
@@ -552,11 +553,19 @@ function notifyWorkspaceEvent(env, ctx, { eventType, workspaceId, workspaceName,
     try {
       const { admins, workspaceMembers } = await resolveRecipients(env, workspaceId)
 
-      // Deduplicate and exclude the actor
+      // Build admin email set — admins always receive (never excluded)
+      const adminEmails = new Set(admins.map((a) => a.email.toLowerCase()))
+
+      // Deduplicate: admins always included, non-admin actors excluded
       const allRecipients = new Map()
       for (const r of [...admins, ...workspaceMembers]) {
-        if (r.email && r.email.toLowerCase() !== (actorEmail || '').toLowerCase()) {
-          allRecipients.set(r.email.toLowerCase(), r)
+        if (!r.email) continue
+        const emailLower = r.email.toLowerCase()
+        const isActor = emailLower === (actorEmail || '').toLowerCase()
+        const isAdmin = adminEmails.has(emailLower)
+        // Admins always get notified; non-admins skip if they're the actor
+        if (isAdmin || !isActor) {
+          allRecipients.set(emailLower, r)
         }
       }
 
