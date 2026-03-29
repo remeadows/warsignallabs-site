@@ -23,8 +23,11 @@ bucket_name = "wsl-portal-files"
 [vars]
 ENVIRONMENT = "production"
 PORTAL_NAME = "WarSignalLabs Portal"
+RESEND_FROM_EMAIL = "portal@warsignallabs.net"
+RESEND_FROM_NAME = "WarSignalLabs Portal"
 CLERK_FRONTEND_API = "https://sharing-gator-67.clerk.accounts.dev"
 
 # ── Secrets (set via `wrangler secret put`) ──
 # CLERK_SECRET_KEY
 # CLERK_WEBHOOK_SECRET
+# RESEND_API_KEY

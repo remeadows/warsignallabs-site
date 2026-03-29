@@ -7,6 +7,9 @@
  *   - FILES: R2 bucket (wsl-portal-files)
  *   - CLERK_SECRET_KEY: secret (for Backend API user lookup)
  *   - CLERK_FRONTEND_API: var (e.g., https://sharing-gator-67.clerk.accounts.dev)
+ *   - RESEND_API_KEY: secret (for email notifications via Resend)
+ *   - RESEND_FROM_EMAIL: var (sender address)
+ *   - RESEND_FROM_NAME: var (sender display name)
  */
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -426,6 +429,213 @@ function getClientIp(request) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// Email Notifications (Resend)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Send an email via Resend API. Fire-and-forget — never blocks the primary action.
+ * Logs to the notifications table for auditing.
+ */
+async function sendEmail(env, { to, subject, html, text, eventType, workspaceId, recipientUserId, metadata }) {
+  if (!env.RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY not set — skipping email notification')
+    return null
+  }
+
+  const fromEmail = env.RESEND_FROM_EMAIL || 'portal@warsignallabs.net'
+  const fromName = env.RESEND_FROM_NAME || 'WarSignalLabs Portal'
+
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: `${fromName} <${fromEmail}>`,
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html: html || undefined,
+        text: text || subject,
+      }),
+    })
+
+    const result = await response.json()
+    const resendId = result.id || null
+    const status = response.ok ? 'sent' : 'failed'
+
+    if (!response.ok) {
+      console.error('Resend API error:', JSON.stringify(result))
+    }
+
+    // Log notification to D1
+    const notifId = crypto.randomUUID()
+    await env.DB.prepare(
+      `INSERT INTO notifications (id, event_type, workspace_id, recipient_email, recipient_user_id, subject, body_text, metadata_json, status, resend_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+    ).bind(
+      notifId,
+      eventType || 'general',
+      workspaceId || null,
+      Array.isArray(to) ? to.join(', ') : to,
+      recipientUserId || null,
+      subject,
+      text || subject,
+      metadata ? JSON.stringify(metadata) : null,
+      status,
+      resendId,
+    ).run()
+
+    return { id: resendId, status }
+  } catch (err) {
+    console.error('Email send failed:', err.message)
+    return null
+  }
+}
+
+/**
+ * Resolve notification recipients for a workspace event.
+ * Returns { admins: [{email, userId}], workspaceMembers: [{email, userId}] }
+ */
+async function resolveRecipients(env, workspaceId) {
+  // All active admins
+  const admins = await env.DB.prepare(
+    "SELECT id, email FROM users WHERE role = 'admin' AND status = 'active' AND email IS NOT NULL",
+  ).all()
+
+  // Workspace members (clients with workspace assignment)
+  let members = { results: [] }
+  if (workspaceId) {
+    members = await env.DB.prepare(
+      `SELECT u.id, u.email FROM users u
+       INNER JOIN user_workspaces uw ON uw.user_id = u.id
+       WHERE uw.workspace_id = ? AND u.status = 'active' AND u.email IS NOT NULL`,
+    ).bind(workspaceId).all()
+  }
+
+  return {
+    admins: admins.results.map((u) => ({ email: u.email, userId: u.id })),
+    workspaceMembers: members.results.map((u) => ({ email: u.email, userId: u.id })),
+  }
+}
+
+/**
+ * Build a branded HTML email body.
+ */
+function buildEmailHtml(title, bodyLines) {
+  const lines = bodyLines.map((l) => `<p style="margin:4px 0;color:#333;">${l}</p>`).join('')
+  return `
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+  <div style="border-bottom:3px solid #00c8d4;padding-bottom:12px;margin-bottom:20px;">
+    <h2 style="margin:0;color:#0a0a0a;">WarSignalLabs Portal</h2>
+    <span style="font-size:0.75rem;color:#888;">v0.1.0</span>
+  </div>
+  <h3 style="color:#0a0a0a;margin-bottom:8px;">${title}</h3>
+  ${lines}
+  <hr style="border:none;border-top:1px solid #eee;margin:24px 0 12px;">
+  <p style="font-size:0.75rem;color:#999;">This is an automated notification from portal.warsignallabs.net</p>
+</body>
+</html>`
+}
+
+/**
+ * Notify on a workspace event. Sends to admins + workspace members.
+ * actorEmail is excluded from recipients to avoid self-notification.
+ * Uses ctx.waitUntil() for non-blocking delivery.
+ */
+function notifyWorkspaceEvent(env, ctx, { eventType, workspaceId, workspaceName, title, bodyLines, actorEmail, metadata }) {
+  const task = (async () => {
+    try {
+      const { admins, workspaceMembers } = await resolveRecipients(env, workspaceId)
+
+      // Deduplicate and exclude the actor
+      const allRecipients = new Map()
+      for (const r of [...admins, ...workspaceMembers]) {
+        if (r.email && r.email.toLowerCase() !== (actorEmail || '').toLowerCase()) {
+          allRecipients.set(r.email.toLowerCase(), r)
+        }
+      }
+
+      if (allRecipients.size === 0) return
+
+      const subject = `[WSL Portal] ${title}`
+      const html = buildEmailHtml(title, bodyLines)
+      const text = bodyLines.join('\n')
+
+      // Send individual emails for per-recipient logging
+      for (const [email, recipient] of allRecipients) {
+        await sendEmail(env, {
+          to: email,
+          subject,
+          html,
+          text,
+          eventType,
+          workspaceId,
+          recipientUserId: recipient.userId,
+          metadata,
+        })
+      }
+    } catch (err) {
+      console.error('notifyWorkspaceEvent failed:', err.message)
+    }
+  })()
+
+  // Non-blocking — Worker responds immediately, email sends in background
+  if (ctx && ctx.waitUntil) {
+    ctx.waitUntil(task)
+  }
+}
+
+/**
+ * Check workspace storage against 75% threshold. Fires alert if exceeded.
+ */
+function checkStorageThreshold(env, ctx, { workspaceId, workspaceName, workspaceSlug, actorEmail }) {
+  const task = (async () => {
+    try {
+      const ws = await env.DB.prepare(
+        'SELECT storage_quota_mb FROM workspaces WHERE id = ?',
+      ).bind(workspaceId).first()
+      if (!ws || !ws.storage_quota_mb) return
+
+      const usage = await env.DB.prepare(
+        'SELECT COALESCE(SUM(size_bytes), 0) AS total_bytes FROM files WHERE workspace_id = ?',
+      ).bind(workspaceId).first()
+
+      const usedMb = (usage?.total_bytes || 0) / (1024 * 1024)
+      const quotaMb = ws.storage_quota_mb
+      const pct = Math.round((usedMb / quotaMb) * 100)
+
+      if (pct >= 75) {
+        notifyWorkspaceEvent(env, ctx, {
+          eventType: 'workspace.threshold',
+          workspaceId,
+          workspaceName: workspaceName || workspaceSlug,
+          title: `Storage Alert: ${workspaceName || workspaceSlug} at ${pct}%`,
+          bodyLines: [
+            `<strong>Workspace:</strong> ${workspaceName || workspaceSlug}`,
+            `<strong>Storage Used:</strong> ${usedMb.toFixed(1)} MB of ${quotaMb} MB (${pct}%)`,
+            `<strong>Status:</strong> ${pct >= 90 ? '🔴 Critical' : '🟡 Warning'} — storage is ${pct >= 90 ? 'nearly full' : 'approaching capacity'}`,
+            `Consider archiving old files or increasing the workspace quota.`,
+          ],
+          actorEmail: null, // admins + members all get threshold alerts
+          metadata: { usedMb: usedMb.toFixed(1), quotaMb, pct, workspaceSlug },
+        })
+      }
+    } catch (err) {
+      console.error('checkStorageThreshold failed:', err.message)
+    }
+  })()
+
+  if (ctx && ctx.waitUntil) {
+    ctx.waitUntil(task)
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // Route Helpers
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -639,7 +849,7 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024
  * POST /api/workspaces/:slug/files — upload a file via multipart/form-data.
  * D1 schema: files(id, workspace_id, category, filename, r2_key, size_bytes, content_type, uploaded_by, created_at)
  */
-async function handleUploadFile(request, env, user, params) {
+async function handleUploadFile(request, env, user, params, ctx) {
   // Allow admin/owner roles OR clients with workspace-level write permission
   if (!hasWorkspaceWriteAccess(user, params.slug)) {
     throw errorResponse(
@@ -722,6 +932,33 @@ async function handleUploadFile(request, env, user, params) {
     ipAddress: getClientIp(request),
   })
 
+  // Notify workspace members + admins
+  const wsInfo = await env.DB.prepare('SELECT name FROM workspaces WHERE id = ?').bind(workspace.id).first()
+  const sizeMb = (file.size / (1024 * 1024)).toFixed(2)
+  notifyWorkspaceEvent(env, ctx, {
+    eventType: 'file.upload',
+    workspaceId: workspace.id,
+    workspaceName: wsInfo?.name || params.slug,
+    title: `File Uploaded: ${sanitized}`,
+    bodyLines: [
+      `<strong>File:</strong> ${sanitized}`,
+      `<strong>Workspace:</strong> ${wsInfo?.name || params.slug}`,
+      `<strong>Category:</strong> ${category}`,
+      `<strong>Size:</strong> ${sizeMb} MB`,
+      `<strong>Uploaded by:</strong> ${user.email || user.userId}`,
+    ],
+    actorEmail: user.email,
+    metadata: { fileId, filename: sanitized, workspaceSlug: params.slug, category, sizeBytes: file.size },
+  })
+
+  // Check 75% storage threshold
+  checkStorageThreshold(env, ctx, {
+    workspaceId: workspace.id,
+    workspaceName: wsInfo?.name || params.slug,
+    workspaceSlug: params.slug,
+    actorEmail: user.email,
+  })
+
   return jsonResponse(
     {
       file: {
@@ -742,7 +979,7 @@ async function handleUploadFile(request, env, user, params) {
 /**
  * DELETE /api/files/:id — admin only
  */
-async function handleDeleteFile(request, env, user, params) {
+async function handleDeleteFile(request, env, user, params, ctx) {
   requireRole(user, 'admin')
 
   const fileId = params.id
@@ -775,6 +1012,22 @@ async function handleDeleteFile(request, env, user, params) {
     ipAddress: getClientIp(request),
   })
 
+  // Notify on deletion
+  const wsInfo = await env.DB.prepare('SELECT name FROM workspaces WHERE id = ?').bind(file.workspace_id).first()
+  notifyWorkspaceEvent(env, ctx, {
+    eventType: 'file.delete',
+    workspaceId: file.workspace_id,
+    workspaceName: wsInfo?.name || file.workspace_id,
+    title: `File Deleted: ${file.filename}`,
+    bodyLines: [
+      `<strong>File:</strong> ${file.filename}`,
+      `<strong>Workspace:</strong> ${wsInfo?.name || file.workspace_id}`,
+      `<strong>Deleted by:</strong> ${user.email || user.userId}`,
+    ],
+    actorEmail: user.email,
+    metadata: { fileId, filename: file.filename, workspaceId: file.workspace_id },
+  })
+
   return jsonResponse({ message: 'File deleted', fileId })
 }
 
@@ -782,7 +1035,7 @@ async function handleDeleteFile(request, env, user, params) {
  * GET /api/files/:id/download — stream from R2
  * D1 schema: content_type (not mime_type)
  */
-async function handleDownloadFile(request, env, user, params) {
+async function handleDownloadFile(request, env, user, params, ctx) {
   const fileId = params.id
 
   const file = await env.DB.prepare(
@@ -814,6 +1067,22 @@ async function handleDownloadFile(request, env, user, params) {
     resourceId: fileId,
     filename: file.filename,
     ipAddress: getClientIp(request),
+  })
+
+  // Notify on download
+  const wsInfo = await env.DB.prepare('SELECT id, name FROM workspaces WHERE slug = ?').bind(file.workspace_slug).first()
+  notifyWorkspaceEvent(env, ctx, {
+    eventType: 'file.download',
+    workspaceId: wsInfo?.id || null,
+    workspaceName: wsInfo?.name || file.workspace_slug,
+    title: `File Downloaded: ${file.filename}`,
+    bodyLines: [
+      `<strong>File:</strong> ${file.filename}`,
+      `<strong>Workspace:</strong> ${wsInfo?.name || file.workspace_slug}`,
+      `<strong>Downloaded by:</strong> ${user.email || user.userId}`,
+    ],
+    actorEmail: user.email,
+    metadata: { fileId, filename: file.filename, workspaceSlug: file.workspace_slug },
   })
 
   return new Response(object.body, {
@@ -1178,7 +1447,7 @@ async function handleDeleteWorkspace(request, env, user, params) {
  * POST /api/users — admin only, create a new user in D1
  * Body: { username, email, role }
  */
-async function handleCreateUser(request, env, user) {
+async function handleCreateUser(request, env, user, ctx) {
   requireRole(user, 'admin')
 
   let body
@@ -1211,6 +1480,22 @@ async function handleCreateUser(request, env, user) {
     resourceType: 'user', resourceId: userId,
     username, email, role: newRole || 'client',
     ipAddress: getClientIp(request),
+  })
+
+  // Notify admins of new user creation
+  notifyWorkspaceEvent(env, ctx, {
+    eventType: 'user.create',
+    workspaceId: null,
+    workspaceName: null,
+    title: `New User Created: ${username}`,
+    bodyLines: [
+      `<strong>Username:</strong> ${username}`,
+      `<strong>Email:</strong> ${email}`,
+      `<strong>Role:</strong> ${newRole || 'client'}`,
+      `<strong>Created by:</strong> ${user.email || user.userId}`,
+    ],
+    actorEmail: user.email,
+    metadata: { userId, username, email, role: newRole || 'client' },
   })
 
   return jsonResponse({
@@ -1304,17 +1589,17 @@ export default {
           return handleListFiles(request, env, user, params)
         }
         if (params && method === 'POST') {
-          return handleUploadFile(request, env, user, params)
+          return handleUploadFile(request, env, user, params, ctx)
         }
 
         params = matchPath('/api/files/:id', pathname)
         if (params && method === 'DELETE') {
-          return handleDeleteFile(request, env, user, params)
+          return handleDeleteFile(request, env, user, params, ctx)
         }
 
         params = matchPath('/api/files/:id/download', pathname)
         if (params && method === 'GET') {
-          return handleDownloadFile(request, env, user, params)
+          return handleDownloadFile(request, env, user, params, ctx)
         }
 
         if (pathname === '/api/users' && method === 'GET') {
@@ -1323,7 +1608,7 @@ export default {
 
         // POST /api/users (create)
         if (pathname === '/api/users' && method === 'POST') {
-          return handleCreateUser(request, env, user)
+          return handleCreateUser(request, env, user, ctx)
         }
 
         // PATCH /api/users/:id/role
