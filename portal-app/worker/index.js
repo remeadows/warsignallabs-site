@@ -789,7 +789,7 @@ async function handleListFiles(request, env, user, params) {
   let bindings
 
   if (category) {
-    query = `SELECT f.id, f.filename, f.r2_key, f.size_bytes, f.content_type, f.category, f.created_at,
+    query = `SELECT f.id, f.filename, f.r2_key, f.size_bytes, f.content_type, f.category, f.version, f.created_at,
                     u.username AS uploaded_by_name
              FROM files f
              LEFT JOIN users u ON u.clerk_id = f.uploaded_by OR u.id = f.uploaded_by
@@ -798,7 +798,7 @@ async function handleListFiles(request, env, user, params) {
              LIMIT ? OFFSET ?`
     bindings = [workspace.id, category, limit, offset]
   } else {
-    query = `SELECT f.id, f.filename, f.r2_key, f.size_bytes, f.content_type, f.category, f.created_at,
+    query = `SELECT f.id, f.filename, f.r2_key, f.size_bytes, f.content_type, f.category, f.version, f.created_at,
                     u.username AS uploaded_by_name
              FROM files f
              LEFT JOIN users u ON u.clerk_id = f.uploaded_by OR u.id = f.uploaded_by
@@ -988,6 +988,187 @@ async function handleUploadFile(request, env, user, params, ctx) {
 /**
  * DELETE /api/files/:id — admin only
  */
+/**
+ * PUT /api/files/:id — replace a file with a new version.
+ * Archives the current version to file_versions, uploads the new file to R2,
+ * and updates the files record with the new R2 key, size, and version number.
+ * Requires write permission on the workspace.
+ */
+async function handleReplaceFile(request, env, user, params, ctx) {
+  const fileId = params.id
+
+  // Fetch existing file + workspace info
+  const file = await env.DB.prepare(
+    `SELECT f.id, f.filename, f.r2_key, f.size_bytes, f.content_type, f.category,
+            f.workspace_id, f.version, f.uploaded_by, w.slug AS workspace_slug, w.name AS workspace_name
+     FROM files f
+     INNER JOIN workspaces w ON w.id = f.workspace_id
+     WHERE f.id = ?`,
+  ).bind(fileId).first()
+
+  if (!file) return errorResponse('File not found', 404)
+
+  // Check workspace write permission
+  if (!hasWorkspaceWriteAccess(user, file.workspace_slug)) {
+    throw errorResponse('Forbidden: you need write permission on this workspace to replace files', 403)
+  }
+
+  let formData
+  try { formData = await request.formData() } catch { return errorResponse('Invalid multipart form data', 400) }
+
+  const newFile = formData.get('file')
+  if (!newFile || !(newFile instanceof File)) {
+    return errorResponse('Missing required field: file', 400)
+  }
+
+  if (newFile.size > MAX_FILE_SIZE) {
+    return errorResponse(`File too large. Maximum size is ${MAX_FILE_SIZE / 1024 / 1024} MB`, 400)
+  }
+
+  if (!ALLOWED_MIME_TYPES.has(newFile.type)) {
+    return errorResponse(`File type not allowed: ${newFile.type}`, 400)
+  }
+
+  const newVersion = (file.version || 1) + 1
+
+  // 1. Archive current version to file_versions
+  const versionId = crypto.randomUUID()
+  await env.DB.prepare(
+    `INSERT INTO file_versions (id, file_id, version_number, r2_key, size_bytes, content_type, uploaded_by, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+  ).bind(
+    versionId, fileId, file.version || 1, file.r2_key,
+    file.size_bytes, file.content_type, file.uploaded_by,
+  ).run()
+
+  // 2. Upload new file to R2 with new key
+  const sanitized = (newFile.name || file.filename).replace(/[/\\]/g, '_').slice(0, 200)
+  const newR2Key = `${file.workspace_id}/${file.category}/${fileId}_v${newVersion}_${sanitized}`
+
+  await env.FILES.put(newR2Key, newFile.stream(), {
+    httpMetadata: { contentType: newFile.type },
+    customMetadata: {
+      uploadedBy: user.userId,
+      workspaceSlug: file.workspace_slug,
+      originalFilename: sanitized,
+      version: String(newVersion),
+    },
+  })
+
+  // 3. Update files record — new r2_key, size, content_type, version, filename
+  const uploadedBy = user.dbUserId || user.userId
+  await env.DB.prepare(
+    `UPDATE files SET r2_key = ?, size_bytes = ?, content_type = ?, filename = ?,
+            version = ?, uploaded_by = ?, created_at = datetime('now')
+     WHERE id = ?`,
+  ).bind(newR2Key, newFile.size, newFile.type, sanitized, newVersion, uploadedBy, fileId).run()
+
+  // 4. Optionally delete old R2 object (keep for now — archived versions remain accessible)
+  // Old R2 key preserved in file_versions for rollback capability
+
+  await logAudit(env, user.userId, 'file.replace', {
+    resourceType: 'file', resourceId: fileId,
+    filename: sanitized, previousVersion: file.version || 1, newVersion,
+    workspaceSlug: file.workspace_slug, sizeBytes: newFile.size,
+    ipAddress: getClientIp(request),
+  })
+
+  // Notify
+  const sizeMb = (newFile.size / (1024 * 1024)).toFixed(2)
+  notifyWorkspaceEvent(env, ctx, {
+    eventType: 'file.replace',
+    workspaceId: file.workspace_id,
+    workspaceName: file.workspace_name || file.workspace_slug,
+    title: `File Updated: ${sanitized} (v${newVersion})`,
+    bodyLines: [
+      `<strong>File:</strong> ${sanitized}`,
+      `<strong>Workspace:</strong> ${file.workspace_name || file.workspace_slug}`,
+      `<strong>Version:</strong> v${file.version || 1} → v${newVersion}`,
+      `<strong>Size:</strong> ${sizeMb} MB`,
+      `<strong>Updated by:</strong> ${user.email || user.userId}`,
+    ],
+    actorEmail: user.email,
+    metadata: { fileId, filename: sanitized, version: newVersion, workspaceSlug: file.workspace_slug },
+  })
+
+  // Check threshold after replacement
+  checkStorageThreshold(env, ctx, {
+    workspaceId: file.workspace_id,
+    workspaceName: file.workspace_name || file.workspace_slug,
+    workspaceSlug: file.workspace_slug,
+    actorEmail: user.email,
+  })
+
+  return jsonResponse({
+    file: {
+      id: fileId,
+      filename: sanitized,
+      r2_key: newR2Key,
+      size_bytes: newFile.size,
+      mime_type: newFile.type,
+      version: newVersion,
+      category: file.category,
+    },
+    previousVersion: file.version || 1,
+    message: `File updated to version ${newVersion}`,
+  })
+}
+
+/**
+ * GET /api/files/:id/versions — returns version history for a file
+ */
+async function handleGetFileVersions(request, env, user, params) {
+  const fileId = params.id
+
+  // Get the file and check workspace access
+  const file = await env.DB.prepare(
+    `SELECT f.id, f.filename, f.r2_key, f.size_bytes, f.content_type, f.version, f.created_at,
+            w.slug AS workspace_slug, w.name AS workspace_name
+     FROM files f
+     INNER JOIN workspaces w ON w.id = f.workspace_id
+     WHERE f.id = ?`,
+  ).bind(fileId).first()
+
+  if (!file) return errorResponse('File not found', 404)
+  requireWorkspaceAccess(user, file.workspace_slug)
+
+  // Get archived versions
+  const versions = await env.DB.prepare(
+    `SELECT fv.id, fv.version_number, fv.size_bytes, fv.content_type, fv.created_at,
+            u.username AS uploaded_by_name
+     FROM file_versions fv
+     LEFT JOIN users u ON u.clerk_id = fv.uploaded_by OR u.id = fv.uploaded_by
+     WHERE fv.file_id = ?
+     ORDER BY fv.version_number DESC`,
+  ).bind(fileId).all()
+
+  return jsonResponse({
+    fileId,
+    filename: file.filename,
+    currentVersion: file.version || 1,
+    versions: [
+      // Current version first
+      {
+        version_number: file.version || 1,
+        size_bytes: file.size_bytes,
+        content_type: file.content_type,
+        created_at: file.created_at,
+        current: true,
+      },
+      // Archived versions
+      ...versions.results.map((v) => ({
+        id: v.id,
+        version_number: v.version_number,
+        size_bytes: v.size_bytes,
+        content_type: v.content_type,
+        created_at: v.created_at,
+        uploaded_by_name: v.uploaded_by_name,
+        current: false,
+      })),
+    ],
+  })
+}
+
 async function handleDeleteFile(request, env, user, params, ctx) {
   requireRole(user, 'admin')
 
@@ -1602,6 +1783,9 @@ export default {
         }
 
         params = matchPath('/api/files/:id', pathname)
+        if (params && method === 'PUT') {
+          return handleReplaceFile(request, env, user, params, ctx)
+        }
         if (params && method === 'DELETE') {
           return handleDeleteFile(request, env, user, params, ctx)
         }
@@ -1609,6 +1793,11 @@ export default {
         params = matchPath('/api/files/:id/download', pathname)
         if (params && method === 'GET') {
           return handleDownloadFile(request, env, user, params, ctx)
+        }
+
+        params = matchPath('/api/files/:id/versions', pathname)
+        if (params && method === 'GET') {
+          return handleGetFileVersions(request, env, user, params)
         }
 
         if (pathname === '/api/users' && method === 'GET') {

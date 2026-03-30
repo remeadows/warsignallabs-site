@@ -146,6 +146,31 @@ a:hover {
   background: rgba(255, 77, 77, 0.1);
 }
 
+.btn--accent {
+  background: transparent;
+  color: var(--accent);
+  border-color: rgba(0, 200, 212, 0.3);
+}
+
+.btn--accent:hover {
+  background: rgba(0, 200, 212, 0.1);
+}
+
+.version-badge {
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: rgba(0, 200, 212, 0.12);
+  border: 1px solid rgba(0, 200, 212, 0.25);
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+  letter-spacing: 0.03em;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+}
+
 /* ── Cards ── */
 
 .card {

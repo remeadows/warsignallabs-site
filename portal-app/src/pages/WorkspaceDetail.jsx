@@ -53,7 +53,9 @@ export default function WorkspaceDetail() {
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState('')
   const [dragOver, setDragOver] = useState(false)
+  const [replacing, setReplacing] = useState(null) // file ID being replaced
   const fileInputRef = useRef(null)
+  const replaceInputRef = useRef(null)
 
   const fetchFiles = useCallback(async (category) => {
     try {
@@ -133,6 +135,33 @@ export default function WorkspaceDetail() {
       await fetchFiles(activeTab)
     } catch (err) {
       setError(`Delete failed: ${err.message}`)
+    }
+  }
+
+  const handleReplace = (file) => {
+    setReplacing(file.id)
+    replaceInputRef.current?.click()
+  }
+
+  const handleReplaceFile = async (e) => {
+    const newFile = e.target.files?.[0]
+    if (!newFile || !replacing) {
+      setReplacing(null)
+      return
+    }
+    setUploading(true)
+    setUploadProgress(`Replacing with ${newFile.name}...`)
+    try {
+      await api.replaceFile(replacing, newFile)
+      await fetchFiles(activeTab)
+    } catch (err) {
+      const msg = err.data?.error || err.message
+      setError(`Replace failed: ${msg}`)
+    } finally {
+      setUploading(false)
+      setUploadProgress('')
+      setReplacing(null)
+      if (replaceInputRef.current) replaceInputRef.current.value = ''
     }
   }
 
@@ -235,6 +264,12 @@ export default function WorkspaceDetail() {
                 style={{ display: 'none' }}
                 onChange={(e) => handleUpload(e.target.files)}
               />
+              <input
+                ref={replaceInputRef}
+                type="file"
+                style={{ display: 'none' }}
+                onChange={handleReplaceFile}
+              />
             </div>
           )}
         </div>
@@ -261,7 +296,12 @@ export default function WorkspaceDetail() {
               {files.map(file => (
                 <tr key={file.id}>
                   <td><span className="file-type-badge">{fileIcon(file.mime_type)}</span></td>
-                  <td className="file-name">{file.filename}</td>
+                  <td className="file-name">
+                    {file.filename}
+                    {file.version > 1 && (
+                      <span className="version-badge" title={`Version ${file.version}`}>v{file.version}</span>
+                    )}
+                  </td>
                   <td className="mono">{formatBytes(file.size_bytes)}</td>
                   <td className="mono">{file.uploaded_by_name || '—'}</td>
                   <td>{formatDate(file.created_at)}</td>
@@ -269,6 +309,15 @@ export default function WorkspaceDetail() {
                     <button className="btn btn--secondary btn--sm" onClick={() => handleDownload(file)}>
                       Download
                     </button>
+                    {canUpload && (
+                      <button
+                        className="btn btn--accent btn--sm"
+                        onClick={() => handleReplace(file)}
+                        disabled={uploading}
+                      >
+                        Replace
+                      </button>
+                    )}
                     {canDelete && (
                       <button className="btn btn--danger btn--sm" onClick={() => handleDelete(file)}>
                         Delete

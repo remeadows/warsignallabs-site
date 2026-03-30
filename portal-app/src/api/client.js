@@ -90,6 +90,15 @@ export function useApiClient() {
       })
     },
     downloadFile: (fileId) => apiFetch(`/api/files/${fileId}/download`, getToken, { responseType: 'blob' }),
+    replaceFile: (fileId, file) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      return apiFetch(`/api/files/${fileId}`, getToken, {
+        method: 'PUT',
+        body: formData,
+      })
+    },
+    getFileVersions: (fileId) => apiFetch(`/api/files/${fileId}/versions`, getToken),
     deleteFile: (fileId) => apiFetch(`/api/files/${fileId}`, getToken, { method: 'DELETE' }),
 
     // Users (admin)
