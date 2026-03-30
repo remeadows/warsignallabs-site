@@ -53,7 +53,7 @@ export default function PortalLayout() {
           >
             {sidebarOpen ? '[ CLOSE ]' : '[ MENU ]'}
           </button>
-          <div className="topnav__logo" />
+          <img className="topnav__logo" src="/favicon-32x32.png" alt="WSLabs" />
           <span className="topnav__name">{PORTAL_NAME}</span>
           <span className="topnav__version mono">v0.1.0</span>
         </div>
