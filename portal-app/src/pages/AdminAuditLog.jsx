@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useUser } from '@clerk/clerk-react'
 import { Navigate } from 'react-router-dom'
 import { useApiClient } from '../api/client'
+import { usePortalAuth } from '../contexts/PortalAuth'
 import './Admin.css'
 
 const ACTION_TYPES = [
@@ -28,10 +28,8 @@ function actionBadgeClass(action) {
 }
 
 export default function AdminAuditLog() {
-  const { user } = useUser()
   const api = useApiClient()
-  const role = user?.publicMetadata?.role || 'client'
-  const isPrivileged = role === 'admin' || role === 'owner'
+  const { isPrivileged, authLoading } = usePortalAuth()
 
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -57,6 +55,10 @@ export default function AdminAuditLog() {
   useEffect(() => {
     fetchLog()
   }, [fetchLog])
+
+  if (authLoading) {
+    return <div className="loading-state"><span className="spinner" /> Loading…</div>
+  }
 
   if (!isPrivileged) {
     return <Navigate to="/forbidden" replace />

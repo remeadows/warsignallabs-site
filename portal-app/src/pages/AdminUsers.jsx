@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useUser } from '@clerk/clerk-react'
 import { Navigate } from 'react-router-dom'
 import { useApiClient } from '../api/client'
+import { usePortalAuth } from '../contexts/PortalAuth'
 import './Admin.css'
 
 const roleBadge = {
@@ -13,11 +13,8 @@ const roleBadge = {
 const ROLES = ['admin', 'owner', 'client']
 
 export default function AdminUsers() {
-  const { user } = useUser()
   const api = useApiClient()
-  const role = user?.publicMetadata?.role || 'client'
-  const isPrivileged = role === 'admin' || role === 'owner'
-  const isAdmin = role === 'admin'
+  const { isPrivileged, isAdmin, authLoading } = usePortalAuth()
 
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -50,6 +47,10 @@ export default function AdminUsers() {
   useEffect(() => {
     if (isPrivileged) fetchUsers()
   }, [isPrivileged]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (authLoading) {
+    return <div className="loading-state"><span className="spinner" /> Loading…</div>
+  }
 
   if (!isPrivileged) {
     return <Navigate to="/forbidden" replace />
@@ -298,7 +299,7 @@ export default function AdminUsers() {
                 </select>
               </div>
               <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                Note: The user will also need a Clerk account to sign in. Create their Clerk account separately and set matching publicMetadata.
+                Note: Create the user here first, then have them self-enroll in Clerk. The Worker auto-maps via email match.
               </p>
             </div>
             <div className="modal__footer">

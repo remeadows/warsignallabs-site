@@ -77,18 +77,45 @@ export function useApiClient() {
     listWorkspaces: () => apiFetch('/api/workspaces', getToken),
     getWorkspace: (slug) => apiFetch(`/api/workspaces/${slug}`, getToken),
 
+    // Folders
+    listFolderContents: (workspaceSlug, folderId) =>
+      apiFetch(`/api/workspaces/${workspaceSlug}/folders${folderId ? `/${folderId}` : ''}`, getToken),
+    createFolder: (workspaceSlug, name, parentFolderId) =>
+      apiFetch(`/api/workspaces/${workspaceSlug}/folders`, getToken, {
+        method: 'POST',
+        body: JSON.stringify({ name, parent_folder_id: parentFolderId || null }),
+      }),
+    renameFolder: (folderId, name) =>
+      apiFetch(`/api/folders/${folderId}`, getToken, {
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      }),
+    deleteFolder: (folderId) =>
+      apiFetch(`/api/folders/${folderId}`, getToken, { method: 'DELETE' }),
+    moveFolder: (folderId, parentFolderId) =>
+      apiFetch(`/api/folders/${folderId}/move`, getToken, {
+        method: 'PATCH',
+        body: JSON.stringify({ parent_folder_id: parentFolderId }),
+      }),
+
     // Files
     listFiles: (workspaceSlug, category) =>
       apiFetch(`/api/workspaces/${workspaceSlug}/files${category ? `?category=${category}` : ''}`, getToken),
-    uploadFile: (workspaceSlug, file, category) => {
+    uploadFile: (workspaceSlug, file, category, folderId) => {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('category', category || 'documents')
+      if (folderId) formData.append('folder_id', folderId)
       return apiFetch(`/api/workspaces/${workspaceSlug}/files`, getToken, {
         method: 'POST',
         body: formData,
       })
     },
+    moveFile: (fileId, folderId) =>
+      apiFetch(`/api/files/${fileId}/move`, getToken, {
+        method: 'PATCH',
+        body: JSON.stringify({ folder_id: folderId }),
+      }),
     downloadFile: (fileId) => apiFetch(`/api/files/${fileId}/download`, getToken, { responseType: 'blob' }),
     replaceFile: (fileId, file) => {
       const formData = new FormData()

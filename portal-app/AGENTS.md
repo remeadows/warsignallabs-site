@@ -1,6 +1,6 @@
 # AGENTS.md — Portal Agent Coordination
 
-**Last Updated:** 2026-03-29
+**Last Updated:** 2026-03-30
 
 ---
 
@@ -57,6 +57,14 @@
 | REM-693 | Day 5: Buffer + Dress Rehearsal | Done | 2026-03-29 |
 | REM-694 | Fix zone-level CSP blocking Clerk | Done | 2026-03-29 |
 
+### Completed Tickets (v0.2.0)
+
+| Ticket | Title | Status | Date |
+|--------|-------|--------|------|
+| REM-698 | Folder browser with breadcrumbs — replace 4-tab category view | Done | 2026-03-30 |
+| REM-699 | Folder CRUD UI — create, rename, delete modals + file move picker | Done | 2026-03-30 |
+| REM-702 | v0.2.0 release — version bump, docs, verification | Done | 2026-03-30 |
+
 ### Commit History (Portal)
 
 | Hash | Message |
@@ -96,4 +104,4 @@ When handing work between agents:
 
 ---
 
-*Generated 2026-03-29 by Claude (Cowork)*
+*Updated 2026-03-30 by Claude (Cowork) — WarSignalLabs Portal v0.2.0*

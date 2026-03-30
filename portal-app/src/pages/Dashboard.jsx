@@ -2,6 +2,7 @@ import { useUser } from '@clerk/clerk-react'
 import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useApiClient } from '../api/client'
+import { usePortalAuth } from '../contexts/PortalAuth'
 import './Dashboard.css'
 
 function formatBytes(bytes) {
@@ -38,10 +39,7 @@ function actionLabel(action) {
 export default function Dashboard() {
   const { user } = useUser()
   const api = useApiClient()
-
-  const role = user?.publicMetadata?.role || 'client'
-  const isAdmin = role === 'admin'
-  const isOwner = role === 'owner'
+  const { isAdmin } = usePortalAuth()
 
   const [workspaces, setWorkspaces] = useState([])
   const [analytics, setAnalytics] = useState(null)

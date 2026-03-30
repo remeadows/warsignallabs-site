@@ -1,7 +1,7 @@
 # CONTEXT.md — WarSignalLabs Client Portal
 
-**Version:** v0.1.0
-**Last Updated:** 2026-03-29
+**Version:** v0.2.0
+**Last Updated:** 2026-03-30
 **Owner:** Russell Meadows (WarSignalLabs)
 **Linear Project:** [Client Portal (portal.warsignallabs.net)](https://linear.app/remeadows/project/client-portal-portalwarsignallabsnet-01fa033a)
 
@@ -42,6 +42,8 @@ A secure, multi-tenant client portal for WarSignalLabs. Clients log in, see only
 
 **Notifications:** Fire-and-forget via Resend API using `ctx.waitUntil()`. Never blocks primary API response. All notifications logged to `notifications` table. Admins always receive alerts; client actors excluded from self-notification.
 
+**Folder browser (v0.2.0):** Replaced the 4-tab category view with a hierarchical folder browser. `folders` table uses `parent_folder_id` for nesting. API returns `folders`, `files`, and `breadcrumbs` arrays per folder request. Frontend maintains `currentFolderId` (null=root) and renders breadcrumb nav with clickable path segments. Uploads target the current folder. Folder CRUD (create, rename, delete) and file move are gated behind workspace write permission. Delete blocks non-empty folders.
+
 **Account deactivation:** Enforced at auth level in the Worker. All three auth resolution paths (clerk_id, email auto-map, username auto-map) check `users.status === 'inactive'` and return 403 before any route handler executes.
 
 ---
@@ -52,7 +54,8 @@ A secure, multi-tenant client portal for WarSignalLabs. Clients log in, see only
 users            (id, username, email, role, status, clerk_id, created_at, updated_at)
 workspaces       (id, name, slug, color, storage_quota_mb, storage_used_mb, created_at, updated_at)
 user_workspaces  (id, user_id, workspace_id, permission, created_at)
-files            (id, workspace_id, category, filename, r2_key, size_bytes, content_type, uploaded_by, version, created_at)
+folders          (id, workspace_id, parent_folder_id, name, created_by, created_at, updated_at)
+files            (id, workspace_id, folder_id, category, filename, r2_key, size_bytes, content_type, uploaded_by, version, created_at)
 file_versions    (id, file_id, version_number, r2_key, size_bytes, content_type, uploaded_by, created_at)
 audit_log        (id, user_id, action, resource_type, resource_id, metadata_json, ip_address, created_at)
 notifications    (id, event_type, workspace_id, recipient_email, recipient_user_id, subject, body_text, metadata_json, status, resend_id, created_at)
@@ -90,8 +93,14 @@ notifications    (id, event_type, workspace_id, recipient_email, recipient_user_
 - `GET /api/me` — current user's D1-authoritative role + workspace permissions
 - `GET /api/workspaces` — list workspaces (filtered by access)
 - `GET /api/workspaces/:slug` — workspace detail with file count, member count, user permission
+- `GET /api/workspaces/:slug/folders` — list root folder contents (folders + files, breadcrumbs)
+- `GET /api/workspaces/:slug/folders/:folderId` — list folder contents by ID (folders + files, breadcrumbs)
+- `POST /api/workspaces/:slug/folders` — create folder (name, parent_folder_id; requires workspace write)
+- `PATCH /api/folders/:id` — rename folder (requires workspace write)
+- `DELETE /api/folders/:id` — delete folder (must be empty; requires workspace write)
+- `PATCH /api/files/:id/move` — move file to folder (folder_id; requires workspace write)
 - `GET /api/workspaces/:slug/files` — list files (optional `?category=` filter)
-- `POST /api/workspaces/:slug/files` — upload file (requires workspace write)
+- `POST /api/workspaces/:slug/files` — upload file (requires workspace write; optional folder_id)
 - `PUT /api/files/:id` — replace file with new version (requires workspace write)
 - `GET /api/files/:id/download` — stream file from R2
 - `GET /api/files/:id/versions` — version history
@@ -184,4 +193,4 @@ portal-app/
 
 ---
 
-*Generated 2026-03-29 by Claude (Cowork) — WarSignalLabs Portal v0.1.0*
+*Updated 2026-03-30 by Claude (Cowork) — WarSignalLabs Portal v0.2.0*
