@@ -164,5 +164,9 @@ export function useApiClient() {
 
     // Admin analytics
     getAnalytics: () => apiFetch('/api/admin/analytics', getToken),
+
+    // Operational Dashboard
+    getDashboardProjects: (params = {}) =>
+      apiFetch(`/api/dashboard/projects?${new URLSearchParams(params)}`, getToken),
   }), [getToken])
 }

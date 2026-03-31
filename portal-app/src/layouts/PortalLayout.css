@@ -129,6 +129,14 @@
   color: var(--accent-secondary);
 }
 
+.sidebar__link--ops {
+  color: var(--warning);
+}
+
+.sidebar__link--ops:hover {
+  color: var(--warning);
+}
+
 .sidebar__dot {
   width: 6px;
   height: 6px;

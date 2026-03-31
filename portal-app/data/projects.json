@@ -1,0 +1,196 @@
+{
+  "exportedAt": "2026-03-30T21:25:00.000Z",
+  "source": "linear",
+  "projects": [
+    {
+      "id": "01fa033a-8551-4174-9644-8210d0663dff",
+      "title": "Client Portal (portal.warsignallabs.net)",
+      "category": "WebApps",
+      "priority": 1,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/client-portal-portalwarsignallabsnet-138ece1eddc9",
+      "repoUrl": null,
+      "targetDate": "2026-03-29"
+    },
+    {
+      "id": "b80d66d6-8b25-4d34-81c8-bb68d40a1de1",
+      "title": "WarSignalLabs Website Overhaul",
+      "category": "WebApps",
+      "priority": 2,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/warsignallabs-website-overhaul-fada6a147f0a",
+      "repoUrl": null,
+      "targetDate": null
+    },
+    {
+      "id": "688aa22d-54b0-4832-8c19-0560a8fa273e",
+      "title": "GridWatch Mac v1",
+      "category": "Enterprise",
+      "priority": 2,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/gridwatch-mac-v1-5c38ba0c9596",
+      "repoUrl": null,
+      "targetDate": null
+    },
+    {
+      "id": "5dfbf971-3f38-49ad-bee8-785767dbc7d1",
+      "title": "GridWatch Command \u2014 Board Authority Refactor",
+      "category": "Games",
+      "priority": 1,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/gridwatch-command-board-authority-refactor-7a8ce8bd8469",
+      "repoUrl": null,
+      "targetDate": null
+    },
+    {
+      "id": "6369fdb3-bcfe-4d78-9630-61cd53f3e1df",
+      "title": "Blueprint Advisory LLC [CLIENT]",
+      "category": "Clients",
+      "priority": 3,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/blueprint-advisory-llc-client-a53076bfad33",
+      "repoUrl": null,
+      "targetDate": null
+    },
+    {
+      "id": "78b1b62f-f793-4fa3-bc64-3d073b7961b0",
+      "title": "GridWatch NetEnterprise Modernization",
+      "category": "Enterprise",
+      "priority": 2,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/gridwatch-netenterprise-modernization-6608c2842b99",
+      "repoUrl": null,
+      "targetDate": null
+    },
+    {
+      "id": "a16ca725-6483-4177-99cd-a814800721e1",
+      "title": "GW-OS",
+      "category": "Infrastructure",
+      "priority": 2,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/gw-os-d5ab09b59218",
+      "repoUrl": "https://github.com/remeadows/GW-OS",
+      "targetDate": "2026-03-31"
+    },
+    {
+      "id": "7cf2c18d-266e-4838-a8ae-5bddd2bd0c57",
+      "title": "AgentSkills",
+      "category": "Infrastructure",
+      "priority": 3,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/agentskills-4878687549d1",
+      "repoUrl": null,
+      "targetDate": null
+    },
+    {
+      "id": "1e3aa566-fc5a-4d0b-b837-a021e997db9e",
+      "title": "MCP-Remote-Access",
+      "category": "MCP",
+      "priority": 3,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/mcp-remote-access-711d812b3ea0",
+      "repoUrl": "https://github.com/remeadows/MCP-Remote-Access",
+      "targetDate": null
+    },
+    {
+      "id": "863c2145-11f2-42ee-a66d-0b4a0fe447fb",
+      "title": "WarSignalAir",
+      "category": "Games",
+      "priority": 3,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/warsignalair-3001079179ef",
+      "repoUrl": "https://github.com/remeadows/WarSignalAir",
+      "targetDate": null
+    },
+    {
+      "id": "d423e6ae-ed20-43e0-aba7-7389d3696b91",
+      "title": "GridWatchMatch",
+      "category": "Games",
+      "priority": 1,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/gridwatchmatch-4f41f910febf",
+      "repoUrl": "https://github.com/remeadows/GridWatchMatch",
+      "targetDate": "2026-09-01"
+    },
+    {
+      "id": "f2807b35-4a28-425c-85ab-7b16b78b3e86",
+      "title": "HomeGym",
+      "category": "Apps",
+      "priority": 2,
+      "status": "Planned",
+      "linearUrl": "https://linear.app/remeadows/project/homegym-fe850ceef127",
+      "repoUrl": "https://github.com/remeadows/HomeGym",
+      "targetDate": "2026-03-24"
+    },
+    {
+      "id": "a815fb5f-06f0-49d2-8aed-fb9f87d6da7d",
+      "title": "SignalSiege",
+      "category": "Games",
+      "priority": 3,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/signalsiege-31a9116c84ff",
+      "repoUrl": "https://github.com/remeadows/SignalSiege",
+      "targetDate": null
+    },
+    {
+      "id": "c37aea96-8fcd-4b70-b9a2-29351157f5c9",
+      "title": "GitHub Security Review",
+      "category": "Security",
+      "priority": 1,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/github-security-review-cd8723229a25",
+      "repoUrl": null,
+      "targetDate": "2026-03-14"
+    },
+    {
+      "id": "92198b30-98ae-441e-8ba8-0e213712e5bc",
+      "title": "Agency System Standup",
+      "category": "Infrastructure",
+      "priority": 1,
+      "status": "Backlog",
+      "linearUrl": "https://linear.app/remeadows/project/agency-system-standup-395ec9059e2d",
+      "repoUrl": null,
+      "targetDate": null
+    },
+    {
+      "id": "7d4812b7-0dc8-4f9e-b85d-9c4d8b1a04f9",
+      "title": "GridWatchZero Launch Stabilization",
+      "category": "Games",
+      "priority": 1,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/gridwatchzero-launch-stabilization-6c496a360042",
+      "repoUrl": null,
+      "targetDate": "2026-03-31"
+    },
+    {
+      "id": "fa41df01-de14-4569-845b-6269a722f243",
+      "title": "ClaudeArchitect",
+      "category": "Infrastructure",
+      "priority": 2,
+      "status": "In Progress",
+      "linearUrl": "https://linear.app/remeadows/project/claudearchitect-44aac9606f1f",
+      "repoUrl": "https://github.com/remeadows/ClaudeArchitect",
+      "targetDate": "2026-03-10"
+    },
+    {
+      "id": "2bf478cc-744a-4c27-8c97-9c441e5ea881",
+      "title": "ClaudeArchitect Hardening Plan",
+      "category": "Infrastructure",
+      "priority": 2,
+      "status": "Completed",
+      "linearUrl": "https://linear.app/remeadows/project/claudearchitect-hardening-plan-f3f36cf0ba38",
+      "repoUrl": null,
+      "targetDate": "2026-03-27"
+    },
+    {
+      "id": "ecbb7da8-c223-4d87-986e-56b44589a79e",
+      "title": "NetNynja Enterprise Stabilization",
+      "category": "Enterprise",
+      "priority": 3,
+      "status": "Completed",
+      "linearUrl": "https://linear.app/remeadows/project/netnynja-enterprise-stabilization-8daa0e0a5527",
+      "repoUrl": null,
+      "targetDate": null
+    }
+  ]
+}

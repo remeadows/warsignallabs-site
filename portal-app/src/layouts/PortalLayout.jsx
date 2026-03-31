@@ -91,8 +91,8 @@ export default function PortalLayout() {
           <nav className={`sidebar ${sidebarOpen ? 'sidebar--open' : ''}`}>
             <div className="sidebar__section">
               <span className="sidebar__label label">Navigation</span>
-              <NavLink to="/dashboard" className={({ isActive }) => `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`}>
-                Dashboard
+              <NavLink to="/" end className={({ isActive }) => `sidebar__link ${isActive ? 'sidebar__link--active' : ''}`}>
+                Home
               </NavLink>
             </div>
 
@@ -121,6 +121,15 @@ export default function PortalLayout() {
                 </NavLink>
                 <NavLink to="/admin/audit-log" className={({ isActive }) => `sidebar__link sidebar__link--admin ${isActive ? 'sidebar__link--active' : ''}`}>
                   Audit Log
+                </NavLink>
+              </div>
+            )}
+
+            {isPrivileged && (
+              <div className="sidebar__section">
+                <span className="sidebar__label label">Operations</span>
+                <NavLink to="/dashboard/projects" className={({ isActive }) => `sidebar__link sidebar__link--ops ${isActive ? 'sidebar__link--active' : ''}`}>
+                  Projects
                 </NavLink>
               </div>
             )}
