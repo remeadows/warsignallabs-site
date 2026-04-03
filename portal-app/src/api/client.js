@@ -168,5 +168,10 @@ export function useApiClient() {
     // Operational Dashboard
     getDashboardProjects: (params = {}) =>
       apiFetch(`/api/dashboard/projects?${new URLSearchParams(params)}`, getToken),
+
+    // GW-OS Briefs
+    listBriefs: (params = {}) =>
+      apiFetch(`/api/briefs?${new URLSearchParams(params)}`, getToken),
+    getBrief: (date) => apiFetch(`/api/briefs/${date}`, getToken),
   }), [getToken])
 }

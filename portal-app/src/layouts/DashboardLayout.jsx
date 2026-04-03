@@ -39,9 +39,14 @@ export default function DashboardLayout() {
           <span className="ops-sidebar__link ops-sidebar__link--future">
             Business Docs
           </span>
-          <span className="ops-sidebar__link ops-sidebar__link--future">
+          <NavLink
+            to="/dashboard/briefs"
+            className={({ isActive }) =>
+              `ops-sidebar__link ${isActive ? 'ops-sidebar__link--active' : ''}`
+            }
+          >
             GW-OS Briefs
-          </span>
+          </NavLink>
         </nav>
 
         <div className="ops-content">

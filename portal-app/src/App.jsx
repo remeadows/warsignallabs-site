@@ -9,6 +9,7 @@ import AdminUsers from './pages/AdminUsers'
 import AdminWorkspaces from './pages/AdminWorkspaces'
 import AdminAuditLog from './pages/AdminAuditLog'
 import DashboardProjects from './pages/DashboardProjects'
+import DashboardBriefs from './pages/DashboardBriefs'
 import Settings from './pages/Settings'
 import NotFound from './pages/NotFound'
 import Forbidden from './pages/Forbidden'
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="dashboard" element={<DashboardLayout />}>
             <Route index element={<Navigate to="projects" replace />} />
             <Route path="projects" element={<DashboardProjects />} />
+            <Route path="briefs" element={<DashboardBriefs />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

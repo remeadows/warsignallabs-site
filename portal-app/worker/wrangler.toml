@@ -31,3 +31,4 @@ CLERK_FRONTEND_API = "https://sharing-gator-67.clerk.accounts.dev"
 # CLERK_SECRET_KEY
 # CLERK_WEBHOOK_SECRET
 # RESEND_API_KEY
+# WSL_SERVICE_KEY  (GW-OS brief ingest service token — matches WSL_PORTAL_API_KEY in gw-os .env)
