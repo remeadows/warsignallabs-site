@@ -1,0 +1,248 @@
+# handoff.yaml — current-state / in-flight work for the portal.
+# Companion to memory.yaml (long-lived project context).
+# Update this file at the end of every working session.
+
+last_updated: 2026-05-03
+last_session_summary: |
+  Russ reported the same blue-screen symptom Chris had been hitting and
+  hypothesized that parallel work on a separate "LOOL" project (its own
+  Cloudflare workers + its own Clerk Application) had disrupted the portal.
+  Triaged the live stack and refuted the LOOL hypothesis on infrastructure:
+  - Pages serves portal.warsignallabs.net 200 with the correct bundle hash
+    (index-Gi1wp55V.js) and a CSP that whitelists *.clerk.accounts.dev.
+  - wsl-portal-api returns 401 unauth on both api.warsignallabs.net and the
+    workers.dev URL; worker last modified 2026-04-03 (untouched).
+  - LOOL workers (lool, lool-api) are separate scripts with separate IDs,
+    last modified 2026-05-03 13:46 UTC — independent of the portal.
+  - Clerk dev instance sharing-gator-67 is alive and returning environment
+    config; its application_name is still "WSL Portal".
+  Browser-side evidence narrows the failure to the same Clerk-cookie wall
+  that hit Chris: Clerk SDK does load (dev-keys warning fires), but the URL
+  spirals into /#/?redirect_url=... — meaning <SignedOut> matches and
+  RedirectToSignIn loops because the third-party __client cookie on
+  *.clerk.accounts.dev cannot be persisted by Russ's browser. Incognito
+  also fails, which is consistent with the hypothesis (incognito blocks 3p
+  cookies by default). Trigger was almost certainly cookie-state aging into
+  the third-party-cookie wall, coincident with LOOL work but not caused by
+  it. Same architectural fix already planned: production Clerk instance
+  with custom domain clerk.warsignallabs.net.
+
+  Revised Phase 1 approach — instead of creating a new Clerk APPLICATION,
+  add a Production INSTANCE under the existing "WSL Portal" application via
+  "Clone settings from Development". This auto-mirrors identifier config,
+  name fields, sessions, CAPTCHA, branding, paths — eliminating the manual
+  mirror checklist. Custom domain, OAuth credentials, and keys remain
+  per-instance. Russ is now executing the revised Phase 1.
+
+current_initiative:
+  name: Clerk Production Migration (portal-only)
+  goal: |
+    Replace Clerk dev instance with a production instance using a custom
+    subdomain (clerk.warsignallabs.net). First-party cookies eliminate the
+    Safari/incognito/extension blank-screen failure mode. $0/month.
+  motivation_user: chris_depalma  # cdepalma@blueprintadvisory.net, usr-004
+  cost: 0
+  estimated_total_wall_time_minutes: 30
+  branch: feat/clerk-prod-migration  # to be created in phase 3
+
+plan_status:
+  current_phase: 1
+  total_phases: 6
+  blocked_on: russ_action_in_clerk_dashboard
+  expected_user_input_to_unblock:
+    - clerk_pk_live_publishable_key
+    - clerk_custom_domain_cname_records  # ~5-7 records Clerk emits
+
+phases:
+  - id: 1
+    title: Russ adds Production INSTANCE to existing WSL Portal app + custom domain
+    owner: russ
+    status: in_progress
+    approach: clone-from-dev  # do NOT create a new Clerk Application
+    actions:
+      - Open the existing "WSL Portal" application at dashboard.clerk.com (do NOT create a new app)
+      - Top-bar instance switcher → "Create production instance"
+      - Choose "Clone settings from Development" — auto-mirrors identifier config, name fields, sessions, CAPTCHA, branding, paths
+      - Switch the top-bar instance switcher to Production for all subsequent steps
+      - OAuth providers (Google, GitHub) — production requires NEW OAuth client IDs/secrets (Clerk's dev shared creds don't carry over). Recommended to disable both for initial cutover and add later; email-code sign-in alone is enough to unblock Russ + Chris.
+      - Add custom domain clerk.warsignallabs.net (Domains screen) — copy the full CNAME record list Clerk emits (typically 5–7 records) and paste into chat
+      - Confirm Paths point to https://portal.warsignallabs.net (after_sign_in/up/out URLs)
+      - Add https://portal.warsignallabs.net to allowed origins
+      - API Keys screen → copy pk_live_ publishable key (paste back to chat)
+      - API Keys screen → copy sk_live_ secret key (do NOT paste; save in password manager; will be fed to wrangler interactively in phase 4)
+    what_clones_from_dev:
+      yes:
+        - Identifier/auth method config (email, password, etc.)
+        - Personal info fields (first/last name)
+        - Branding, paths, customizations
+        - Bot protection / CAPTCHA settings
+        - Sessions config (single session mode)
+        - Sign-up mode, progressive, legal consent, MFA settings
+      no:
+        - Custom domain (added fresh on the production instance)
+        - OAuth provider credentials (toggle clones; keys must be supplied fresh)
+        - Users (production starts empty — D1 self-heals via email match in requireAuth)
+        - JWT signing keys / JWKS (worker fetches from new CLERK_FRONTEND_API on phase 4)
+        - Audit log, sessions, prior history
+
+  - id: 2
+    title: Add Cloudflare DNS CNAMEs
+    owner: claude
+    status: pending
+    actions:
+      - Add each CNAME from Clerk to warsignallabs.net zone, proxied=false
+      - Verify DNS via `dig +short clerk.warsignallabs.net CNAME`
+      - Tell russ to click "Verify" in the Clerk dashboard
+      - Smoke-test https://clerk.warsignallabs.net/v1/environment + /.well-known/jwks.json
+
+  - id: 3
+    title: Code changes on feat/clerk-prod-migration branch
+    owner: claude
+    status: pending
+    files_to_change:
+      - path: portal-app/.env
+        change: replace VITE_CLERK_PUBLISHABLE_KEY with pk_live_ value
+        committed: false  # .env is gitignored
+      - path: portal-app/worker/wrangler.toml
+        change: "line 28 — CLERK_FRONTEND_API = https://clerk.warsignallabs.net"
+      - path: portal-app/public/_headers
+        change: replace https://*.clerk.accounts.dev with https://clerk.warsignallabs.net in CSP (script-src, style-src, img-src, connect-src, frame-src)
+
+  - id: 4
+    title: Cutover (deploys + secret rotation)
+    owner: shared
+    status: pending
+    expected_outage_seconds: 30-60
+    actions:
+      - russ: "wrangler secret put CLERK_SECRET_KEY (paste sk_live_)"
+      - claude: "cd portal-app/worker && npx wrangler deploy"
+      - claude: "cd portal-app && npm run build && wrangler pages deploy dist --project-name wsl-portal --branch main --commit-dirty=true"
+
+  - id: 5
+    title: Verify
+    owner: shared
+    status: pending
+    actions:
+      - russ: hard-refresh portal.warsignallabs.net + sign in with russell.meadows@gmail.com
+      - claude: "confirm clerk_id rewritten in D1: SELECT id, email, clerk_id, updated_at FROM users WHERE email='russell.meadows@gmail.com'"
+      - claude: smoke-test /api/me and /api/workspaces returning 200
+      - russ: ask Chris to retry portal.warsignallabs.net
+
+  - id: 6
+    title: Post-cutover cleanup
+    owner: claude
+    status: pending
+    actions:
+      - update portal-app/CONTEXT.md (Clerk Production note)
+      - update portal-app/AGENTS.md (REM-XXX entry once ticket exists)
+      - "git push -u origin feat/clerk-prod-migration"
+      - open PR + squash-merge
+      - "russ later (optional, recommend ≥1 week post-cutover): delete dev INSTANCE from the WSL Portal application — keep the Application itself; deleting the dev instance alone preserves the production instance and simplifies the dashboard"
+
+investigation_findings:
+  symptom: |
+    Chris reports blank blue screen at portal.warsignallabs.net. Body
+    background (#0a1628 dark navy) renders but <div id="root"> has no React
+    children.
+  why_blank_not_error: |
+    ClerkProvider does not render children until isLoaded=true. If Clerk's
+    client cannot establish or refresh its session, the entire React tree
+    is gated and stays empty — no error boundary triggers.
+  evidence_chris_is_provisioned_correctly:
+    d1_user_id: usr-004
+    username: cdepalma
+    email: cdepalma@blueprintadvisory.net
+    clerk_id: user_3BWbfZe10xkvkAwtSsQlqtMkiZB
+    role: client
+    status: active
+    workspaces:
+      - {slug: blueprint-advisory, permission: write}
+      - {slug: lunch-out-of-landfills, permission: write}
+    last_successful_activity_utc: "2026-04-01 10:46:12"
+    last_notification_email_sent_utc: "2026-04-27 11:13:05"
+  evidence_others_unaffected: |
+    [Superseded 2026-05-03 — Russ now affected too. See evidence_russ_now_affected_2026_05_03 below.]
+    user_3BRbnNAaoiEJVsP3PvTFQyPkbtb (Russ) had audit_log entries through
+    2026-05-02 (last successful login).
+  evidence_russ_now_affected_2026_05_03:
+    symptom: same blue screen + URL spirals to /#/?redirect_url=...
+    last_successful_login_utc: "2026-05-02 (per audit_log)"
+    browser_console:
+      - "Clerk: Clerk has been loaded with development keys (informational; proves SDK loaded)"
+      - "Clerk: prop redirectUrl is deprecated (informational; from RedirectToSignIn internals)"
+      - "CSP violation: static.cloudflareinsights.com/beacon.min.js (Cloudflare Web Analytics; unrelated to auth)"
+    incognito_also_fails: true  # consistent with hypothesis — incognito blocks 3p cookies by default
+    refutes_lool_hypothesis: |
+      wsl-portal-api unchanged since 2026-04-03; LOOL workers (lool, lool-api) are
+      separate Cloudflare scripts with separate IDs; LOOL Clerk is a separate
+      Clerk Application; portal Pages deploy serves correct hash bundle with
+      intact CSP. Russ's working theory that LOOL disrupted the portal is refuted
+      on infrastructure. Trigger was likely cookie-state aging into the
+      third-party-cookie wall (same architectural fragility) coincident with
+      LOOL work, not caused by LOOL.
+    side_observations:
+      - CSP omits https://static.cloudflareinsights.com — Cloudflare auto-inject of Web Analytics beacon is blocked. Cosmetic; add to portal-app/public/_headers when convenient.
+      - URL "/#/?redirect_url=..." pattern = RedirectToSignIn looping because Clerk's hosted sign-in sees a session ticket on accounts.dev but the portal can't read the third-party cookie back, so SignedOut keeps matching.
+  root_cause_hypothesis: |
+    Third-party cookie blocking on Chris's browser. The dev Clerk instance
+    is at sharing-gator-67.clerk.accounts.dev — a different eTLD+1 from
+    portal.warsignallabs.net, so Clerk's session cookie is third-party.
+    Safari ITP, Firefox strict, Brave default, Chrome Incognito all block
+    these by default; uBlock-style extensions can block accounts.dev.
+  hypothesis_confidence: high  # 85%+
+  fallback_causes_to_check_if_migration_doesnt_fix_it:
+    - browser extension blocking accounts.dev / clerk.warsignallabs.net
+    - corporate network at Blueprint Advisory blocking Clerk
+    - stale orphaned Clerk session cookie from April login
+
+risk_register:
+  - risk: Clerk free tier may not include custom Clerk domain
+    likelihood: low  # ~5%
+    detection: russ sees "upgrade required" prompt during phase 1.3
+    mitigation: re-evaluate cost vs. Pro tier ($25/mo) — fix is still cheap
+  - risk: Dev instance has OAuth providers (Google/GitHub) that need new client IDs in prod
+    likelihood: confirmed  # 2026-05-03 — env shows oauth_github + oauth_google enabled
+    mitigation: |
+      Recommended path for initial cutover: disable both providers on the
+      Production instance. Email-code sign-in alone unblocks Russ + Chris
+      (D1-authoritative auth doesn't depend on OAuth identity). Add Google
+      and GitHub OAuth credentials in a follow-up after cutover is
+      verified. If Russ wants OAuth at cutover: create a new Web client at
+      console.cloud.google.com/apis/credentials with Clerk's emitted
+      callback URL, and a new OAuth App at github.com/settings/developers
+      similarly; paste Client ID + Secret into Clerk's Social Connections.
+  - risk: Brief auth outage between worker deploy and frontend deploy
+    likelihood: certain  # 30-60 seconds
+    mitigation: send heads-up to active users; do cutover off-peak
+  - risk: Cloudflare proxies CNAMEs by default; Clerk requires DNS-only
+    likelihood: would-be-bug
+    mitigation: I will set proxied=false explicitly via Cloudflare MCP in phase 2
+
+rollback:
+  trigger: auth broken for >5 min after phase 4 cutover
+  prerequisite: russ keeps dev sk_test_ accessible during cutover
+  steps:
+    - revert wrangler.toml CLERK_FRONTEND_API to https://sharing-gator-67.clerk.accounts.dev
+    - revert .env VITE_CLERK_PUBLISHABLE_KEY to old pk_test_ value
+    - russ: wrangler secret put CLERK_SECRET_KEY (with old dev secret)
+    - claude: redeploy worker and frontend
+  self_healing_note: |
+    Any users who signed in during the bad window will have their clerk_id
+    overwritten with prod IDs. The email-fallback in requireAuth re-overwrites
+    them on first dev-instance sign-in, so this self-heals.
+
+resumption_data:
+  current_clerk:
+    publishable_key: pk_test_c2hhcmluZy1nYXRvci02Ny5jbGVyay5hY2NvdW50cy5kZXYk
+    frontend_api: https://sharing-gator-67.clerk.accounts.dev
+  worker:
+    id_tag: e60fd21c28f64be5b4161a4790967794
+    last_modified_utc: "2026-04-03T15:18:01.555Z"
+  pending_user_input:
+    - clerk_pk_live_publishable_key
+    - clerk_custom_domain_cname_records
+  resume_with: |
+    Once russ pastes the CNAME list and pk_live_ key, run phase 2 (DNS via
+    Cloudflare MCP), then phase 3 (code changes on feat/clerk-prod-migration
+    branch). Coordinate phase 4 cutover so worker and frontend deploys are
+    back-to-back.

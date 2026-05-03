@@ -1,0 +1,168 @@
+# memory.yaml — long-lived project context for portal.warsignallabs.net
+# Companion to handoff.yaml (which carries current-state / in-flight work).
+# Last reviewed: 2026-05-03
+
+project:
+  name: WarSignalLabs Client Portal
+  url: https://portal.warsignallabs.net
+  codebase_root: portal-app/
+  current_version: "0.2.2"
+  description: |
+    Multi-tenant document-management portal for WarSignalLabs clients.
+    Workspaces (one per client engagement), folder/file hierarchy with versioning,
+    role-based access (admin/owner/client), audit log, email notifications via
+    Resend. Operational dashboard (admin-only) surfaces GW-OS daily briefs.
+
+stack:
+  frontend:
+    framework: React 19 + Vite 8
+    auth_sdk: "@clerk/clerk-react ^5.61.4"
+    routing: react-router-dom 7
+    deploy_target: Cloudflare Pages
+    pages_project_name: wsl-portal
+    pages_domains: [wsl-portal.pages.dev, portal.warsignallabs.net]
+    deploy_command: |
+      cd portal-app && npm run build && \
+        npx wrangler pages deploy dist \
+        --project-name wsl-portal --branch main --commit-dirty=true
+  worker:
+    name: wsl-portal-api
+    workers_dev_url: https://wsl-portal-api.russell-meadows.workers.dev
+    custom_route: "api.warsignallabs.net/*"
+    deploy_command: "cd portal-app/worker && npx wrangler deploy"
+    main_file: portal-app/worker/index.js  # ~2600 lines
+  database:
+    type: Cloudflare D1
+    name: wsl-portal
+    id: 9b47800b-5435-4e2c-890b-e38d2eea3f6a
+    binding: DB
+    tables:
+      - users
+      - workspaces
+      - user_workspaces
+      - folders
+      - files
+      - file_versions
+      - audit_log
+      - notifications
+      - briefs
+  storage:
+    type: Cloudflare R2
+    bucket: wsl-portal-files
+    binding: FILES
+  email:
+    provider: Resend
+    from_address: portal@warsignallabs.net
+    secret: RESEND_API_KEY  # set via `wrangler secret put`
+
+cloudflare:
+  account_name: "Russell.meadows@gmail.com's Account"
+  account_id: 210e77c9da5741b3aa1b6199a082d70b
+  zone: warsignallabs.net
+
+auth:
+  authority: D1  # never trust Clerk publicMetadata for authorization
+  flow_summary: |
+    Browser ClerkProvider obtains JWT.
+    Worker requireAuth() verifies signature against JWKS at
+    {CLERK_FRONTEND_API}/.well-known/jwks.json, then matches the user in D1
+    by clerk_id, falling back by email, then by username, then to
+    Clerk publicMetadata as a last resort. Email/username matches
+    auto-rewrite the user's clerk_id.
+  jwt_verification:
+    algorithm: RS256
+    checks: [signature, exp, nbf]
+    issuer_check: false
+  rbac:
+    roles: [admin, owner, client]
+    permissions: [read, write, admin]
+    permission_scope: workspace
+  status_enforcement: |
+    users.status='inactive' raises 403 from requireAuth(),
+    blocking all API access regardless of route.
+  passwordless: true  # Clerk passwordless only — no username/password
+
+clerk:
+  current:
+    type: development
+    frontend_api: https://sharing-gator-67.clerk.accounts.dev
+    publishable_key_prefix: pk_test_
+    cookie_scope: third-party  # source of fragility
+  target:
+    type: production
+    custom_domain: clerk.warsignallabs.net
+    publishable_key_prefix: pk_live_
+    cookie_scope: first-party
+    cost_per_month: 0  # free tier
+  worker_env_vars:
+    CLERK_FRONTEND_API: var (wrangler.toml)
+    CLERK_SECRET_KEY:   secret (wrangler secret put)
+    CLERK_WEBHOOK_SECRET: secret (currently unused)
+  frontend_env_vars:
+    VITE_CLERK_PUBLISHABLE_KEY: portal-app/.env
+
+key_files:
+  src/main.jsx: ClerkProvider mount; reads VITE_CLERK_PUBLISHABLE_KEY
+  src/App.jsx: route definitions + ProtectedRoute (SignedIn / SignedOut wrapper)
+  src/contexts/PortalAuth.jsx: D1-authoritative auth context
+  src/layouts/PortalLayout.jsx: top-level chrome; fetches /api/me + /api/workspaces once
+  src/api/client.js: useApiClient hook — every REST endpoint
+  worker/index.js: full API + JWT verification + Clerk Backend API integration
+  worker/wrangler.toml: D1, R2, env vars, secrets list, custom route
+  public/_headers: CSP source (Vite copies into dist/_headers on build)
+
+architectural_decisions:
+  - "D1 is authoritative for role + workspace permissions. Clerk publicMetadata is fallback only."
+  - "JWT verification: RS256 + JWKS rotation; no issuer (`iss`) claim check."
+  - "Account status enforced at the auth layer (requireAuth → 403), not per-route."
+  - "All file operations write an audit_log row."
+  - "Notifications are sent on file events to all admins + workspace members; Resend is the transport."
+  - "Folders are first-class (REM-695..702); files have a folder_id and a category."
+  - "File replacement creates a file_versions row (REM-697)."
+
+agents:
+  claude_cowork:
+    role: primary architect
+    owns: [worker code, frontend code, D1 schema, RBAC, notification system]
+    can: [deploy worker, deploy pages, query D1, update Linear]
+    cannot: [provision secrets, change DNS, edit Clerk dashboard]
+  codex_cli:
+    role: execution support
+    owns: [batch refactors, test scaffolding]
+    can: [code edits]
+    cannot: [deploy, mutate D1, manage secrets]
+  russ:
+    role: operator
+    owns:
+      - Cloudflare dashboard (zone config, transform rules)
+      - Clerk dashboard
+      - Resend dashboard
+      - domain registrar
+    authority: final approval on architecture, secrets, production verification
+
+linear:
+  workspace: remeadows
+  team: Remeadows
+  project_name: "Client Portal (portal.warsignallabs.net)"
+  project_id: 01fa033a-8551-4174-9644-8210d0663dff
+  project_url: https://linear.app/remeadows/project/client-portal-portalwarsignallabsnet-01fa033a
+
+related_files:
+  - portal-app/CONTEXT.md     # human-facing project overview, deeper stack notes
+  - portal-app/AGENTS.md      # agent boundaries + completed Linear tickets
+  - portal/architecture.yaml  # original v2.0 architecture spec
+
+neighboring_projects:
+  - name: LOOL
+    relationship: independent  # shares no infrastructure with the portal
+    cloudflare:
+      account: same (210e77c9da5741b3aa1b6199a082d70b)
+      workers: [lool, lool-api]  # separate scripts; separate IDs from wsl-portal-api
+    clerk:
+      relationship: separate Clerk Application (own pk_test_/sk_test_)
+    note: |
+      LOOL is built in parallel with the portal but shares no infrastructure
+      beyond the Cloudflare account. Treat any symptom that seems to span
+      both as unrelated by default and require evidence before linking. This
+      was triaged on 2026-05-03 when LOOL was suspected of disrupting the
+      portal — it had not.
