@@ -20,7 +20,12 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  /* Clearance for fixed nav (~58.6px tall + breathing room) so #anchor jumps
+     don't land hidden underneath the nav bar. */
+  scroll-padding-top: 5rem;
+}
 
 body {
   font-family: 'Rajdhani', sans-serif;
@@ -104,6 +109,15 @@ body::after {
   background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-magenta), transparent);
   margin: 0;
   opacity: 0.5;
+}
+
+/* ═══ HERO DEFAULT ═══
+   Fixed nav is ~58.6px tall (z-index 1000). Pages without their own .hero
+   padding rule were rendering H1 underneath the nav. This sets a safe default
+   padding-top; pages that declare .hero { padding: ... } shorthand still win
+   the cascade because their inline <style> loads after styles.css. */
+.hero {
+  padding-top: 7rem;
 }
 
 /* ═══ NAVIGATION ═══ */
