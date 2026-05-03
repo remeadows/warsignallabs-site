@@ -538,6 +538,103 @@
   line-height: 1.5;
 }
 
+/* ═══ W.A.R. DOCTRINE ═══ */
+.war-doctrine { padding: 5rem 0 4rem; }
+
+.war-intro {
+  max-width: 720px;
+  margin-bottom: 2rem;
+  color: var(--text-dim);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+.war-intro strong { color: var(--text-bright); font-weight: 600; }
+
+.war-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.war-card {
+  background: rgba(12, 31, 58, 0.5);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  padding: 1.75rem 1.75rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+}
+
+.war-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 0;
+  background: var(--neon-cyan);
+  transition: height 0.4s;
+}
+
+.war-card:hover {
+  border-color: var(--border-glow);
+  background: rgba(12, 31, 58, 0.78);
+  transform: translateY(-2px);
+}
+
+.war-card:hover::before { height: 100%; }
+
+.war-letter {
+  position: absolute;
+  top: 0.4rem;
+  right: 1rem;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 6.5rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--neon-cyan);
+  opacity: 0.13;
+  text-shadow: 0 0 40px rgba(0, 240, 255, 0.35);
+  pointer-events: none;
+  letter-spacing: 0;
+}
+
+.war-card.lane-watch   .war-letter { color: var(--neon-cyan);    text-shadow: 0 0 40px rgba(0, 240, 255, 0.35); }
+.war-card.lane-analyze .war-letter { color: var(--neon-magenta); text-shadow: 0 0 40px rgba(255, 0, 170, 0.35); }
+.war-card.lane-react   .war-letter { color: var(--neon-amber);   text-shadow: 0 0 40px rgba(255, 170, 0, 0.35); }
+
+.war-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  color: var(--neon-green);
+  margin-bottom: 0.6rem;
+  position: relative;
+  z-index: 1;
+}
+
+.war-card h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 0.65rem;
+  letter-spacing: 0.05em;
+  position: relative;
+  z-index: 1;
+}
+
+.war-card p {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 0.85rem;
+}
+
+.war-card .service-tags { position: relative; z-index: 1; }
+
 /* ═══ FADE-IN ANIMATION ═══ */
 .fade-in {
   opacity: 0;
@@ -554,6 +651,9 @@
   .about-grid,
   .product-showcase,
   .deployed-card { grid-template-columns: 1fr; gap: 2rem; }
+
+  .war-grid { grid-template-columns: 1fr; }
+  .war-letter { font-size: 5rem; opacity: 0.18; }
 
   .hero-title { font-size: clamp(2rem, 8vw, 3.5rem); }
   .hero-logo { width: 160px; }
@@ -577,6 +677,7 @@
       <li><a href="/services.html">Services</a></li>
       <li><a href="/gridwatch-enterprise.html">GridWatch</a></li>
       <li><a href="/labs.html">Labs</a></li>
+      <li><a href="/studio.html">Studio</a></li>
       <li><a href="/deployed-systems.html">Deployed</a></li>
       <li><a href="/warsignal-vision.html">Vision</a></li>
       <li><a href="#connect">Connect</a></li>
@@ -600,6 +701,64 @@
     <div class="hero-buttons">
       <a href="/services.html" class="btn btn-primary">EXPLORE CAPABILITIES</a>
       <a href="#connect" class="btn btn-secondary">ESTABLISH LINK</a>
+    </div>
+  </div>
+</section>
+
+<div class="neon-divider"></div>
+
+<!-- ═══ W.A.R. DOCTRINE ═══ -->
+<section class="war-doctrine" id="doctrine">
+  <div class="container">
+    <div class="section-label">OPERATIONAL DOCTRINE</div>
+    <h2 class="section-title">The W.A.R. Loop</h2>
+    <p class="war-intro">
+      The acronym isn't decoration. <strong>WATCH · ANALYZE · REACT</strong> is the operating model
+      every system we ship runs on — from network architecture and STIG compliance to GridWatch Enterprise
+      and the controlled AI workflows we deploy for clients.
+    </p>
+
+    <div class="war-grid">
+
+      <div class="war-card lane-watch fade-in">
+        <div class="war-letter">W</div>
+        <div class="war-label">01 · WATCH</div>
+        <h3>Passive Collection</h3>
+        <p>SNMPv3, syslog, NetFlow, packet capture, configuration telemetry. Continuous discovery of every device, every change, every drift from baseline. You cannot defend what you cannot see.</p>
+        <div class="service-tags">
+          <span class="tag">SNMPv3</span>
+          <span class="tag">SYSLOG</span>
+          <span class="tag">NETFLOW</span>
+          <span class="tag">TELEMETRY</span>
+        </div>
+      </div>
+
+      <div class="war-card lane-analyze fade-in">
+        <div class="war-letter">A</div>
+        <div class="war-label">02 · ANALYZE</div>
+        <h3>Correlation &amp; Threat Modeling</h3>
+        <p>STIG drift detection, baseline deviation, lateral-movement signatures, control-plane anomalies. Raw signal becomes prioritized, audit-ready intelligence — risk-scored, not just logged.</p>
+        <div class="service-tags">
+          <span class="tag">STIG DRIFT</span>
+          <span class="tag">CORRELATION</span>
+          <span class="tag">THREAT MODEL</span>
+          <span class="tag">RISK SCORE</span>
+        </div>
+      </div>
+
+      <div class="war-card lane-react fade-in">
+        <div class="war-letter">R</div>
+        <div class="war-label">03 · REACT</div>
+        <h3>Hardening &amp; Response</h3>
+        <p>Automated remediation, POA&amp;M closure, segmentation enforcement, incident playbooks. Controls update at the speed of the threat — not the speed of paperwork. Every action audit-trailed.</p>
+        <div class="service-tags">
+          <span class="tag">REMEDIATE</span>
+          <span class="tag">POA&amp;M</span>
+          <span class="tag">PLAYBOOK</span>
+          <span class="tag">RESPONSE</span>
+        </div>
+      </div>
+
     </div>
   </div>
 </section>
@@ -841,6 +1000,13 @@
         <div class="card-desc">Professional background, certifications, and network connections.</div>
       </a>
 
+      <a href="https://x.com/russ2themeadows" target="_blank" rel="noopener noreferrer" class="connect-card fade-in">
+        <div class="card-label">// X / TWITTER</div>
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        <div class="card-value">@russ2themeadows</div>
+        <div class="card-desc">Live signal — operational posts on security, AI orchestration, builds, and field notes.</div>
+      </a>
+
     </div>
   </div>
 </section>
@@ -859,10 +1025,12 @@
       <a href="/services.html">Services</a>
       <a href="/gridwatch-enterprise.html">GridWatch</a>
       <a href="/labs.html">Labs</a>
+      <a href="/studio.html">Studio</a>
       <a href="/deployed-systems.html">Deployed</a>
       <a href="/warsignal-vision.html">Vision</a>
       <a href="/support.html">App Support</a>
       <a href="/privacy.html">Privacy Policy</a>
+      <a href="https://x.com/russ2themeadows" target="_blank" rel="noopener noreferrer">X</a>
     </div>
     <div class="footer-line">© 2026 WarSignalLabs. All rights reserved.</div>
   </div>
@@ -894,7 +1062,8 @@
   },
   "sameAs": [
     "https://github.com/remeadows",
-    "https://linkedin.com/in/russell-meadows-1abb5994"
+    "https://linkedin.com/in/russell-meadows-1abb5994",
+    "https://x.com/russ2themeadows"
   ]
 }
 </script>
