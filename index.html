@@ -168,7 +168,12 @@
 
 .contact-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  /* 4-up at desktop math: container max-width 1200 minus padding 64 = 1136 content area;
+     minus 3 gaps × 16 = 1088 / 4 columns = 272px per card. Min must be ≤ 272 to keep
+     4-up; 260 gives 12px headroom and 1fr still expands each card to 272. The
+     min(260px, 100%) wrapper lets the column shrink below 260 on very narrow viewports,
+     preventing horizontal overflow. */
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 1rem;
   margin-top: 1.5rem;
 }
@@ -198,10 +203,13 @@
 }
 
 .contact-value {
-  font-family: var(--font-serif);
-  font-size: 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  font-weight: 600;
   color: var(--text-bright);
   display: block;
+  overflow-wrap: anywhere;
+  letter-spacing: -0.005em;
 }
 
 @media (max-width: 900px) {
