@@ -137,9 +137,13 @@ strong { color: var(--text-bright); font-weight: 600; }
 
 /* =============================================================
    NAVIGATION
+   Scoped to `body > nav` so the rules apply ONLY to the primary
+   site nav and never cascade to <nav class="footer-nav"> inside
+   <footer> (which would otherwise inherit position: fixed and
+   render itself at the top of every page).
    ============================================================= */
 
-nav {
+body > nav {
   position: fixed;
   top: 0; left: 0;
   width: 100%;
@@ -150,7 +154,7 @@ nav {
   border-bottom: 1px solid var(--rule);
 }
 
-nav .container {
+body > nav .container {
   display: flex;
   justify-content: space-between;
   align-items: center;
