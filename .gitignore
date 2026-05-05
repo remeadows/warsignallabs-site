@@ -6,3 +6,6 @@
 
 # Superpowers brainstorm artifacts
 .superpowers/
+
+# Cloudflare wrangler local cache
+.wrangler/
