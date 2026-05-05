@@ -8,24 +8,22 @@
   Studio page embeds Spotify + Apple Music iframes — both required for music playback.
   frame-src and child-src enumerate the trusted embed origins; img-src expanded to
   cover Spotify CDN album artwork that some embed skins fetch from the parent context.
-  When zone activates and security headers move to Cloudflare Transform Rules,
-  fold this into the canonical header CSP and remove the meta override here.
 -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; img-src 'self' data: https://i.scdn.co https://is1-ssl.mzstatic.com https://*.mzstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; frame-src https://open.spotify.com https://embed.music.apple.com; child-src https://open.spotify.com https://embed.music.apple.com; media-src 'self' data:; object-src 'none'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Studio — WAR SIGNAL — WarSignalLabs</title>
-<meta name="description" content="WAR SIGNAL — the music arm of WarSignalLabs. Cyberpunk synthwave, mil-ambient, and AI-augmented composition. Live catalog playable on Spotify and Apple Music.">
+<meta name="description" content="WAR SIGNAL — a personal music project of Russ Meadows. Synthwave and instrumental tracks, playable on Spotify and Apple Music.">
 <link rel="canonical" href="https://warsignallabs.net/studio.html">
 <meta property="og:type" content="music.musician">
 <meta property="og:site_name" content="WarSignalLabs">
 <meta property="og:title" content="WAR SIGNAL — Studio — WarSignalLabs">
-<meta property="og:description" content="Cyberpunk synthwave, mil-ambient, and AI-augmented composition. Live catalog on Spotify and Apple Music.">
+<meta property="og:description" content="A personal music project of Russ Meadows. Synthwave and instrumental tracks on Spotify and Apple Music.">
 <meta property="og:url" content="https://warsignallabs.net/studio.html">
 <meta property="og:image" content="https://warsignallabs.net/WarSignalLabs.webp">
 <meta property="music:musician" content="https://open.spotify.com/artist/7HagNrQxvM5rXJhod9sux5">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="WAR SIGNAL — Studio — WarSignalLabs">
-<meta name="twitter:description" content="Cyberpunk synthwave, mil-ambient, and AI-augmented composition. Live catalog on Spotify and Apple Music.">
+<meta name="twitter:description" content="A personal music project of Russ Meadows. Synthwave and instrumental tracks.">
 <meta name="twitter:image" content="https://warsignallabs.net/WarSignalLabs.webp">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
@@ -35,181 +33,95 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://open.spotify.com">
 <link rel="preconnect" href="https://embed.music.apple.com">
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
 
 <style>
-/* STUDIO PAGE-SPECIFIC STYLES */
+.hero { padding: 9rem 0 3rem; }
+.hero h1 { letter-spacing: 0.02em; margin-bottom: 0.4rem; }
 
-.hero { padding: 7rem 0 3rem; }
-
-.kicker {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.75rem;
-  color: var(--neon-green);
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  opacity: 0.9;
-  margin-bottom: 1rem;
-}
-.kicker::before { content: '// '; color: var(--neon-magenta); }
-
-h1 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(2.1rem, 5vw, 3.35rem);
-  font-weight: 900;
-  color: var(--text-bright);
-  line-height: 1.08;
-  margin-bottom: 0.75rem;
-  letter-spacing: 0.05em;
-}
-
-.subhead {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.9rem;
+.hero-sub {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
   color: var(--text-dim);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.02em;
   margin-bottom: 1.5rem;
 }
 
-.hero-panel {
-  background: rgba(12, 31, 58, 0.55);
-  border: 1px solid var(--border-glow);
-  padding: 1.6rem;
-  position: relative;
-  overflow: hidden;
+.frame {
+  background: var(--bg-elevated);
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--accent);
+  padding: 1.5rem 1.75rem;
+  border-radius: 4px;
+  max-width: 64ch;
+  margin-bottom: 1.5rem;
 }
-.hero-panel::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--neon-magenta), var(--neon-cyan), var(--neon-amber), transparent);
-  opacity: 0.7;
-}
-.hero-panel p {
-  font-size: 1.05rem;
-  color: var(--text-primary);
-  line-height: 1.8;
-  margin-bottom: 0.9rem;
-}
-.hero-panel p:last-child { margin-bottom: 0; }
-p.dim { color: var(--text-dim); }
 
-.cta-row {
+.frame p:last-child { margin-bottom: 0; }
+
+.platform-row {
   display: flex;
-  gap: 1rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
-  margin-top: 1.25rem;
+  margin-top: 1rem;
 }
 
-.btn-secondary {
-  background: transparent;
-  color: var(--neon-magenta);
-  border: 1px solid rgba(255, 0, 170, 0.5);
-}
-.btn-secondary:hover {
-  background: rgba(255, 0, 170, 0.08);
-  border-color: var(--neon-magenta);
-}
-
-.btn-tertiary {
-  background: transparent;
-  color: var(--text-dim);
-  border: 1px solid rgba(200, 214, 229, 0.18);
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.78rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  padding: 0.85rem 1.8rem;
-  text-decoration: none;
-  transition: all 0.3s;
-  display: inline-block;
-}
-.btn-tertiary:hover {
-  color: var(--neon-amber);
-  border-color: rgba(255, 170, 0, 0.55);
-  background: rgba(255, 170, 0, 0.05);
-}
-
-/* TRACK GRID */
-.track-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1.5rem;
-}
-
-.track-card {
-  background: rgba(12, 31, 58, 0.55);
-  border: 1px solid rgba(0, 240, 255, 0.15);
-  padding: 1.4rem;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s;
-}
-.track-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0;
-  width: 3px; height: 100%;
-  background: var(--neon-magenta);
-  opacity: 0.85;
-}
-.track-card:hover {
-  border-color: var(--border-glow);
-  background: rgba(12, 31, 58, 0.78);
-}
-
-.track-card .track-meta {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--neon-amber);
-  margin-bottom: 0.45rem;
-}
-
-.track-card h3 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-bright);
-  margin-bottom: 0.5rem;
-  letter-spacing: 0.04em;
-}
-
-.track-card .track-blurb {
+.platform-link {
+  font-family: var(--font-sans);
   font-size: 0.9rem;
+  padding: 0.55rem 1.1rem;
+  border: 1px solid var(--rule-strong);
+  color: var(--text-bright);
+  text-decoration: none;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: border-color 0.2s, color 0.2s;
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.platform-link:hover {
+  border-color: var(--accent);
+  border-bottom-color: var(--accent);
+  color: var(--text-bright);
+}
+
+.platform-link svg { width: 14px; height: 14px; fill: currentColor; }
+
+.embed-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-top: 1.75rem;
+}
+
+.embed-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--rule);
+  padding: 1.5rem;
+  border-radius: 4px;
+}
+
+.embed-card h3 {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  margin-bottom: 0.4rem;
+}
+
+.embed-card .embed-meta {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
   color: var(--text-dim);
-  line-height: 1.55;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.85rem;
 }
 
-.track-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0.7rem 0 1rem;
-}
-.track-tag {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.6rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 0.2rem 0.6rem;
-  border: 1px solid rgba(255, 0, 170, 0.25);
-  color: var(--neon-magenta);
-  opacity: 0.85;
-}
-
-/* EMBED SLOT */
 .embed-slot {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(0, 240, 255, 0.1);
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule);
   margin-top: 0.75rem;
-  position: relative;
-  min-height: 80px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
@@ -220,80 +132,22 @@ p.dim { color: var(--text-dim); }
   background: transparent;
 }
 
-.embed-placeholder {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.72rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--neon-amber);
-  padding: 1.5rem 1.25rem;
-  text-align: center;
-  line-height: 1.7;
-}
-.embed-placeholder::before {
-  content: '[ ';
-  color: var(--text-dim);
-}
-.embed-placeholder::after {
-  content: ' ]';
-  color: var(--text-dim);
-}
-.embed-placeholder .small {
-  display: block;
-  font-size: 0.6rem;
-  color: var(--text-dim);
-  letter-spacing: 0.15em;
-  margin-top: 0.5rem;
-  opacity: 0.7;
+.stack {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule);
+  padding: 1.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  line-height: 2;
+  border-radius: 4px;
+  max-width: 64ch;
 }
 
-/* PLATFORM BADGES */
-.platform-row {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-top: 1.5rem;
-}
-.platform-badge {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  padding: 0.55rem 1rem;
-  border: 1px solid rgba(0, 240, 255, 0.3);
-  color: var(--neon-cyan);
-  text-decoration: none;
-  transition: all 0.25s;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.platform-badge:hover {
-  background: rgba(0, 240, 255, 0.08);
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 14px rgba(0, 240, 255, 0.2);
-}
-.platform-badge svg { width: 14px; height: 14px; fill: currentColor; }
-
-/* STACK STRIP */
-.stack-strip {
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(0, 240, 255, 0.1);
-  padding: 1.4rem;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.78rem;
-  line-height: 1.95;
-  color: var(--neon-green);
-  overflow-x: auto;
-}
-.stack-strip strong { color: var(--neon-cyan); }
-.stack-strip .comment { color: var(--text-dim); }
-.stack-strip .accent { color: var(--neon-magenta); }
-
-.section { padding: 3.5rem 0; }
+.stack strong { color: var(--text-bright); display: inline-block; min-width: 7.5rem; }
+.stack .comment { color: var(--text-dim); }
 
 @media (max-width: 900px) {
-  .track-grid { grid-template-columns: 1fr; }
+  .embed-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -302,86 +156,65 @@ p.dim { color: var(--text-dim); }
 
 <nav>
   <div class="container">
-    <a href="/index.html" class="nav-brand">
-      <img src="/WarSignalLabs.webp" alt="WarSignalLabs" class="nav-logo" width="32" height="32">
-      WARSIGNALLABS
+    <a href="/" class="nav-brand">
+      <img src="/WarSignalLabs.webp" alt="" class="nav-logo" width="28" height="28">
+      WarSignalLabs
     </a>
-    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">[ MENU ]</button>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
     <ul class="nav-links" id="site-nav">
       <li><a href="/services.html">Services</a></li>
-      <li><a href="/gridwatch-enterprise.html">GridWatch</a></li>
-      <li><a href="/labs.html">Labs</a></li>
-      <li><a href="/studio.html">Studio</a></li>
-      <li><a href="/deployed-systems.html">Deployed</a></li>
-      <li><a href="/warsignal-vision.html">Vision</a></li>
-      <li><a href="/index.html#connect">Connect</a></li>
-      <li><a href="https://portal.warsignallabs.net" class="nav-portal">Enter Portal</a></li>
+      <li><a href="/deployed-systems.html">Work</a></li>
+      <li><a href="/labs.html">Research</a></li>
+      <li><a href="/studio.html" aria-current="page">Studio</a></li>
+      <li><a href="/warsignal-vision.html">About</a></li>
+      <li><a href="/#contact">Contact</a></li>
+      <li><a href="https://portal.warsignallabs.net">Client Portal</a></li>
     </ul>
   </div>
 </nav>
 
 <header class="hero">
   <div class="container">
-    <div class="kicker">WAR SIGNAL // STUDIO</div>
-    <h1>WAR SIGNAL</h1>
-    <div class="subhead">Cyberpunk Synthwave · Mil-Ambient · AI-Augmented Composition</div>
+    <span class="eyebrow">Studio · personal music project</span>
+    <h1>WAR SIGNAL.</h1>
+    <div class="hero-sub">Synthwave, instrumental, and ambient tracks — by Russ Meadows.</div>
 
-    <div class="hero-panel">
+    <div class="frame">
       <p>
-        The other half of the lab. Sound design and original tracks composed at the intersection of
-        military aesthetics, cyberpunk noir, and modern AI-assisted production tooling — the same
-        execution discipline that ships hardened networks, applied to records.
+        This is the music side of WarSignalLabs. The rest of the site is the engineering practice; this page is a personal creative project that happens to share the brand. New tracks land on Spotify and Apple Music — both players below load the live catalog.
       </p>
-      <p class="dim">
-        Soundtrack for the lab. Background hum for the work. Drop in, take what you need.
-      </p>
+    </div>
 
-      <div class="platform-row">
-        <a class="platform-badge" href="https://open.spotify.com/artist/7HagNrQxvM5rXJhod9sux5" target="_blank" rel="noopener noreferrer">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-          SPOTIFY
-        </a>
-        <a class="platform-badge" href="https://music.apple.com/us/artist/war-signal/1859401890" target="_blank" rel="noopener noreferrer">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M23.994 6.124a9.23 9.23 0 0 0-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 0 0-1.877-.726 10.496 10.496 0 0 0-1.564-.15c-.04-.003-.083-.01-.124-.013H5.986c-.152.01-.303.017-.455.026-.747.043-1.49.123-2.193.4-1.336.53-2.3 1.452-2.865 2.78-.192.448-.292.925-.363 1.408-.056.392-.088.785-.1 1.18 0 .032-.007.062-.01.093v12.223c.01.14.017.283.027.424.05.815.154 1.624.497 2.373.65 1.42 1.738 2.353 3.234 2.802.42.127.856.187 1.293.228.55.053 1.1.06 1.652.06h11.146c.523 0 1.045-.034 1.565-.1.97-.123 1.856-.45 2.617-1.075.787-.65 1.305-1.48 1.602-2.45.115-.378.18-.762.222-1.152.06-.566.073-1.135.073-1.704V6.124zm-6.643 5.336c-.01.34-.06.67-.18 1-.18.54-.51.953-.95 1.286-.4.31-.853.508-1.336.62-.32.07-.64.12-.97.12-.06 0-.12 0-.18-.01-.43-.05-.83-.18-1.18-.43-.5-.36-.81-.85-.96-1.43-.08-.31-.1-.62-.1-.94 0-.34.05-.67.16-.99.16-.5.43-.92.83-1.27.3-.27.65-.45 1.04-.55.6-.16 1.2-.18 1.81-.05.39.08.74.24 1.05.5.39.32.66.74.83 1.21.13.36.18.74.18 1.13l-.04.81zm-7.74-1.8c-.01.4-.07.8-.21 1.18-.16.45-.42.83-.79 1.13-.31.25-.66.42-1.04.52-.42.11-.84.16-1.27.13-.42-.02-.83-.13-1.21-.34-.4-.22-.7-.54-.92-.93-.18-.32-.28-.66-.32-1.02-.04-.43-.04-.86.04-1.28.08-.42.24-.81.5-1.16.29-.39.66-.66 1.1-.83.42-.16.85-.22 1.29-.18.43.04.83.17 1.2.4.36.23.62.55.79.94.16.36.23.74.24 1.13l.4-.69z"/></svg>
-          APPLE MUSIC
-        </a>
-        <a class="btn-tertiary" href="https://x.com/russ2themeadows" target="_blank" rel="noopener noreferrer">
-          Drops on X
-        </a>
-      </div>
+    <div class="platform-row">
+      <a class="platform-link" href="https://open.spotify.com/artist/7HagNrQxvM5rXJhod9sux5" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+        Spotify
+      </a>
+      <a class="platform-link" href="https://music.apple.com/us/artist/war-signal/1859401890" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M23.994 6.124a9.23 9.23 0 0 0-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 0 0-1.877-.726 10.496 10.496 0 0 0-1.564-.15c-.04-.003-.083-.01-.124-.013H5.986c-.152.01-.303.017-.455.026-.747.043-1.49.123-2.193.4-1.336.53-2.3 1.452-2.865 2.78-.192.448-.292.925-.363 1.408-.056.392-.088.785-.1 1.18 0 .032-.007.062-.01.093v12.223c.01.14.017.283.027.424.05.815.154 1.624.497 2.373.65 1.42 1.738 2.353 3.234 2.802.42.127.856.187 1.293.228.55.053 1.1.06 1.652.06h11.146c.523 0 1.045-.034 1.565-.1.97-.123 1.856-.45 2.617-1.075.787-.65 1.305-1.48 1.602-2.45.115-.378.18-.762.222-1.152.06-.566.073-1.135.073-1.704V6.124z"/></svg>
+        Apple Music
+      </a>
+      <a class="platform-link" href="https://x.com/russ2themeadows" target="_blank" rel="noopener noreferrer">
+        New drops on X
+      </a>
     </div>
   </div>
 </header>
 
-<div class="neon-divider"></div>
+<hr class="rule">
 
 <main>
 
-  <!-- ═══ LIVE CATALOG ═══ -->
   <section class="section">
     <div class="container">
-      <div class="section-label">LIVE CATALOG // ARTIST EMBEDS</div>
-      <h2 class="section-title">Catalog</h2>
-      <p class="dim" style="margin-bottom:1rem;max-width:680px;">
-        Both players load the live WAR SIGNAL artist catalog directly from Spotify and Apple Music.
-        New releases appear automatically — no site update required. Playback, save-to-library,
-        and sharing all work natively in-page.
-      </p>
+      <span class="eyebrow">Catalog</span>
+      <h2>Listen.</h2>
+      <p>Both players load the live WAR SIGNAL artist catalog. New releases appear automatically.</p>
 
-      <div class="track-grid">
-
-        <!-- ───── SPOTIFY ARTIST EMBED ───── -->
-        <div class="track-card">
-          <div class="track-meta">SPOTIFY · ARTIST</div>
+      <div class="embed-grid">
+        <div class="embed-card">
           <h3>WAR SIGNAL on Spotify</h3>
-          <div class="track-blurb">
-            Top tracks playable in-page. Tap the artist link to open the full discography in Spotify.
-          </div>
-          <div class="track-tags">
-            <span class="track-tag">Synthwave</span>
-            <span class="track-tag">Cyberpunk</span>
-            <span class="track-tag">Mil-Ambient</span>
-          </div>
+          <div class="embed-meta">Spotify · artist embed</div>
           <div class="embed-slot">
             <iframe
               src="https://open.spotify.com/embed/artist/7HagNrQxvM5rXJhod9sux5?utm_source=generator&theme=0"
@@ -392,18 +225,9 @@ p.dim { color: var(--text-dim); }
           </div>
         </div>
 
-        <!-- ───── APPLE MUSIC ARTIST EMBED ───── -->
-        <div class="track-card">
-          <div class="track-meta">APPLE MUSIC · ARTIST</div>
+        <div class="embed-card">
           <h3>WAR SIGNAL on Apple Music</h3>
-          <div class="track-blurb">
-            Full artist page rendered live from Apple Music. Catalog updates flow through automatically.
-          </div>
-          <div class="track-tags">
-            <span class="track-tag">Synthwave</span>
-            <span class="track-tag">Cyberpunk</span>
-            <span class="track-tag">Mil-Ambient</span>
-          </div>
+          <div class="embed-meta">Apple Music · artist embed</div>
           <div class="embed-slot">
             <iframe
               allow="autoplay *; encrypted-media *; clipboard-write *"
@@ -413,60 +237,49 @@ p.dim { color: var(--text-dim); }
             </iframe>
           </div>
         </div>
-
       </div>
     </div>
   </section>
 
-  <div class="neon-divider"></div>
+  <hr class="rule">
 
-  <!-- ═══ STUDIO STACK ═══ -->
   <section class="section">
     <div class="container">
-      <div class="section-label">STUDIO STACK</div>
-      <h2 class="section-title">Production Pipeline</h2>
-      <p class="dim" style="margin-bottom:1rem;max-width:680px;">
-        Multi-agent music workflow — same operational discipline as the engineering side, applied to sound.
-      </p>
+      <span class="eyebrow">Production</span>
+      <h2>How it gets made.</h2>
+      <p>The same execution discipline that ships hardened systems, applied to records. AI-assisted composition with a human-in-the-loop production process.</p>
 
-      <div class="stack-strip">
-        <span class="comment"># studio$ stack --overview</span><br><br>
-        <strong>generation:</strong> <span class="accent">Suno</span> · prompt-driven composition + iteration<br>
-        <strong>vocals / vox:</strong> <span class="accent">ElevenLabs</span> · synthesized + layered character voices<br>
-        <strong>arrangement:</strong> DAW · structure, automation, FX chains<br>
-        <strong>mastering:</strong> reference-aligned · loudness-normalized for streaming<br>
-        <strong>distribution:</strong> Spotify · Apple Music · X drops<br><br>
-        <span class="comment"># cadence: ship clean, log learnings, iterate.</span><br>
-        <span class="comment"># vibe: cyberpunk · noir · mil-ambient · industrial.</span>
+      <div class="stack">
+        <span class="comment"># production pipeline</span><br><br>
+        <strong>Generation</strong>Suno — prompt-driven composition and iteration<br>
+        <strong>Vocals</strong>ElevenLabs — synthesized character voices<br>
+        <strong>Arrangement</strong>DAW — structure, automation, FX chains<br>
+        <strong>Mastering</strong>Reference-aligned, loudness-normalized for streaming<br>
+        <strong>Distribution</strong>Spotify, Apple Music<br>
       </div>
     </div>
   </section>
 
-  <div class="neon-divider"></div>
+  <hr class="rule">
 
-  <!-- ═══ FIELD NOTES ═══ -->
   <section class="section">
     <div class="container">
-      <div class="section-label">FIELD NOTES</div>
-      <h2 class="section-title">Why Studio</h2>
+      <span class="eyebrow">Why this exists</span>
+      <h2>Notes from the studio.</h2>
 
-      <div class="hero-panel">
+      <div class="frame">
         <p>
-          Network defense and music share more than aesthetic. Both are systems built from layered signals,
-          mixed in real time, and judged on whether the listener — or the operator — can tell when something
-          is off. Working in both keeps the same instinct sharp.
+          Network defense and music share more than aesthetic. Both are systems built from layered signals, mixed in real time, and judged on whether the listener — or the operator — can tell when something is off. Working in both keeps the same instinct sharp.
         </p>
-        <p class="dim">
-          Studio output funds nothing critical and breaks no production. That's exactly why it's where the
-          fastest experimentation happens — multi-agent orchestration, prompt iteration, mastering chains,
-          distribution loops. The lessons travel.
+        <p>
+          The studio output funds nothing critical and breaks no production. That is exactly why it is where the fastest experimentation happens. The lessons travel back to the engineering work.
         </p>
+      </div>
 
-        <div class="cta-row">
-          <a class="btn btn-primary" href="https://x.com/russ2themeadows" target="_blank" rel="noopener noreferrer">Follow Drops on X</a>
-          <a class="btn btn-secondary" href="/labs.html">Sister Lab — GridWatchMatch</a>
-          <a class="btn-tertiary" href="/warsignal-vision.html">WarSignal Vision</a>
-        </div>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="https://x.com/russ2themeadows" target="_blank" rel="noopener noreferrer">Follow on X</a>
+        <a class="btn btn-secondary" href="/labs.html">Research</a>
+        <a class="btn btn-tertiary" href="/warsignal-vision.html">About</a>
       </div>
     </div>
   </section>
@@ -475,21 +288,20 @@ p.dim { color: var(--text-dim); }
 
 <footer>
   <div class="container">
-    <div class="footer-brand">WARSIGNALLABS</div>
-
-    <div class="footer-links">
-      <a href="/services.html">Services</a>
-      <a href="/gridwatch-enterprise.html">GridWatch</a>
-      <a href="/labs.html">Labs</a>
-      <a href="/studio.html">Studio</a>
-      <a href="/deployed-systems.html">Deployed</a>
-      <a href="/warsignal-vision.html">Vision</a>
-      <a href="/support.html">App Support</a>
-      <a href="/privacy.html">Privacy Policy</a>
-      <a href="https://x.com/russ2themeadows" target="_blank" rel="noopener noreferrer">X</a>
+    <div class="footer-inner">
+      <div class="footer-brand">WarSignalLabs</div>
+      <div class="footer-line">Security engineering &middot; Secure platforms &middot; Controlled AI workflows</div>
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="/services.html">Services</a>
+        <a href="/deployed-systems.html">Work</a>
+        <a href="/labs.html">Research</a>
+        <a href="/studio.html">Studio</a>
+        <a href="/warsignal-vision.html">About</a>
+        <a href="/support.html">App support</a>
+        <a href="/privacy.html">Privacy</a>
+      </nav>
+      <div class="footer-copy">© 2026 WarSignalLabs. All rights reserved.</div>
     </div>
-
-    <div class="footer-copy">© 2026 WarSignalLabs. All rights reserved.</div>
   </div>
 </footer>
 
@@ -501,7 +313,7 @@ p.dim { color: var(--text-dim); }
   "name": "WAR SIGNAL",
   "url": "https://warsignallabs.net/studio.html",
   "image": "https://warsignallabs.net/WarSignalLabs.webp",
-  "genre": ["Synthwave", "Cyberpunk", "Mil-Ambient", "Industrial", "Dark Synth"],
+  "genre": ["Synthwave", "Instrumental", "Ambient"],
   "sameAs": [
     "https://open.spotify.com/artist/7HagNrQxvM5rXJhod9sux5",
     "https://music.apple.com/us/artist/war-signal/1859401890",

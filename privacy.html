@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; object-src 'none'; form-action 'self'; upgrade-insecure-requests">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Privacy Policy — WarSignalLabs</title>
-<meta name="description" content="GridWatchMatch privacy policy — Data collection, usage, and protection practices for the WarSignalLabs iOS application.">
+<meta name="description" content="GridWatchMatch privacy policy — data collection, usage, and protection practices for the WarSignalLabs iOS application.">
 <link rel="canonical" href="https://warsignallabs.net/privacy.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="WarSignalLabs">
@@ -24,302 +24,177 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
+
 <style>
-
-.container {
-  max-width: 860px;
-}
-
-/* ═══ BACK LINK ═══ */
-.back-bar {
-  padding: 1.5rem 0 0;
-}
-
-.back-link {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.75rem;
-  letter-spacing: 0.2em;
-  color: var(--neon-cyan);
-  text-decoration: none;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.back-link::before { content: '←'; }
-.back-link:hover { opacity: 1; }
-
-/* ═══ HEADER ═══ */
-header {
-  padding: 6.5rem 0 2rem;
-  border-bottom: 1px solid var(--border-glow);
-  margin-bottom: 3rem;
-}
-
-.doc-label {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.7rem;
-  letter-spacing: 0.35em;
-  text-transform: uppercase;
-  color: var(--neon-magenta);
-  margin-bottom: 0.75rem;
-}
-.doc-label::before { content: '// '; }
-
-h1 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: clamp(1.8rem, 5vw, 2.6rem);
-  font-weight: 900;
-  color: var(--text-bright);
-  line-height: 1.1;
-  margin-bottom: 0.75rem;
-}
+.container { max-width: 760px; }
+.hero { padding: 9rem 0 3rem; }
+.hero h1 { margin-bottom: 0.5rem; }
 
 .effective-date {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 0.75rem;
-  letter-spacing: 0.15em;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
   color: var(--text-dim);
-}
-
-/* ═══ POLICY CONTENT ═══ */
-.policy-section {
-  margin-bottom: 2.5rem;
-}
-
-h2 {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--neon-cyan);
-  letter-spacing: 0.1em;
   margin-bottom: 1rem;
-  padding-left: 1rem;
-  border-left: 2px solid var(--neon-magenta);
 }
 
-p {
-  font-size: 1.05rem;
-  color: var(--text-primary);
+.policy-section { margin-bottom: 2.5rem; }
+
+.policy-section h2 {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  color: var(--text-bright);
+  margin-bottom: 0.85rem;
+}
+
+.policy-section p {
+  font-size: 1rem;
+  color: var(--text);
   line-height: 1.7;
   margin-bottom: 0.85rem;
 }
 
-p:last-child { margin-bottom: 0; }
-
-ul {
+.policy-section ul {
   list-style: none;
+  margin: 0.5rem 0 1rem;
   padding: 0;
-  margin: 0.5rem 0 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
 }
 
-ul li {
-  font-size: 1.05rem;
-  color: var(--text-primary);
-  padding-left: 1.5rem;
+.policy-section ul li {
   position: relative;
+  padding: 0.3rem 0 0.3rem 1.25rem;
+  color: var(--text);
+  font-size: 1rem;
 }
-ul li::before {
-  content: '▸';
-  color: var(--neon-cyan);
+
+.policy-section ul li::before {
+  content: '';
   position: absolute;
   left: 0;
-  font-size: 0.7rem;
-  top: 0.25rem;
-}
-
-a {
-  color: var(--neon-cyan);
-  text-decoration: none;
-}
-a:hover { text-decoration: underline; }
-
-/* ═══ NEON DIVIDER ═══ */
-.neon-divider {
+  top: 0.85rem;
+  width: 6px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-magenta), transparent);
-  margin: 2rem 0;
-  opacity: 0.35;
+  background: var(--accent);
 }
-
-@media (max-width: 600px) {
-  header { padding: 2rem 0 1.5rem; }
-  h2 { font-size: 0.9rem; }
-}
-
 </style>
 </head>
 <body>
 
 <nav>
   <div class="container">
-    <a href="/index.html" class="nav-brand">
-      <img src="/WarSignalLabs.webp" alt="WarSignalLabs" class="nav-logo" width="32" height="32">
-      WARSIGNALLABS
+    <a href="/" class="nav-brand">
+      <img src="/WarSignalLabs.webp" alt="" class="nav-logo" width="28" height="28">
+      WarSignalLabs
     </a>
-    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">[ MENU ]</button>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
     <ul class="nav-links" id="site-nav">
       <li><a href="/services.html">Services</a></li>
-      <li><a href="/gridwatch-enterprise.html">GridWatch</a></li>
-      <li><a href="/labs.html">Labs</a></li>
+      <li><a href="/deployed-systems.html">Work</a></li>
+      <li><a href="/labs.html">Research</a></li>
       <li><a href="/studio.html">Studio</a></li>
-      <li><a href="/deployed-systems.html">Deployed</a></li>
-      <li><a href="/warsignal-vision.html">Vision</a></li>
-      <li><a href="/index.html#connect">Connect</a></li>
-      <li><a href="https://portal.warsignallabs.net" class="nav-portal">Enter Portal</a></li>
+      <li><a href="/warsignal-vision.html">About</a></li>
+      <li><a href="/#contact">Contact</a></li>
+      <li><a href="https://portal.warsignallabs.net">Client Portal</a></li>
     </ul>
   </div>
 </nav>
 
-<div class="container">
-
-  <!-- BACK -->
-  <div class="back-bar">
-    <a href="https://warsignallabs.net" class="back-link">WARSIGNALLABS</a>
+<header class="hero">
+  <div class="container">
+    <span class="eyebrow">Legal</span>
+    <h1>Privacy policy.</h1>
+    <div class="effective-date">Effective date: February 28, 2026</div>
   </div>
+</header>
 
-  <!-- HEADER -->
-  <header>
-    <div class="doc-label">LEGAL DOCUMENT</div>
-    <h1>Privacy Policy</h1>
-    <div class="effective-date">EFFECTIVE DATE: FEBRUARY 28, 2026</div>
-  </header>
+<hr class="rule">
 
-  <!-- SECTION 1 -->
-  <section class="policy-section">
-    <h2>1. Overview</h2>
-    <p>
-      WarSignalLabs ("we," "us," or "our") operates the GridWatchMatch mobile application (the "App"). This Privacy Policy explains what information we collect, how we use it, and your rights with respect to that information.
-    </p>
-    <p>
-      We are committed to protecting your privacy. We do not sell, rent, or trade your personal information to third parties.
-    </p>
-  </section>
+<main>
+  <div class="container" style="padding-top: 3rem; padding-bottom: 3rem;">
 
-  <div class="neon-divider"></div>
+    <section class="policy-section">
+      <h2>1. Overview</h2>
+      <p>WarSignalLabs (&ldquo;we,&rdquo; &ldquo;us,&rdquo; or &ldquo;our&rdquo;) operates the GridWatchMatch mobile application (the &ldquo;App&rdquo;). This privacy policy explains what information we collect, how we use it, and your rights with respect to that information.</p>
+      <p>We are committed to protecting your privacy. We do not sell, rent, or trade your personal information to third parties.</p>
+    </section>
 
-  <!-- SECTION 2 -->
-  <section class="policy-section">
-    <h2>2. Information We Collect</h2>
-    <p>GridWatchMatch collects only the minimum data required to operate and improve the app.</p>
-    <p><strong style="color: var(--text-bright);">Automatically collected:</strong></p>
-    <ul>
-      <li>Device type and operating system version</li>
-      <li>App version and session duration</li>
-      <li>Crash reports and performance diagnostics</li>
-      <li>General gameplay analytics (e.g., levels played, session frequency)</li>
-    </ul>
-    <p><strong style="color: var(--text-bright);">We do NOT collect:</strong></p>
-    <ul>
-      <li>Your name, email address, or contact information</li>
-      <li>Precise location data</li>
-      <li>Payment or financial information (all purchases are handled by Apple)</li>
-      <li>Any data from your contacts, camera, microphone, or photos</li>
-    </ul>
-  </section>
+    <section class="policy-section">
+      <h2>2. Information we collect</h2>
+      <p>GridWatchMatch collects only the minimum data required to operate and improve the app.</p>
+      <p><strong>Automatically collected:</strong></p>
+      <ul>
+        <li>Device type and operating system version</li>
+        <li>App version and session duration</li>
+        <li>Crash reports and performance diagnostics</li>
+        <li>General gameplay analytics (e.g., levels played, session frequency)</li>
+      </ul>
+      <p><strong>We do not collect:</strong></p>
+      <ul>
+        <li>Your name, email address, or contact information</li>
+        <li>Precise location data</li>
+        <li>Payment or financial information (all purchases are handled by Apple)</li>
+        <li>Any data from your contacts, camera, microphone, or photos</li>
+      </ul>
+    </section>
 
-  <div class="neon-divider"></div>
+    <section class="policy-section">
+      <h2>3. Third-party services</h2>
+      <p>The app may use Apple&rsquo;s built-in frameworks for crash reporting and performance monitoring. These operate under Apple&rsquo;s privacy policies and data-handling standards.</p>
+      <p>We do not integrate third-party advertising SDKs. No advertising networks have access to data collected through this app.</p>
+      <p>All in-app purchases are processed entirely by Apple via the App Store. WarSignalLabs does not receive or store your payment information.</p>
+    </section>
 
-  <!-- SECTION 3 -->
-  <section class="policy-section">
-    <h2>3. Third-Party Services</h2>
-    <p>
-      The App may use Apple's built-in frameworks for crash reporting and performance monitoring. These operate under Apple's privacy policies and data handling standards.
-    </p>
-    <p>
-      We do not integrate third-party advertising SDKs. No advertising networks have access to data collected through this App.
-    </p>
-    <p>
-      All in-app purchases are processed entirely by Apple via the App Store. WarSignalLabs does not receive or store your payment information.
-    </p>
-  </section>
+    <section class="policy-section">
+      <h2>4. Data retention</h2>
+      <p>Analytics and diagnostic data are retained for up to 12 months and used solely to improve app stability and performance. Crash reports are reviewed and deleted after the underlying issue is resolved.</p>
+      <p>Game progress data is stored locally on your device. Deleting the app removes all locally stored game data.</p>
+    </section>
 
-  <div class="neon-divider"></div>
+    <section class="policy-section">
+      <h2>5. Children&rsquo;s privacy</h2>
+      <p>GridWatchMatch is not directed at children under the age of 13. We do not knowingly collect personal information from children. If you believe a child has provided us with personal information, please contact us at the address below and we will promptly delete it.</p>
+    </section>
 
-  <!-- SECTION 4 -->
-  <section class="policy-section">
-    <h2>4. Data Retention</h2>
-    <p>
-      Analytics and diagnostic data are retained for up to 12 months and used solely to improve app stability and performance. Crash reports are reviewed and deleted after the underlying issue is resolved.
-    </p>
-    <p>
-      Game progress data is stored locally on your device. Deleting the App removes all locally stored game data.
-    </p>
-  </section>
+    <section class="policy-section">
+      <h2>6. Your rights</h2>
+      <p>Depending on your jurisdiction, you may have the right to access, correct, or request deletion of any personal data associated with your use of the app. Because we collect minimal data and do not associate it with identifiable user accounts, most requests can be addressed by simply uninstalling the app.</p>
+      <p>California residents: Under the CCPA, you have the right to know what personal information is collected and to request its deletion. We do not sell personal information. To submit a request, contact us at the email below.</p>
+    </section>
 
-  <div class="neon-divider"></div>
+    <section class="policy-section">
+      <h2>7. Changes to this policy</h2>
+      <p>We may update this privacy policy periodically. Any changes will be reflected by an updated effective date at the top of this page. Continued use of the app after changes constitutes acceptance of the revised policy.</p>
+    </section>
 
-  <!-- SECTION 5 -->
-  <section class="policy-section">
-    <h2>5. Children's Privacy</h2>
-    <p>
-      GridWatchMatch is not directed at children under the age of 13. We do not knowingly collect personal information from children. If you believe a child has provided us with personal information, please contact us at the address below and we will promptly delete it.
-    </p>
-  </section>
+    <section class="policy-section">
+      <h2>8. Contact</h2>
+      <p>Questions about this privacy policy or your data? Contact us at <a href="mailto:remeadows@warsignallabs.net">remeadows@warsignallabs.net</a>.</p>
+      <p>WarSignalLabs &middot; <a href="https://warsignallabs.net">warsignallabs.net</a></p>
+    </section>
 
-  <div class="neon-divider"></div>
+  </div>
+</main>
 
-  <!-- SECTION 6 -->
-  <section class="policy-section">
-    <h2>6. Your Rights</h2>
-    <p>
-      Depending on your jurisdiction, you may have the right to access, correct, or request deletion of any personal data associated with your use of the App. Because we collect minimal data and do not associate it with identifiable user accounts, most requests can be addressed by simply uninstalling the App.
-    </p>
-    <p>
-      California residents: Under the CCPA, you have the right to know what personal information is collected and to request its deletion. We do not sell personal information. To submit a request, contact us at the email below.
-    </p>
-  </section>
-
-  <div class="neon-divider"></div>
-
-  <!-- SECTION 7 -->
-  <section class="policy-section">
-    <h2>7. Changes to This Policy</h2>
-    <p>
-      We may update this Privacy Policy periodically. Any changes will be reflected by an updated effective date at the top of this page. Continued use of the App after changes constitutes acceptance of the revised policy.
-    </p>
-  </section>
-
-  <div class="neon-divider"></div>
-
-  <!-- SECTION 8 -->
-  <section class="policy-section">
-    <h2>8. Contact</h2>
-    <p>
-      Questions about this Privacy Policy or your data? Contact us at:<br>
-      <a href="mailto:remeadows@warsignallabs.net">remeadows@warsignallabs.net</a>
-    </p>
-    <p>
-      WarSignalLabs<br>
-      <a href="https://warsignallabs.net">warsignallabs.net</a>
-    </p>
-  </section>
-
-  <!-- FOOTER -->
-  <footer>
-    <div class="footer-brand">WARSIGNALLABS</div>
-    <div class="footer-links">
-      <a href="/index.html">Home</a>
-      <a href="/services.html">Services</a>
-      <a href="/gridwatch-enterprise.html">GridWatch</a>
-      <a href="/labs.html">Labs</a>
-      <a href="/studio.html">Studio</a>
-      <a href="/deployed-systems.html">Deployed</a>
-      <a href="/warsignal-vision.html">Vision</a>
-      <a href="/support.html">App Support</a>
-      <a href="/privacy.html">Privacy Policy</a>
-      <a href="https://x.com/russ2themeadows" target="_blank" rel="noopener noreferrer">X</a>
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div class="footer-brand">WarSignalLabs</div>
+      <div class="footer-line">Security engineering &middot; Secure platforms &middot; Controlled AI workflows</div>
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="/services.html">Services</a>
+        <a href="/deployed-systems.html">Work</a>
+        <a href="/labs.html">Research</a>
+        <a href="/studio.html">Studio</a>
+        <a href="/warsignal-vision.html">About</a>
+        <a href="/support.html">App support</a>
+        <a href="/privacy.html">Privacy</a>
+      </nav>
+      <div class="footer-copy">© 2026 WarSignalLabs. All rights reserved.</div>
     </div>
-    <div class="footer-copy">© 2026 WarSignalLabs. All rights reserved.</div>
-  </footer>
+  </div>
+</footer>
 
-</div>
-
+<script src="/site.js" defer></script>
 </body>
 </html>
