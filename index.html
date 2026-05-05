@@ -168,10 +168,12 @@
 
 .contact-list {
   display: grid;
-  /* min(280px, 100%) = on viewports too narrow for 280px the column shrinks to fill,
-     preventing horizontal overflow. The 280px min ensures the longest contact value
-     ("remeadows@warsignallabs.net" in serif) doesn't get clipped at typical desktop. */
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  /* 4-up at desktop math: container max-width 1200 minus padding 64 = 1136 content area;
+     minus 3 gaps × 16 = 1088 / 4 columns = 272px per card. Min must be ≤ 272 to keep
+     4-up; 260 gives 12px headroom and 1fr still expands each card to 272. The
+     min(260px, 100%) wrapper lets the column shrink below 260 on very narrow viewports,
+     preventing horizontal overflow. */
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 1rem;
   margin-top: 1.5rem;
 }
