@@ -168,7 +168,10 @@
 
 .contact-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  /* min(280px, 100%) = on viewports too narrow for 280px the column shrinks to fill,
+     preventing horizontal overflow. The 280px min ensures the longest contact value
+     ("remeadows@warsignallabs.net" in serif) doesn't get clipped at typical desktop. */
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 1rem;
   margin-top: 1.5rem;
 }
@@ -198,10 +201,13 @@
 }
 
 .contact-value {
-  font-family: var(--font-serif);
-  font-size: 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  font-weight: 600;
   color: var(--text-bright);
   display: block;
+  overflow-wrap: anywhere;
+  letter-spacing: -0.005em;
 }
 
 @media (max-width: 900px) {
