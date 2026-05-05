@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; object-src 'none'; form-action 'self'; upgrade-insecure-requests" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
-<title>Labs — WarSignalLabs</title>
-<meta name="description" content="WarSignalLabs Interactive Systems Division — Cyberpunk mobile games, SwiftUI R&D, and performance engineering on Apple platforms.">
+<title>Research — WarSignalLabs</title>
+<meta name="description" content="WarSignalLabs research and portfolio: a research line on formal models of agent communication, plus the iOS games portfolio used as practical R&D in shipping discipline.">
 <link rel="canonical" href="https://warsignallabs.net/labs.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="WarSignalLabs">
-<meta property="og:title" content="Labs — WarSignalLabs">
-<meta property="og:description" content="Cyberpunk mobile games, SwiftUI R&D, and performance engineering on Apple platforms.">
+<meta property="og:title" content="Research — WarSignalLabs">
+<meta property="og:description" content="A research line on formal models of agent communication, and the iOS games portfolio used as practical R&D.">
 <meta property="og:url" content="https://warsignallabs.net/labs.html">
 <meta property="og:image" content="https://warsignallabs.net/WarSignalLabs.webp">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Labs — WarSignalLabs">
-<meta name="twitter:description" content="Cyberpunk mobile games, SwiftUI R&D, and performance engineering on Apple platforms.">
+<meta name="twitter:title" content="Research — WarSignalLabs">
+<meta name="twitter:description" content="A research line on formal models of agent communication, and the iOS games portfolio used as practical R&D.">
 <meta name="twitter:image" content="https://warsignallabs.net/WarSignalLabs.webp">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
@@ -24,366 +24,405 @@
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/styles.css">
 
 <style>
-/* PAGE-SPECIFIC STYLES */
-.btn-secondary{
-  background:transparent;
-  color:var(--neon-magenta);
-  border:1px solid rgba(255,0,170,.5);
-}
-.btn-secondary:hover{
-  background:rgba(255,0,170,.08);
-  border-color:var(--neon-magenta);
-}
-.btn-tertiary{
-  background:transparent;
-  color:var(--text-dim);
-  border:1px solid rgba(200,214,229,.18);
-}
-.btn-tertiary:hover{
-  color:var(--neon-amber);
-  border-color:rgba(255,170,0,.55);
-  background:rgba(255,170,0,.05);
+.hero { padding: 9rem 0 4rem; }
+.hero h1 { max-width: 30ch; }
+
+.research-block {
+  background: var(--bg-elevated);
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--accent);
+  padding: 2rem 2.25rem;
+  border-radius: 4px;
+  max-width: 64ch;
+  margin-top: 1.5rem;
 }
 
-/* GRIDS + CARDS */
-.grid-2{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:1.25rem;
-}
-.grid-3{
-  display:grid;
-  grid-template-columns:repeat(3,1fr);
-  gap:1.25rem;
-}
-.card{
-  background:rgba(12,31,58,.5);
-  border:1px solid rgba(0,240,255,.12);
-  padding:1.6rem;
-  position:relative;
-  overflow:hidden;
-}
-.card::before{
-  content:'';
-  position:absolute;top:0;left:0;
-  width:3px;height:100%;
-  background:var(--neon-cyan);
-  opacity:.85;
-}
-.card-kicker{
-  font-family:'Share Tech Mono',monospace;
-  font-size:.65rem;
-  letter-spacing:.22em;
-  text-transform:uppercase;
-  color:var(--neon-amber);
-  margin-bottom:.5rem;
-}
-.card h3{
-  font-family:'Orbitron',sans-serif;
-  font-size:1rem;
-  color:var(--text-bright);
-  margin-bottom:.7rem;
+.research-block p:last-child { margin-bottom: 0; }
+
+.equation {
+  background: var(--bg-sunken);
+  border: 1px solid var(--rule);
+  padding: 1.5rem 1.75rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  line-height: 2;
+  color: var(--text-bright);
+  overflow-x: auto;
+  margin: 1.25rem 0;
+  max-width: 64ch;
 }
 
-p{
-  font-size:1.05rem;
-  line-height:1.8;
-  color:var(--text-primary);
-  margin-bottom:.9rem;
+.equation .comment { color: var(--text-dim); }
+.equation .accent { color: var(--accent); }
+.equation .blank { display: block; height: 0.4rem; }
+
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 1.5rem;
 }
 
-.list{
-  list-style:none;
-  display:grid;
-  gap:.45rem;
-  margin-top:.75rem;
-}
-.list li{
-  position:relative;
-  padding-left:1.2rem;
-  color:var(--text-primary);
-  font-size:1rem;
-}
-.list li::before{
-  content:'▸';
-  position:absolute;left:0;top:.08rem;
-  color:var(--neon-cyan);
-  font-size:.75rem;
+.why-card {
+  border: 1px solid var(--rule);
+  padding: 1.5rem;
+  border-radius: 4px;
+  background: var(--bg-elevated);
 }
 
-.badge-row{
-  display:flex;
-  gap:.5rem;
-  flex-wrap:wrap;
-  margin-top:.8rem;
-}
-.badge{
-  font-family:'Share Tech Mono',monospace;
-  font-size:.6rem;
-  letter-spacing:.1em;
-  text-transform:uppercase;
-  padding:.18rem .6rem;
-  border:1px solid rgba(0,240,255,.18);
-  color:var(--neon-cyan);
-  opacity:.8;
+.why-card h3 {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  margin-bottom: 0.5rem;
 }
 
-/* DEVLOG */
-.devlog{
-  border:1px solid rgba(0,240,255,.12);
-  background:rgba(12,31,58,.35);
-  padding:1.6rem;
-}
-.devlog-item{
-  border-bottom:1px solid rgba(0,240,255,.10);
-  padding:1rem 0;
-}
-.devlog-item:last-child{border-bottom:none;}
-.devlog-title{
-  font-family:'Orbitron',sans-serif;
-  color:var(--text-bright);
-  font-size:.95rem;
-  margin-bottom:.35rem;
-}
-.devlog-meta{
-  font-family:'Share Tech Mono',monospace;
-  color:var(--text-dim);
-  font-size:.7rem;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  margin-bottom:.6rem;
-}
-.devlog-body{color:var(--text-primary);}
+.why-card p { font-size: 0.95rem; margin-bottom: 0; }
 
-@media (max-width: 1100px){
-  .grid-3{grid-template-columns:1fr;}
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-top: 1.75rem;
 }
-@media (max-width: 900px){
-  .grid-2{grid-template-columns:1fr;}
+
+.game-card {
+  border: 1px solid var(--rule);
+  padding: 1.5rem;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+}
+
+.game-card h3 {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  margin-bottom: 0.4rem;
+}
+
+.game-card .game-meta {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-bottom: 0.75rem;
+}
+
+.game-card p { font-size: 0.95rem; margin-bottom: 0.75rem; }
+
+.game-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.game-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  border: 1px solid var(--rule);
+  padding: 0.15rem 0.5rem;
+  border-radius: 2px;
+}
+
+.notes {
+  border: 1px solid var(--rule);
+  padding: 1.5rem 1.75rem;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  max-width: 64ch;
+}
+
+.notes-item {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.notes-item:last-child { border-bottom: none; }
+
+.notes-title {
+  font-family: var(--font-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 0.25rem;
+}
+
+.notes-meta {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-bottom: 0.4rem;
+}
+
+.notes-body {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+@media (max-width: 900px) {
+  .why-grid, .games-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
 
 <body>
+
 <nav>
   <div class="container">
-    <a href="/index.html" class="nav-brand">
-      <img src="/WarSignalLabs.webp" alt="WarSignalLabs" class="nav-logo" width="32" height="32">
-      WARSIGNALLABS
+    <a href="/" class="nav-brand">
+      <img src="/WarSignalLabs.webp" alt="" class="nav-logo" width="28" height="28">
+      WarSignalLabs
     </a>
-    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">[ MENU ]</button>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
     <ul class="nav-links" id="site-nav">
       <li><a href="/services.html">Services</a></li>
-      <li><a href="/gridwatch-enterprise.html">GridWatch</a></li>
-      <li><a href="/labs.html">Labs</a></li>
+      <li><a href="/deployed-systems.html">Work</a></li>
+      <li><a href="/labs.html" aria-current="page">Research</a></li>
       <li><a href="/studio.html">Studio</a></li>
-      <li><a href="/deployed-systems.html">Deployed</a></li>
-      <li><a href="/warsignal-vision.html">Vision</a></li>
-      <li><a href="/index.html#connect">Connect</a></li>
-      <li><a href="https://portal.warsignallabs.net" class="nav-portal">Enter Portal</a></li>
+      <li><a href="/warsignal-vision.html">About</a></li>
+      <li><a href="/#contact">Contact</a></li>
+      <li><a href="https://portal.warsignallabs.net">Client Portal</a></li>
     </ul>
   </div>
 </nav>
 
 <header class="hero">
   <div class="container">
-    <div class="kicker">INTERACTIVE SYSTEMS</div>
-    <h1>Labs</h1>
-    <div class="subhead">Cyberpunk Builds · Skill Growth · Telemetry Discipline · Performance Craft</div>
-
-    <div class="hero-panel">
-      <p>
-        The WarSignalLabs Interactive Systems Division is a deliberate R&amp;D track: cyberpunk mobile experiences built on Apple’s platform
-        for fun, additional income, and continuous skill improvement.
-      </p>
-      <p class="dim">
-        This is not “random game dev.” It’s a systems lab: UX execution, instrumentation, performance, economy design, and iteration speed.
-      </p>
-
-      <div class="cta-row">
-        <a class="btn btn-primary" href="/labs.html">Interactive Overview</a>
-        <a class="btn btn-secondary" href="/warsignal-vision.html">Vision</a>
-        <a class="btn btn-tertiary" href="/gridwatch-enterprise.html">GridWatch Enterprise</a>
-      </div>
-    </div>
+    <span class="eyebrow">Research</span>
+    <h1>A research line, and a portfolio that pays its tuition.</h1>
+    <p class="lead">
+      WarSignalLabs runs an active research line on multi-agent AI communication. It also ships iOS games — not as the business, but as an honest pressure-test for the production discipline the consulting work depends on.
+    </p>
   </div>
 </header>
 
-<div class="neon-divider"></div>
+<hr class="rule">
 
-<main>
+<section class="section">
+  <div class="container">
+    <span class="eyebrow">Research direction</span>
+    <h2>Toward formal models of agent communication.</h2>
 
-  <section class="section">
-    <div class="container">
-      <div class="section-label">FLAGSHIP APP</div>
-      <h2 class="section-title">GridWatchMatch</h2>
-
-      <div class="grid-2">
-        <div class="card">
-          <div class="card-kicker">ACTIVE ITERATION</div>
-          <h3>SwiftUI Cyberpunk Puzzle System</h3>
-          <p class="dim">
-            GridWatchMatch is a cyberpunk match-3 system in active refinement — built to sharpen production instincts around UX,
-            stability, and player-facing system design.
-          </p>
-          <ul class="list">
-            <li>SwiftUI UI architecture and iteration loops</li>
-            <li>Performance profiling and crash stability habits</li>
-            <li>Player systems design: progression, balance, rewards</li>
-            <li>Telemetry thinking (planned): events, funnels, retention loops</li>
-          </ul>
-
-          <div class="badge-row">
-            <span class="badge">SwiftUI</span>
-            <span class="badge">iOS</span>
-            <span class="badge">Cyberpunk</span>
-            <span class="badge">Match-3</span>
-          </div>
-
-          <!-- Support/Privacy allowed here -->
-          <div class="cta-row" style="margin-top:1rem;">
-            <a class="btn btn-primary" href="/support.html">Support</a>
-            <a class="btn btn-secondary" href="/privacy.html">Privacy</a>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-kicker">TESTFLIGHT</div>
-          <h3>Distribution + Feedback Loop</h3>
-          <p class="dim">
-            Keep TestFlight links here (public or invite-only). Use this area to run controlled playtests and gather structured feedback.
-          </p>
-
-          <ul class="list">
-            <li>TestFlight link: <span style="color:var(--neon-amber)">[ADD LINK]</span></li>
-            <li>Build notes: <span style="color:var(--neon-amber)">[ADD NOTES]</span></li>
-            <li>Feedback channel: <span style="color:var(--neon-amber)">Email support</span></li>
-          </ul>
-
-          <div class="badge-row">
-            <span class="badge">Playtesting</span>
-            <span class="badge">Iteration</span>
-            <span class="badge">Quality</span>
-          </div>
-
-          <div class="cta-row" style="margin-top:1rem;">
-            <a class="btn btn-tertiary" href="mailto:remeadows@warsignallabs.net?subject=GridWatchMatch%20-%20TestFlight%20Request">Request Access</a>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <section class="section">
-    <div class="container">
-      <div class="section-label">R&amp;D PIPELINE</div>
-      <h2 class="section-title">What We’re Practicing (Deliberately)</h2>
-
-      <div class="grid-3">
-        <div class="card">
-          <div class="card-kicker">TELEMETRY</div>
-          <h3>Instrumentation Discipline</h3>
-          <ul class="list">
-            <li>Event naming conventions</li>
-            <li>Funnels: onboarding → engagement → retention</li>
-            <li>Level completion and fail-state analysis</li>
-          </ul>
-        </div>
-
-        <div class="card">
-          <div class="card-kicker">PERFORMANCE</div>
-          <h3>Stability + Frame Budget</h3>
-          <ul class="list">
-            <li>Crash hygiene and regression discipline</li>
-            <li>Animation cost and render efficiency</li>
-            <li>Memory pressure and asset pipeline</li>
-          </ul>
-        </div>
-
-        <div class="card">
-          <div class="card-kicker">ECONOMY</div>
-          <h3>Balance + Progression</h3>
-          <ul class="list">
-            <li>Reward pacing and upgrade loops</li>
-            <li>Difficulty curves</li>
-            <li>Systems that scale without exploit paths</li>
-          </ul>
-        </div>
-      </div>
-
-      <p class="dim" style="margin-top:1rem;">
-        The “lab” goal is repeatable craft: better iteration speed, cleaner stability habits, and tighter systems thinking.
+    <div class="research-block">
+      <p>
+        Multi-agent AI systems work by passing messages between agents. Today those protocols are largely ad-hoc: handcrafted prompts, JSON schemas, and convention. They work well enough for demos, badly enough that nobody is comfortable putting them inside systems where a wrong answer has consequences.
       </p>
-
+      <p>
+        WarSignalLabs is building a repeatable local-AI research pipeline to study what changes when an agent&rsquo;s behavior is shaped by structured corrections rather than left to the base model alone. The goal is not impressive answers. The goal is measurable progress &mdash; or measurable failure &mdash; with evidence.
+      </p>
     </div>
-  </section>
 
-  <section class="section">
-    <div class="container">
-      <div class="section-label">DEVLOG</div>
-      <h2 class="section-title">Field Notes (Starter)</h2>
+    <h3 style="margin-top: 2.5rem;">The method</h3>
+    <p>
+      Take a base language model. Measure how it behaves on a fixed task before any intervention. Then layer in two kinds of correction &mdash; a protocol or prompt correction, and a fine-tuning correction via LoRA or QLoRA &mdash; and measure again. The same pipeline runs every time. The same scoring runs every time. What changes is what the corrections do.
+    </p>
+    <p>The behavior of an agent at any stage decomposes additively:</p>
 
-      <div class="devlog">
-        <div class="devlog-item">
-          <div class="devlog-title">Devlog #001 — Lab Intent</div>
-          <div class="devlog-meta">Status · Draft · Replace with real date</div>
-          <div class="devlog-body">
-            GridWatchMatch exists as a cyberpunk systems lab: build fast, ship clean, log learnings, iterate relentlessly.
-            This page will track milestones, changes, and lessons learned.
-          </div>
-        </div>
+    <div class="equation">
+      <span class="comment"># Components</span><br>
+      <span class="accent">f₀(x)</span>      &nbsp;= base model behavior<br>
+      <span class="accent">Δf₁(x)</span>     &nbsp;= protocol / prompt correction<br>
+      <span class="accent">Δf₂(x)</span>     &nbsp;= LoRA correction<br>
+      <span class="blank"></span>
+      <span class="comment"># Composed behavior</span><br>
+      <span class="accent">f₂(x)</span>      &nbsp;= f₀(x) + Δf₁(x) + Δf₂(x)<br>
+      <span class="blank"></span>
+      <span class="comment"># Equivalently, in named form</span><br>
+      <span class="accent">f<sub>final</sub>(x)</span> ≈ f<sub>base</sub>(x) + Δf<sub>protocol</sub>(x) + Δf<sub>LoRA</sub>(x)
+    </div>
 
-        <div class="devlog-item">
-          <div class="devlog-title">Devlog #002 — Telemetry Planning</div>
-          <div class="devlog-meta">Status · Planned</div>
-          <div class="devlog-body">
-            Define event schema, retention loop metrics, and a minimal analytics plan that respects user privacy.
-          </div>
-        </div>
+    <p>
+      The model is simple by design: each correction is a measurable contribution that can be attributed, isolated, and rolled back. An agent that produces a bad answer can be queried about which correction caused it. An agent that improves can be queried about which correction earned the improvement. That attribution is the property that turns a black-box workflow into a system a regulated buyer can sign off on.
+    </p>
 
-        <div class="devlog-item">
-          <div class="devlog-title">Devlog #003 — Performance Budget</div>
-          <div class="devlog-meta">Status · Planned</div>
-          <div class="devlog-body">
-            Establish an animation/render budget, profile hotspots, and reduce stability regressions across releases.
-          </div>
+    <h3 style="margin-top: 2.5rem;">Why this matters</h3>
+    <div class="why-grid">
+      <div class="why-card">
+        <h3>Reliability</h3>
+        <p>Cybersecurity and scientific reasoning need agents that behave predictably under adversarial input. Additive, attributable corrections make behavior auditable instead of mysterious.</p>
+      </div>
+      <div class="why-card">
+        <h3>Explainability</h3>
+        <p>If an agent gets something wrong, the decomposition tells you which layer is responsible. Regulated buyers will not adopt agents they cannot debug.</p>
+      </div>
+      <div class="why-card">
+        <h3>Local first</h3>
+        <p>The whole pipeline is designed to run on local hardware. No cloud dependency, no data leaving the network, no external API contract to break.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section class="section">
+  <div class="container">
+    <span class="eyebrow">Applied work</span>
+    <h2>GW-OS — Edge AI in the field.</h2>
+    <p>
+      The research above informs an active applied project. <strong>GW-OS</strong> is a small fleet of Raspberry Pi devices running local AI models that watch a network and report what they see. It is the practical end of the question: how do small AI agents coordinate, in production, with bounded behavior?
+    </p>
+    <div class="cta-row">
+      <a href="/deployed-systems.html#gw-os" class="btn btn-secondary">Read the GW-OS case study</a>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section class="section">
+  <div class="container">
+    <span class="eyebrow">Portfolio</span>
+    <h2>iOS games — practical R&amp;D in shipping discipline.</h2>
+    <p>
+      Building a game and shipping it to a public store is one of the cleanest pressure-tests for production engineering: real users, real performance constraints, real crash data, real iteration loops. The titles below are part of that discipline. They also stand on their own.
+    </p>
+
+    <div class="games-grid">
+      <div class="game-card">
+        <h3>GridWatchMatch</h3>
+        <div class="game-meta">iOS · puzzle · in development</div>
+        <p>A tactical grid-based puzzle game. Match patterns, manage power, and defend a network against escalating pressure. Currently in active iteration.</p>
+        <div class="game-tags">
+          <span class="game-tag">SwiftUI</span>
+          <span class="game-tag">iOS</span>
+          <span class="game-tag">Telemetry</span>
         </div>
       </div>
 
-      <div class="cta-row" style="margin-top:1.25rem;">
-        <a class="btn btn-primary" href="mailto:remeadows@warsignallabs.net?subject=Labs%20-%20Feedback">Send Feedback</a>
-        <a class="btn btn-secondary" href="/labs.html">Back to Interactive</a>
+      <div class="game-card">
+        <h3>GridWatchZero</h3>
+        <div class="game-meta">iOS · launch stabilization</div>
+        <p>Companion title in the GridWatch line. Currently in launch stabilization — focus is performance, crash hygiene, and onboarding flow.</p>
+        <div class="game-tags">
+          <span class="game-tag">SpriteKit</span>
+          <span class="game-tag">iOS</span>
+        </div>
       </div>
 
-    </div>
-  </section>
+      <div class="game-card">
+        <h3>Signal Siege</h3>
+        <div class="game-meta">iOS · creature-evolution auto-battler</div>
+        <p>Auto-battler with a creature-evolution layer. Built on SpriteKit and Swift 6. Sprint 4 code complete; art assets and Sprint 5 systems work in progress.</p>
+        <div class="game-tags">
+          <span class="game-tag">SpriteKit</span>
+          <span class="game-tag">Swift 6</span>
+          <span class="game-tag">iOS 18+</span>
+        </div>
+      </div>
 
-</main>
+      <div class="game-card">
+        <h3>WarSignalAir</h3>
+        <div class="game-meta">iOS · early stage</div>
+        <p>Early-stage title in the SpriteKit line. Concept and prototyping phase.</p>
+        <div class="game-tags">
+          <span class="game-tag">SpriteKit</span>
+          <span class="game-tag">iOS</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <a href="/support.html" class="btn btn-tertiary">App support</a>
+      <a href="mailto:remeadows@warsignallabs.net?subject=TestFlight%20Request" class="btn btn-tertiary">Request TestFlight access</a>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section class="section">
+  <div class="container">
+    <span class="eyebrow">What we practice</span>
+    <h2>Three disciplines under continuous pressure.</h2>
+    <p>The portfolio is structured to keep three muscles in shape — the same three that show up in every paid engagement.</p>
+
+    <div class="grid-3">
+      <div class="card">
+        <h3>Telemetry discipline</h3>
+        <ul class="list">
+          <li>Event naming conventions</li>
+          <li>Funnels: onboarding, engagement, retention</li>
+          <li>Failure-mode analysis</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Performance and stability</h3>
+        <ul class="list">
+          <li>Crash hygiene and regression discipline</li>
+          <li>Animation and render efficiency</li>
+          <li>Memory pressure and asset pipeline</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Systems balance</h3>
+        <ul class="list">
+          <li>Reward pacing and progression</li>
+          <li>Difficulty curves</li>
+          <li>Systems that scale without exploit paths</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section class="section">
+  <div class="container">
+    <span class="eyebrow">Notes from the lab</span>
+    <h2>Field notes.</h2>
+
+    <div class="notes">
+      <div class="notes-item">
+        <div class="notes-title">Lab intent</div>
+        <div class="notes-meta">Note · ongoing</div>
+        <div class="notes-body">
+          The portfolio exists to keep production discipline sharp. Build fast, ship clean, log learnings, iterate. This page tracks milestones, decisions, and what they taught us.
+        </div>
+      </div>
+
+      <div class="notes-item">
+        <div class="notes-title">Telemetry planning</div>
+        <div class="notes-meta">Note · planned</div>
+        <div class="notes-body">
+          Define event schema, retention loop metrics, and a minimal analytics plan that respects user privacy.
+        </div>
+      </div>
+
+      <div class="notes-item">
+        <div class="notes-title">Performance budget</div>
+        <div class="notes-meta">Note · planned</div>
+        <div class="notes-body">
+          Establish an animation and render budget, profile hotspots, and reduce stability regressions across releases.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <footer>
   <div class="container">
-    <div class="footer-brand">WARSIGNALLABS</div>
-
-    <div class="footer-links">
-      <a href="/services.html">Services</a>
-      <a href="/gridwatch-enterprise.html">GridWatch</a>
-      <a href="/labs.html">Labs</a>
-      <a href="/studio.html">Studio</a>
-      <a href="/deployed-systems.html">Deployed</a>
-      <a href="/warsignal-vision.html">Vision</a>
-      <a href="/support.html">App Support</a>
-      <a href="/privacy.html">Privacy Policy</a>
-      <a href="https://x.com/russ2themeadows" target="_blank" rel="noopener noreferrer">X</a>
+    <div class="footer-inner">
+      <div class="footer-brand">WarSignalLabs</div>
+      <div class="footer-line">Security engineering &middot; Secure platforms &middot; Controlled AI workflows</div>
+      <nav class="footer-nav" aria-label="Footer">
+        <a href="/services.html">Services</a>
+        <a href="/deployed-systems.html">Work</a>
+        <a href="/labs.html">Research</a>
+        <a href="/studio.html">Studio</a>
+        <a href="/warsignal-vision.html">About</a>
+        <a href="/support.html">App support</a>
+        <a href="/privacy.html">Privacy</a>
+      </nav>
+      <div class="footer-copy">© 2026 WarSignalLabs. All rights reserved.</div>
     </div>
-
-    <div class="footer-copy">© 2026 WarSignalLabs. All rights reserved.</div>
   </div>
 </footer>
 
+<script src="/site.js" defer></script>
 </body>
 </html>
