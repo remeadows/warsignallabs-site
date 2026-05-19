@@ -19,16 +19,16 @@
 <meta property="og:title" content="WAR SIGNAL — Studio — WarSignalLabs">
 <meta property="og:description" content="A personal music project of Russ Meadows. Synthwave and instrumental tracks on Spotify and Apple Music.">
 <meta property="og:url" content="https://warsignallabs.net/studio.html">
-<meta property="og:image" content="https://warsignallabs.net/WarSignalLabs.webp">
+<meta property="og:image" content="https://warsignallabs.net/WarSignalLabs-banner.webp">
 <meta property="music:musician" content="https://open.spotify.com/artist/7HagNrQxvM5rXJhod9sux5">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="WAR SIGNAL — Studio — WarSignalLabs">
 <meta name="twitter:description" content="A personal music project of Russ Meadows. Synthwave and instrumental tracks.">
-<meta name="twitter:image" content="https://warsignallabs.net/WarSignalLabs.webp">
-<link rel="icon" href="/favicon.ico" sizes="any">
-<link rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32">
-<link rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="twitter:image" content="https://warsignallabs.net/WarSignalLabs-banner.webp">
+<link rel="icon" href="/favicon.ico?v=2026-05e" sizes="any">
+<link rel="icon" href="/favicon-32x32.png?v=2026-05e" type="image/png" sizes="32x32">
+<link rel="icon" href="/favicon-16x16.png?v=2026-05e" type="image/png" sizes="16x16">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2026-05e">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://open.spotify.com">
@@ -156,9 +156,11 @@
 
 <nav>
   <div class="container">
-    <a href="/" class="nav-brand">
-      <img src="/WarSignalLabs.webp" alt="" class="nav-logo" width="28" height="28">
-      WarSignalLabs
+    <a href="/" class="nav-brand" aria-label="WarSignalLabs">
+      <picture>
+        <source media="(max-width: 640px)" srcset="/WarSignalLabs.webp?v=2026-05e">
+        <img src="/WarSignalLabs-banner.webp?v=2026-05e" alt="WarSignalLabs — Watch, Assess, React. Signal Labs." class="nav-mark">
+      </picture>
     </a>
     <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">Menu</button>
     <ul class="nav-links" id="site-nav">
@@ -312,7 +314,7 @@
   "@type": "MusicGroup",
   "name": "WAR SIGNAL",
   "url": "https://warsignallabs.net/studio.html",
-  "image": "https://warsignallabs.net/WarSignalLabs.webp",
+  "image": "https://warsignallabs.net/WarSignalLabs-banner.webp",
   "genre": ["Synthwave", "Instrumental", "Ambient"],
   "sameAs": [
     "https://open.spotify.com/artist/7HagNrQxvM5rXJhod9sux5",

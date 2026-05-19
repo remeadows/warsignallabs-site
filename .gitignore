@@ -9,3 +9,17 @@
 
 # Cloudflare wrangler local cache
 .wrangler/
+
+# Brand-asset workspace — keyed sources, preview composites, backups
+_preview/
+preview-brand.html
+brand-banner-new.png
+WarSignalLabs-icon-1024.png
+WarSignalLabs-hero-1024.png
+WarSignalLabs-hero-v2.png
+WarSignalLabs-banner-1200.png
+_preview_tile_raw.png
+
+# Internal brand-prompt documentation (kept local for reference)
+BRAND_ICON_PROMPTS.md
+BRAND_ICON_PROMPT_v2.md

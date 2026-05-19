@@ -180,12 +180,29 @@ body > nav .container {
   border-bottom: none;
 }
 
-.nav-brand .nav-logo {
-  width: 28px;
-  height: 28px;
-  object-fit: cover;
-  border-radius: 4px;
-  opacity: 0.95;
+/* Banner mark — full WarSignalLabs lockup (icon + tagline + Signal Labs).
+   Desktop renders the wide banner; mobile <picture> swap delivers the
+   square obelisk so the nav stays compact next to the menu button. */
+.nav-brand .nav-mark {
+  height: 80px;
+  width: auto;
+  max-width: none;
+  display: block;
+}
+
+@media (max-width: 1200px) {
+  .nav-brand .nav-mark { height: 64px; }
+}
+
+@media (max-width: 900px) {
+  .nav-brand .nav-mark { height: 56px; }
+}
+
+@media (max-width: 640px) {
+  .nav-brand .nav-mark {
+    height: 44px;
+    width: 44px;
+  }
 }
 
 .nav-links {

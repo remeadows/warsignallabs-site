@@ -1,5 +1,31 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# WARNING — THIS FILE IS NOT ACTIVE ON THE CURRENT HOST.
+#
+# Production marketing site is hosted on GitHub Pages, which DOES NOT honor
+# the `_headers` convention. This file therefore does NOT deliver any headers
+# to live visitors today. Only the per-page <meta http-equiv> CSP and
+# Referrer-Policy tags inside each HTML file are actually applied.
+#
+# Missing on live (until Cloudflare zone migration completes — REM-652 / REM-656):
+#   - Strict-Transport-Security (HSTS)
+#   - X-Frame-Options
+#   - X-Content-Type-Options
+#   - Permissions-Policy
+#   - response-header CSP with frame-ancestors
+#
+# This file is preserved as the canonical *intended* header set. Once the
+# zone is on Cloudflare, these headers will be delivered via Cloudflare
+# Transform Rules at the zone level (uniform across all three surfaces:
+# warsignallabs.net, portal.warsignallabs.net, api.warsignallabs.net).
+#
+# See: DECISIONS/0002-security-headers-gap.md
+#      ARCHITECTURE.md §3, §6 (AR-01, AR-03)
+#      BACKLOG.md P0-3, P0-4
+# ─────────────────────────────────────────────────────────────────────────────
+
 /*
   Content-Security-Policy: default-src 'self'; base-uri 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self'; connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com; object-src 'none'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-Frame-Options: DENY
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
