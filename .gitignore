@@ -23,3 +23,6 @@ _preview_tile_raw.png
 # Internal brand-prompt documentation (kept local for reference)
 BRAND_ICON_PROMPTS.md
 BRAND_ICON_PROMPT_v2.md
+
+# Design system — internal reference doc, not for public deploy
+WarSignalLabs Design System/
