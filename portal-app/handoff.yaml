@@ -108,9 +108,17 @@ plan_status:
   total_phases: 6
   phases_1_2_3_4: complete_2026_07_17
   auth_provider_hardening: complete_2026_07_17  # google+microsoft only, no email/password/github
+  microsoft_oauth_mechanism_verified: 2026-07-17  # russ signed in via Microsoft; audit_log
+    # shows workspace.view under existing clerk_id user_3GdtN8mgtz17pIfdlj8TdV1kzUi (usr-001)
+    # -- Clerk linked the Microsoft identity to the same Clerk user as Google (same verified
+    # email, russell.meadows@gmail.com), no duplicate D1 row created. Confirms the mechanism
+    # works end-to-end, but this was Russ's own account, not Chris's.
   blocked_on: chris_test_signin
   expected_user_input_to_unblock:
     - "chris signs in with Microsoft at portal.warsignallabs.net"
+    - "if Chris's Microsoft account email != cdepalma@blueprintadvisory.net (usr-004 on file),
+       watch for the email-fallback rewrite in requireAuth to confirm it still maps correctly
+       rather than creating a new user row"
 
 phases:
   - id: 1
