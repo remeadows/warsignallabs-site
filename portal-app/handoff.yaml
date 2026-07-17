@@ -20,13 +20,25 @@ session_2026_07_17: |
     https://clerk.warsignallabs.net; public/_headers CSP *.clerk.accounts.dev ->
     clerk.warsignallabs.net; .env VITE_CLERK_PUBLISHABLE_KEY ->
     pk_live_Y2xlcmsud2Fyc2lnbmFsbGFicy5uZXQk (backup .env.bak-20260717).
-  REMAINING (phase 4-6):
-    1. russ: cd portal-app/worker && npx wrangler secret put CLERK_SECRET_KEY
-       (paste sk_live_ from dashboard API keys; do NOT paste in chat)
-    2. deploy worker, then build + deploy pages (commands in CONTEXT.md)
-    3. verify: Russ signs in at portal.warsignallabs.net; confirm clerk_id rewrite
-       in D1; /api/me + /api/workspaces 200; then Chris retries
-    4. push branch + PR; update CONTEXT.md; later delete dev instance (>=1wk)
+  PHASE 4 CUTOVER DONE 2026-07-17:
+    - russ set CLERK_SECRET_KEY (sk_live) via wrangler secret put
+    - worker deployed (version 907adc95, CLERK_FRONTEND_API=clerk.warsignallabs.net)
+    - pages deployed (bundle index-Dsa1w3bp.js); live CSP references clerk.warsignallabs.net
+    - portal.warsignallabs.net now redirects to accounts.warsignallabs.net/sign-in
+      and renders (blank-blue-screen failure GONE)
+  OAUTH STATE (production requires custom credentials; dev shared creds do not exist):
+    - google: DISABLED (Russ signs in with Google! needs Google Cloud OAuth client:
+      redirect URI https://clerk.warsignallabs.net/v1/oauth_callback, then paste
+      Client ID+Secret in Clerk Google page "Use custom credentials" -> Enable)
+    - github, microsoft: still enabled WITHOUT credentials -> dead buttons on
+      sign-in page (disable attempts did not persist; retry or credential them)
+  REMAINING (phase 5-6):
+    1. russ: sign in via EMAIL CODE with russell.meadows@gmail.com (works now;
+       D1 email fallback maps to usr-001 admin + rewrites clerk_id)
+    2. google oauth credentials (see above) to restore Google button
+    3. clean up github/microsoft dead buttons (disable or credential)
+    4. Chris retries; confirm clerk_id rewrite in D1
+    5. push branch + PR; update CONTEXT.md; later delete dev instance (>=1wk)
   NOTE: portal overhaul plan written this session -> portal-app/PORTAL_OVERHAUL_PLAN.md
 last_session_summary: |
   Russ reported the same blue-screen symptom Chris had been hitting and
