@@ -26,19 +26,30 @@ session_2026_07_17: |
     - pages deployed (bundle index-Dsa1w3bp.js); live CSP references clerk.warsignallabs.net
     - portal.warsignallabs.net now redirects to accounts.warsignallabs.net/sign-in
       and renders (blank-blue-screen failure GONE)
-  OAUTH STATE (production requires custom credentials; dev shared creds do not exist):
-    - google: DISABLED (Russ signs in with Google! needs Google Cloud OAuth client:
-      redirect URI https://clerk.warsignallabs.net/v1/oauth_callback, then paste
-      Client ID+Secret in Clerk Google page "Use custom credentials" -> Enable)
-    - github, microsoft: still enabled WITHOUT credentials -> dead buttons on
-      sign-in page (disable attempts did not persist; retry or credential them)
-  REMAINING (phase 5-6):
-    1. russ: sign in via EMAIL CODE with russell.meadows@gmail.com (works now;
-       D1 email fallback maps to usr-001 admin + rewrites clerk_id)
-    2. google oauth credentials (see above) to restore Google button
-    3. clean up github/microsoft dead buttons (disable or credential)
-    4. Chris retries; confirm clerk_id rewrite in D1
-    5. push branch + PR; update CONTEXT.md; later delete dev instance (>=1wk)
+  AUTH TARGET STATE (Russ 2026-07-17): Google (Russ) + Microsoft (Chris) ONLY.
+    No email-code sign-in, no usernames, no passwords, no GitHub.
+  DONE so far toward target:
+    - passwords: sign-up-with-password OFF, add-password-to-account OFF (verified persisted)
+    - username: off (was never enabled on prod)
+    - github: connection DISABLED (verified persisted)
+  PENDING (order matters — email sign-in stays ON until both OAuth providers work,
+  otherwise total lockout since no provider has production credentials yet):
+    1. russ: GOOGLE credentials — console.cloud.google.com/apis/credentials ->
+       Create OAuth client ID (Web application), authorized redirect URI:
+       https://clerk.warsignallabs.net/v1/oauth_callback
+       -> paste Client ID + Secret into Clerk > Production > SSO connections >
+       Google > "Use custom credentials", then Enable connection
+    2. russ: MICROSOFT credentials — portal.azure.com -> Microsoft Entra ID ->
+       App registrations -> New registration (supported accounts: personal +
+       any org), redirect URI (Web): https://clerk.warsignallabs.net/v1/oauth_callback
+       -> Certificates & secrets -> new client secret -> paste Application
+       (client) ID + secret VALUE into Clerk > Microsoft > custom credentials -> Enable
+       (claude cannot type credentials per policy; can drive everything else)
+    3. claude: verify Google + Microsoft buttons work (Russ + Chris test sign-in)
+    4. claude: THEN disable "Sign-in with email" (Email tab) — keep "Require email
+       address" ON (D1 authz maps by email claim; do not remove email identifier)
+    5. Chris signs in w/ Microsoft; confirm clerk_id rewrite in D1
+    6. push branch + PR; update CONTEXT.md; later delete dev instance (>=1wk)
   NOTE: portal overhaul plan written this session -> portal-app/PORTAL_OVERHAUL_PLAN.md
 last_session_summary: |
   Russ reported the same blue-screen symptom Chris had been hitting and
