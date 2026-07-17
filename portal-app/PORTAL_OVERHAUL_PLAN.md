@@ -1,8 +1,8 @@
 # PORTAL_OVERHAUL_PLAN.md — portal.warsignallabs.net v0.2.2 → v1.0
 
-**Date:** 2026-07-17
+**Date:** 2026-07-17 (revised same day post PR #22 review — see §3.1, §3.2.3, §3.4, §7)
 **Author:** Claude (Fable) — planning session with Russ
-**Status:** DRAFT — awaiting Russ approval
+**Status:** DRAFT — awaiting Russ approval; Phase 0 already shipped (see §4)
 **Executor:** Sonnet (phase-by-phase; each phase is one PR)
 **Prereq reading for executor:** `portal-app/CONTEXT.md`, `portal-app/AGENTS.md`, `portal-app/memory.yaml`, `portal-app/handoff.yaml`, root `CONTEXT.md` (Brand & Voice section is load-bearing)
 
@@ -93,6 +93,32 @@ Russ-owned workspace → 403 + audit_log entry.
 Enforcement stays **D1-authoritative in the Worker** (never Clerk metadata). Every new
 mutation endpoint writes an `audit_log` row — same discipline as the file endpoints.
 
+**⚠️ Pre-existing code conflicts with this design — must be fixed first, in this order,
+before any role promotion runs (flagged in PR #22 review, confirmed against
+`worker/index.js` as shipped today):**
+
+Today, `requireWorkspaceAccess()` and `hasWorkspaceWriteAccess()` both grant **global**
+access to *any* `role === 'owner'` user — identical to `admin` — across every workspace,
+and several admin-plane endpoints (`/api/users`, `/api/audit-log`, `/api/admin/analytics`,
+workspace create/update/delete) gate on `requireRole(user, 'admin', 'owner')`. If Chris is
+promoted to `owner` under this code as-is, he gets full cross-workspace visibility and
+several admin endpoints — violating every ceiling above. Phase 2 step 1 below is now:
+
+1. **Rewrite the authz helpers first, promote the role second, in the same PR, in that
+   commit order:**
+   a. Split `requireWorkspaceAccess`/`hasWorkspaceWriteAccess` global-bypass so only
+      `role === 'admin'` short-circuits to all-workspaces access. `owner` must fall
+      through to the same per-workspace `workspacePermissions` check as `client`.
+   b. Audit every `requireRole(user, 'admin', 'owner')` call site individually: user
+      management, audit log, and admin analytics endpoints become `admin`-only;
+      `POST /api/workspaces` is the one endpoint that legitimately extends to `owner`
+      (per §3.2.1).
+   c. Add the tests from the Risks table (§6) — owner must NOT reach `/api/users`,
+      `/api/audit-log`, `/api/admin/*`, or any workspace where they hold no
+      `workspacePermissions` entry — and the ceiling tests below.
+   d. **Only after (a)–(c) are merged and verified**, run the `role='owner'` migration.
+      Reordered acceptance criteria for Phase 2 reflect this below.
+
 ### 3.2 New collaboration features
 
 1. **Workspace Add** — "New workspace" button (admin + owner). Creates workspace, assigns
@@ -107,7 +133,13 @@ mutation endpoint writes an `audit_log` row — same discipline as the file endp
    attaches the Clerk identity and flips status to `active`. No Clerk API dependency.
 3. **Comments** — threaded discussion (one reply level) on two entity types at launch:
    workspace ("Discussion" tab) and file (side panel in the file browser). Markdown-lite
-   rendering (bold/italic/links/code — sanitize, no raw HTML).
+   rendering (bold/italic/links/code — sanitize, no raw HTML). `entity_id` and
+   `parent_comment_id` have no DB-level relationship enforcing workspace ownership (SQLite
+   `REFERENCES` isn't polymorphic), so every comment mutation must verify server-side that
+   `entity_id` actually belongs to the workspace in the URL, and — when `parent_comment_id`
+   is supplied — that the parent belongs to the same workspace and entity and is itself
+   top-level (`parent_comment_id IS NULL`). Otherwise a caller can link a comment to another
+   workspace's file/task or nest under an unrelated thread.
 4. **Projects & tasks** — the "collaborate on many different projects" core. A workspace
    contains projects; a project contains tasks. Task = title, description, status
    (`todo` / `in_progress` / `done`), assignee (workspace member), due date. Board view
@@ -200,6 +232,15 @@ CREATE INDEX idx_inbox_user ON notification_inbox(user_id, read_at);
 
 ALTER TABLE users ADD COLUMN email_pref TEXT NOT NULL DEFAULT 'all'; -- all | mentions | none
 
+-- audit_log predates this plan and has no workspace column. The new Activity feed
+-- (§3.2.5, §3.5) requires scoping non-file events (comments, member/task changes) to a
+-- workspace, which the existing (id, user_id, action, resource_type, resource_id,
+-- metadata_json, ip_address, created_at) shape cannot do reliably via resource_id alone.
+ALTER TABLE audit_log ADD COLUMN workspace_id TEXT REFERENCES workspaces(id);
+-- logAudit(env, userId, action, details) gains a required workspace_id param for every
+-- workspace-scoped event (file/folder/comment/task/project/member events all have one);
+-- global events (user create/deactivate, workspace create/delete) leave it NULL.
+
 -- 004_projects_tasks.sql (Phase 4)
 CREATE TABLE projects (
   id TEXT PRIMARY KEY,               -- prj-<nanoid>
@@ -209,7 +250,8 @@ CREATE TABLE projects (
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','paused','done','archived')),
   created_by TEXT NOT NULL REFERENCES users(id),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at TEXT                    -- soft delete; see destructive-action ceilings §3.1
 );
 CREATE TABLE tasks (
   id TEXT PRIMARY KEY,               -- tsk-<nanoid>
@@ -223,11 +265,18 @@ CREATE TABLE tasks (
   sort_order REAL NOT NULL DEFAULT 0,
   created_by TEXT NOT NULL REFERENCES users(id),
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at TEXT                    -- soft delete; see destructive-action ceilings §3.1
 );
 CREATE INDEX idx_tasks_project ON tasks(project_id, status, sort_order);
 CREATE INDEX idx_tasks_assignee ON tasks(assignee_id, status);
 ```
+
+Soft-delete rule for `comments`/`tasks`/`projects` (ties back to the §3.1 ceiling table):
+an author can soft-delete their own; deleting another member's requires `wsAdmin`; nothing
+is ever hard-deleted through the API. Listing/detail queries filter `deleted_at IS NULL`
+by default; a `?include_deleted=1` admin-only param can surface tombstones for audit
+review, matching the "global admin can always restore from audit trail context" ceiling.
 
 Note: the existing `dashboard/projects` (ops dashboard, `data/projects.json`) is an
 **unrelated admin feature** (GW-OS ops). The new `projects` table is workspace-scoped
@@ -263,14 +312,14 @@ PATCH  /api/me/preferences                            (self)     body: {email_pr
 GET    /api/workspaces/:slug/activity?limit=50&before= (member)  -- audit_log scoped to workspace
 
 # Projects & tasks (Phase 4)
-GET    /api/workspaces/:slug/projects                 (member)
+GET    /api/workspaces/:slug/projects                 (member; excludes deleted_at unless ?include_deleted=1 + admin)
 POST   /api/workspaces/:slug/projects                 (wsWrite)
 PATCH  /api/projects/:id                              (wsWrite)
-DELETE /api/projects/:id                              (wsAdmin; blocks if tasks exist unless ?force=1, which archives)
-GET    /api/projects/:id/tasks                        (member)
+DELETE /api/projects/:id                              (creator or wsAdmin — soft delete only, see ceilings §3.1; blocks if open tasks exist unless ?force=1, which soft-deletes tasks too)
+GET    /api/projects/:id/tasks                        (member; excludes deleted_at unless ?include_deleted=1 + admin)
 POST   /api/projects/:id/tasks                        (wsWrite)
 PATCH  /api/tasks/:id                                 (wsWrite)  -- status/assignee/due/sort_order/title/description
-DELETE /api/tasks/:id                                 (wsWrite)
+DELETE /api/tasks/:id                                 (creator or wsAdmin — soft delete only, see ceilings §3.1)
 ```
 
 New notification events: `comment.create`, `comment.mention` (`@username` parsing),
@@ -283,13 +332,17 @@ with the new `email_pref` filter applied to email only, never to inbox rows.
 Each phase = one branch + one PR, deployable and demoable on its own. Worker and Pages
 deploy commands are in `CONTEXT.md`. Bump the version badge and `package.json` each phase.
 
-### Phase 0 — Clerk production migration (GATE — mostly Russ)
-Already fully specified in `portal-app/handoff.yaml` (6 sub-phases). Russ performs the
-Clerk dashboard steps (create production instance via clone-from-dev, custom domain
-`clerk.warsignallabs.net`, emit CNAMEs + `pk_live_`); agent does DNS, code changes
-(`wrangler.toml` line 28, `.env`, `public/_headers` CSP), cutover deploys, verification.
-**Exit criterion: Chris signs in successfully.** Code phases 1–5 below can proceed in
-parallel; nothing in them touches auth.
+### Phase 0 — Clerk production migration (GATE — mostly Russ) — **SHIPPED 2026-07-17**
+Fully specified in `portal-app/handoff.yaml`; landed as `feat/clerk-prod-migration` (PR
+#22). Clerk production instance on `clerk.warsignallabs.net` (DNS/SSL verified);
+`wrangler.toml`, `.env`, `public/_headers` CSP updated; worker + frontend deployed. Sign-in
+hardened beyond the original plan text below: Google OAuth (custom client, RustysHH GCP
+project) and Microsoft OAuth (custom client, new Azure tenant, secret expires 2027-01-13 —
+see handoff.yaml) are both live and required; email-code sign-in and passwords are
+disabled; GitHub OAuth is disabled. See §7 for why this supersedes the "email code is
+sufficient" language that follows. **Exit criterion (Russ verified): Google sign-in
+end-to-end.** Remaining before Phase 0 fully closes: Chris signs in with Microsoft.
+Code phases 1–5 below can proceed in parallel; nothing in them touches auth further.
 
 ### Phase 1 — Foundation: refactor + retheme (no behavior change) → v0.3.0
 1. **Modularize the Worker.** Split `worker/index.js` into ES modules:
@@ -311,19 +364,28 @@ parallel; nothing in them touches auth.
   pages, briefs); kill-list grep = 0; `npm run migrate` idempotent; new theme live.
 
 ### Phase 2 — Workspaces, members, permissions → v0.4.0
-1. Migration `002_collab_core.sql`; promote Chris: `UPDATE users SET role='owner' WHERE id='usr-004'` (as a migration, with Russ's confirmation).
-2. Worker: members/invitations endpoints (§3.5); extend `POST /api/workspaces` to owners;
-   guard: cannot remove/downgrade the last `admin`-permission member.
-3. Frontend: "New workspace" modal (name, slug auto, color picker); workspace **Members
+1. **Authz rewrite first** (§3.1 "Pre-existing code conflicts" — do this before anything
+   else in the phase): scope `requireWorkspaceAccess`/`hasWorkspaceWriteAccess` so only
+   `admin` bypasses per-workspace checks; split every `requireRole(user, 'admin', 'owner')`
+   call site to `admin`-only except `POST /api/workspaces`; add the negative-access tests
+   from §6. Land and verify this on its own commit before step 2.
+2. Migration `002_collab_core.sql`; **then** promote Chris:
+   `UPDATE users SET role='owner' WHERE id='usr-004'` (as a migration, with Russ's
+   confirmation) — only after step 1 is verified, not before.
+3. Worker: members/invitations endpoints (§3.5); extend `POST /api/workspaces` to owners;
+   guard: cannot remove/downgrade the last `admin`-permission member; member-remove can
+   never target a global admin.
+4. Frontend: "New workspace" modal (name, slug auto, color picker); workspace **Members
    tab** (list, permission dropdown, remove, invite form); pending-invites list with
    revoke; Settings tab (rename, color) for wsAdmin.
-4. Invitation email via existing Resend path; `member.invite` / `member.join` audit + notification events.
+5. Invitation email via existing Resend path; `member.invite` / `member.join` audit + notification events.
 - **Acceptance:** Chris (owner) creates a workspace, invites a test email with `read`,
   changes it to `write`, revokes an invite; a `client` user sees no management controls;
   all mutations appear in the audit log. **Ceiling tests:** owner calling workspace
   delete (any workspace, including their own), file delete in a write-permission
-  workspace, and member-remove/downgrade against the global admin all return 403 and
-  write an audit_log entry.
+  workspace, member-remove/downgrade against the global admin, and owner hitting
+  `/api/users`, `/api/audit-log`, or `/api/admin/analytics` all return 403 and (where
+  applicable) write an audit_log entry.
 
 ### Phase 3 — Comments, activity, notification center → v0.5.0
 1. Migration `003_comments_notifications.sql`.
@@ -370,7 +432,7 @@ parallel; nothing in them touches auth.
 
 | Risk | Mitigation |
 |---|---|
-| Phase 0 stalls on dashboard steps (has since May) | Phases 1–5 don't depend on it; but demo-to-Chris value is zero until it ships. Treat as the top of Russ's personal queue. |
+| ~~Phase 0 stalls on dashboard steps~~ — **shipped 2026-07-17** | Chris's Microsoft sign-in test is the one remaining item; not a blocker for Phases 1–5. |
 | Worker refactor regresses an endpoint | Phase 1 smoke script diffing every GET response before/after; deploy worker + frontend together. |
 | D1 free-tier limits | 2 users, text rows — negligible. Storage quota logic already exists for R2. |
 | Scope creep in Phase 5 | Phase 5 items are optional and individually shippable; v1.0 can ship without any of them. |
@@ -380,7 +442,11 @@ parallel; nothing in them touches auth.
 
 Real-time sync (WebSockets/Durable Objects), external client self-signup, per-workspace
 storage billing, mobile app, GW-OS briefs visibility for non-admins (revisit later),
-OAuth social login (email code is sufficient; revisit post-Phase-0).
+**additional OAuth providers beyond Google + Microsoft**. Google and Microsoft OAuth are
+**required** in production — not optional — per Russ 2026-07-17: sign-in is Google
+(Russ) + Microsoft (Chris) only, with email-code and password sign-in disabled. This
+shipped as part of the Phase 0 migration (`feat/clerk-prod-migration`, PR #22), ahead of
+the original Phase 0 plan text in §4 which predates that decision.
 
 ---
 *Update `handoff.yaml` and this file's Status line as phases complete.*
