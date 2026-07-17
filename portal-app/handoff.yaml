@@ -2,7 +2,65 @@
 # Companion to memory.yaml (long-lived project context).
 # Update this file at the end of every working session.
 
-last_updated: 2026-05-03
+last_updated: 2026-07-17
+session_2026_07_17: |
+  Clerk PRODUCTION migration executed (Claude driving Chrome, authorized by Russ).
+  - Dev instance "Maximum lifetime" (Pro, custom 1 day) disabled -> default 7 days;
+    this was blocking free-tier production clone ("Upgrade plan" wall).
+  - Production instance created via "Clone development instance";
+    app domain entered: warsignallabs.net  =>  Frontend API clerk.warsignallabs.net,
+    Account Portal accounts.warsignallabs.net. Instance ID ins_3Gdn0OujyWhD9KvG9Demcbl3wca.
+  - 5 CNAMEs added to Cloudflare zone (DNS-only): clerk, accounts, clkmail,
+    clk._domainkey, clk2._domainkey. Clerk: DNS Verified, SSL ISSUED, domain Verified.
+  - GitHub + Google OAuth disabled on production (per plan; re-add later w/ real creds).
+  - Paths: Home URL set to https://portal.warsignallabs.net; component paths on
+    Account Portal (accounts.warsignallabs.net).
+  - Smoke: /v1/environment 200; JWKS serving kid ins_3Gdn0Ouj... RS256.
+  - Code (branch feat/clerk-prod-migration): wrangler.toml CLERK_FRONTEND_API ->
+    https://clerk.warsignallabs.net; public/_headers CSP *.clerk.accounts.dev ->
+    clerk.warsignallabs.net; .env VITE_CLERK_PUBLISHABLE_KEY ->
+    pk_live_Y2xlcmsud2Fyc2lnbmFsbGFicy5uZXQk (backup .env.bak-20260717).
+  PHASE 4 CUTOVER DONE 2026-07-17:
+    - russ set CLERK_SECRET_KEY (sk_live) via wrangler secret put
+    - worker deployed (version 907adc95, CLERK_FRONTEND_API=clerk.warsignallabs.net)
+    - pages deployed (bundle index-Dsa1w3bp.js); live CSP references clerk.warsignallabs.net
+    - portal.warsignallabs.net now redirects to accounts.warsignallabs.net/sign-in
+      and renders (blank-blue-screen failure GONE)
+  AUTH TARGET STATE (Russ 2026-07-17): Google (Russ) + Microsoft (Chris) ONLY.
+    No email-code sign-in, no usernames, no passwords, no GitHub. **ACHIEVED.**
+  DONE:
+    - passwords: sign-up-with-password OFF, add-password-to-account OFF (verified persisted)
+    - username: off (was never enabled on prod)
+    - github: connection DISABLED (verified persisted)
+    - google: custom OAuth client created in Cloud project "rustyshh" (client ID
+      414432552760-20bf54lc3q838ua0orgg427odrkl7f8i.apps.googleusercontent.com,
+      redirect https://clerk.warsignallabs.net/v1/oauth_callback) -> Enabled in Clerk.
+      Russ signed in end-to-end (dashboard loaded, all 4 workspaces visible).
+    - microsoft: no Azure tenant existed on russell.meadows@gmail.com (M365 Dev
+      Program join did not grant a sandbox tenant either) -> Russ signed up for
+      Azure free tier himself (tenant russellmeadowsgmail.onmicrosoft.com,
+      $200 credit). App registration "WSL Portal Clerk production"
+      (client ID 85ff6dd2-d2a7-47f0-817e-fae8b488890c, account type "Any Entra ID
+      Tenant + Personal Microsoft accounts", redirect
+      https://clerk.warsignallabs.net/v1/oauth_callback, secret "Clerk production
+      OAuth" expires 1/13/2027 — ROTATE BEFORE THEN) -> Enabled in Clerk.
+      Redirect verified clean (login.microsoftonline.com with correct client_id).
+    - "Sign-in with email" toggled OFF (Email tab); "Require email address" stays
+      ON — D1 authz still maps users by email claim, only the email-code sign-in
+      *path* is gone. Verified persisted on reload.
+    - Live sign-in page (accounts.warsignallabs.net/sign-in) now shows exactly
+      two buttons: Continue with Google, Continue with Microsoft. No email field,
+      no GitHub, no password.
+  REMAINING:
+    1. Chris signs in w/ Microsoft; confirm clerk_id rewrite in D1
+       (SELECT id, email, clerk_id, updated_at FROM users WHERE id='usr-004')
+    2. push branch feat/clerk-prod-migration + PR; update CONTEXT.md
+    3. later (>=1wk): delete dev Clerk instance (sharing-gator-67)
+    4. calendar reminder: rotate Microsoft client secret before 2027-01-13
+    5. note: an Azure/live.com OAuth consent tab was left mid-flow (Russ's own
+       Microsoft browser session, not completed) — inspect/close manually next
+       session if still open; nothing was submitted on it
+  NOTE: portal overhaul plan written this session -> portal-app/PORTAL_OVERHAUL_PLAN.md
 last_session_summary: |
   Russ reported the same blue-screen symptom Chris had been hitting and
   hypothesized that parallel work on a separate "LOOL" project (its own
@@ -46,12 +104,13 @@ current_initiative:
   branch: feat/clerk-prod-migration  # to be created in phase 3
 
 plan_status:
-  current_phase: 1
+  current_phase: 5
   total_phases: 6
-  blocked_on: russ_action_in_clerk_dashboard
+  phases_1_2_3_4: complete_2026_07_17
+  auth_provider_hardening: complete_2026_07_17  # google+microsoft only, no email/password/github
+  blocked_on: chris_test_signin
   expected_user_input_to_unblock:
-    - clerk_pk_live_publishable_key
-    - clerk_custom_domain_cname_records  # ~5-7 records Clerk emits
+    - "chris signs in with Microsoft at portal.warsignallabs.net"
 
 phases:
   - id: 1
