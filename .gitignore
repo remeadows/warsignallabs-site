@@ -26,3 +26,7 @@ BRAND_ICON_PROMPT_v2.md
 
 # Design system — internal reference doc, not for public deploy
 WarSignalLabs Design System/
+
+# env backups (secret material)
+.env.bak*
+**/.env.bak*
