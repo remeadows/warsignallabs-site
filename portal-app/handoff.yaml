@@ -27,29 +27,39 @@ session_2026_07_17: |
     - portal.warsignallabs.net now redirects to accounts.warsignallabs.net/sign-in
       and renders (blank-blue-screen failure GONE)
   AUTH TARGET STATE (Russ 2026-07-17): Google (Russ) + Microsoft (Chris) ONLY.
-    No email-code sign-in, no usernames, no passwords, no GitHub.
-  DONE so far toward target:
+    No email-code sign-in, no usernames, no passwords, no GitHub. **ACHIEVED.**
+  DONE:
     - passwords: sign-up-with-password OFF, add-password-to-account OFF (verified persisted)
     - username: off (was never enabled on prod)
     - github: connection DISABLED (verified persisted)
-  PENDING (order matters — email sign-in stays ON until both OAuth providers work,
-  otherwise total lockout since no provider has production credentials yet):
-    1. russ: GOOGLE credentials — console.cloud.google.com/apis/credentials ->
-       Create OAuth client ID (Web application), authorized redirect URI:
-       https://clerk.warsignallabs.net/v1/oauth_callback
-       -> paste Client ID + Secret into Clerk > Production > SSO connections >
-       Google > "Use custom credentials", then Enable connection
-    2. russ: MICROSOFT credentials — portal.azure.com -> Microsoft Entra ID ->
-       App registrations -> New registration (supported accounts: personal +
-       any org), redirect URI (Web): https://clerk.warsignallabs.net/v1/oauth_callback
-       -> Certificates & secrets -> new client secret -> paste Application
-       (client) ID + secret VALUE into Clerk > Microsoft > custom credentials -> Enable
-       (claude cannot type credentials per policy; can drive everything else)
-    3. claude: verify Google + Microsoft buttons work (Russ + Chris test sign-in)
-    4. claude: THEN disable "Sign-in with email" (Email tab) — keep "Require email
-       address" ON (D1 authz maps by email claim; do not remove email identifier)
-    5. Chris signs in w/ Microsoft; confirm clerk_id rewrite in D1
-    6. push branch + PR; update CONTEXT.md; later delete dev instance (>=1wk)
+    - google: custom OAuth client created in Cloud project "rustyshh" (client ID
+      414432552760-20bf54lc3q838ua0orgg427odrkl7f8i.apps.googleusercontent.com,
+      redirect https://clerk.warsignallabs.net/v1/oauth_callback) -> Enabled in Clerk.
+      Russ signed in end-to-end (dashboard loaded, all 4 workspaces visible).
+    - microsoft: no Azure tenant existed on russell.meadows@gmail.com (M365 Dev
+      Program join did not grant a sandbox tenant either) -> Russ signed up for
+      Azure free tier himself (tenant russellmeadowsgmail.onmicrosoft.com,
+      $200 credit). App registration "WSL Portal Clerk production"
+      (client ID 85ff6dd2-d2a7-47f0-817e-fae8b488890c, account type "Any Entra ID
+      Tenant + Personal Microsoft accounts", redirect
+      https://clerk.warsignallabs.net/v1/oauth_callback, secret "Clerk production
+      OAuth" expires 1/13/2027 — ROTATE BEFORE THEN) -> Enabled in Clerk.
+      Redirect verified clean (login.microsoftonline.com with correct client_id).
+    - "Sign-in with email" toggled OFF (Email tab); "Require email address" stays
+      ON — D1 authz still maps users by email claim, only the email-code sign-in
+      *path* is gone. Verified persisted on reload.
+    - Live sign-in page (accounts.warsignallabs.net/sign-in) now shows exactly
+      two buttons: Continue with Google, Continue with Microsoft. No email field,
+      no GitHub, no password.
+  REMAINING:
+    1. Chris signs in w/ Microsoft; confirm clerk_id rewrite in D1
+       (SELECT id, email, clerk_id, updated_at FROM users WHERE id='usr-004')
+    2. push branch feat/clerk-prod-migration + PR; update CONTEXT.md
+    3. later (>=1wk): delete dev Clerk instance (sharing-gator-67)
+    4. calendar reminder: rotate Microsoft client secret before 2027-01-13
+    5. note: an Azure/live.com OAuth consent tab was left mid-flow (Russ's own
+       Microsoft browser session, not completed) — inspect/close manually next
+       session if still open; nothing was submitted on it
   NOTE: portal overhaul plan written this session -> portal-app/PORTAL_OVERHAUL_PLAN.md
 last_session_summary: |
   Russ reported the same blue-screen symptom Chris had been hitting and
@@ -94,12 +104,13 @@ current_initiative:
   branch: feat/clerk-prod-migration  # to be created in phase 3
 
 plan_status:
-  current_phase: 4
+  current_phase: 5
   total_phases: 6
-  phases_1_2_3: complete_2026_07_17
-  blocked_on: russ_wrangler_secret_put_sk_live
+  phases_1_2_3_4: complete_2026_07_17
+  auth_provider_hardening: complete_2026_07_17  # google+microsoft only, no email/password/github
+  blocked_on: chris_test_signin
   expected_user_input_to_unblock:
-    - "russ runs: cd portal-app/worker && npx wrangler secret put CLERK_SECRET_KEY"
+    - "chris signs in with Microsoft at portal.warsignallabs.net"
 
 phases:
   - id: 1
