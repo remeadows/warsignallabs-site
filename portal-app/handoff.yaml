@@ -2,7 +2,32 @@
 # Companion to memory.yaml (long-lived project context).
 # Update this file at the end of every working session.
 
-last_updated: 2026-05-03
+last_updated: 2026-07-17
+session_2026_07_17: |
+  Clerk PRODUCTION migration executed (Claude driving Chrome, authorized by Russ).
+  - Dev instance "Maximum lifetime" (Pro, custom 1 day) disabled -> default 7 days;
+    this was blocking free-tier production clone ("Upgrade plan" wall).
+  - Production instance created via "Clone development instance";
+    app domain entered: warsignallabs.net  =>  Frontend API clerk.warsignallabs.net,
+    Account Portal accounts.warsignallabs.net. Instance ID ins_3Gdn0OujyWhD9KvG9Demcbl3wca.
+  - 5 CNAMEs added to Cloudflare zone (DNS-only): clerk, accounts, clkmail,
+    clk._domainkey, clk2._domainkey. Clerk: DNS Verified, SSL ISSUED, domain Verified.
+  - GitHub + Google OAuth disabled on production (per plan; re-add later w/ real creds).
+  - Paths: Home URL set to https://portal.warsignallabs.net; component paths on
+    Account Portal (accounts.warsignallabs.net).
+  - Smoke: /v1/environment 200; JWKS serving kid ins_3Gdn0Ouj... RS256.
+  - Code (branch feat/clerk-prod-migration): wrangler.toml CLERK_FRONTEND_API ->
+    https://clerk.warsignallabs.net; public/_headers CSP *.clerk.accounts.dev ->
+    clerk.warsignallabs.net; .env VITE_CLERK_PUBLISHABLE_KEY ->
+    pk_live_Y2xlcmsud2Fyc2lnbmFsbGFicy5uZXQk (backup .env.bak-20260717).
+  REMAINING (phase 4-6):
+    1. russ: cd portal-app/worker && npx wrangler secret put CLERK_SECRET_KEY
+       (paste sk_live_ from dashboard API keys; do NOT paste in chat)
+    2. deploy worker, then build + deploy pages (commands in CONTEXT.md)
+    3. verify: Russ signs in at portal.warsignallabs.net; confirm clerk_id rewrite
+       in D1; /api/me + /api/workspaces 200; then Chris retries
+    4. push branch + PR; update CONTEXT.md; later delete dev instance (>=1wk)
+  NOTE: portal overhaul plan written this session -> portal-app/PORTAL_OVERHAUL_PLAN.md
 last_session_summary: |
   Russ reported the same blue-screen symptom Chris had been hitting and
   hypothesized that parallel work on a separate "LOOL" project (its own
@@ -46,12 +71,12 @@ current_initiative:
   branch: feat/clerk-prod-migration  # to be created in phase 3
 
 plan_status:
-  current_phase: 1
+  current_phase: 4
   total_phases: 6
-  blocked_on: russ_action_in_clerk_dashboard
+  phases_1_2_3: complete_2026_07_17
+  blocked_on: russ_wrangler_secret_put_sk_live
   expected_user_input_to_unblock:
-    - clerk_pk_live_publishable_key
-    - clerk_custom_domain_cname_records  # ~5-7 records Clerk emits
+    - "russ runs: cd portal-app/worker && npx wrangler secret put CLERK_SECRET_KEY"
 
 phases:
   - id: 1
