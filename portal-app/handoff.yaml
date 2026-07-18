@@ -3,19 +3,68 @@
 # Update this file at the end of every working session.
 
 last_updated: 2026-07-18
-pointer_phase1_in_progress: |
-  PORTAL_OVERHAUL_PLAN.md Phase 1 (Worker modularization, D1 migration
-  scaffold, executive retheme, hygiene/tests) is being executed via
-  subagent-driven-development on branch feat/portal-phase1-foundation, in
-  worktree .claude/worktrees/feat+portal-phase1-foundation (NOT this main
-  checkout). Progress ledger, task briefs/reports, and review packages live
-  under .superpowers/sdd/ inside that worktree. See
-  docs/superpowers/plans/2026-07-17-portal-phase1-foundation.md for the
-  11-task plan. As of 2026-07-18: Tasks 1-7 (D1 migrations + full Worker
-  modularization) and Task 9 (executive retheme) complete and reviewed;
-  Task 8 (smoke-test deploy) blocked pending a decision on live-token
-  verification; Task 10-11 not started. Production Worker still running
-  pre-Phase-1 index.js -- refactor not yet deployed.
+session_2026_07_18_phase1_complete: |
+  PHASE 1 COMPLETE (subagent-driven-development, plan approved by Russ). All 11
+  tasks done, task-reviewed and approved; both Worker and frontend deployed to
+  production and verified live.
+  Plan: docs/superpowers/plans/2026-07-17-portal-phase1-foundation.md
+  Branch: feat/portal-phase1-foundation
+  Progress ledger + per-task briefs/reports:
+    .claude/worktrees/feat+portal-phase1-foundation/.superpowers/sdd/
+
+  SHIPPED:
+    1. D1 migration scaffold — schema_migrations table + idempotent
+       000_baseline.sql, npm run migrate. Ran for real against remote
+       wsl-portal D1; verified idempotent, existing 9 tables untouched.
+    2-7. worker/index.js (2,607 lines) fully modularized into 11 files:
+       worker/src/{cors,auth,audit,notify,router}.js + worker/src/routes/
+       {me,workspaces,files,folders,users,admin,briefs}.js. index.js is now an
+       18-line thin entry point. Every function body verified byte-identical.
+    8. Smoke-test script (worker/scripts/smoke-test.js) run against real
+       production before and after deploying the refactored Worker (fresh
+       Clerk bearer tokens captured via DevTools each time — tokens are
+       60s-lived and can't pass through the assistant's Bash tool, so Russ
+       ran the commands himself). All 12 GET endpoints returned 200 both
+       times; before/after snapshots byte-identical. Worker deployed
+       (version c6cfb8ec) — zero observable behavior change confirmed live.
+    9. Executive retheme — navy/steel-blue/gold, IBM Plex fonts, matching
+       the marketing site. Kill-list grep zero. Dashboard.jsx (dead
+       duplicate) and dark-professional.css (retired) deleted.
+    10. Hygiene — version bumped to 0.3.0, first Vitest suite (9/9 passing,
+        RBAC permission helpers), version badge now reads from package.json.
+    11. Full-flow acceptance checklist run against live production (sign-in,
+        dashboard, workspace browse/file view, all 4 admin/ops pages,
+        settings) both before and after the frontend deploy. Upload/replace/
+        move were NOT exercised against real production documents (IRS/
+        approval PDFs) — relied on Task 6/7's verbatim-move + byte-identical
+        smoke test instead, a deliberate judgment call to avoid mutating
+        real business files.
+
+  INCIDENT DURING THIS SESSION (self-caused, self-fixed, ~2 min window):
+    The Phase 1 work happens in a git worktree
+    (.claude/worktrees/feat+portal-phase1-foundation), which `git worktree add`
+    does NOT copy gitignored files into — including portal-app/.env. The
+    first frontend deploy was built from the worktree without .env present,
+    so VITE_CLERK_PUBLISHABLE_KEY was missing from the bundle and production
+    went blank (same failure class as the historical third-party-cookie
+    blank-screen bug, different root cause). Fixed by copying .env from the
+    main checkout into the worktree (file copy only — contents never read
+    or displayed, permissions locked to 600), rebuilding (confirmed pk_live_
+    present via `grep -c`, never printed), and redeploying. Re-verified live:
+    correct bundle hash, v0.3.0 badge, executive theme, all pages render, no
+    console errors post-fix. LESSON: any future frontend build from a fresh
+    worktree needs its own .env copied in first — it will not inherit one.
+
+  Current production state: Worker version c6cfb8ec-f177-419b-a5eb-ecf794449452,
+  Pages deployment https://3c7a8730.wsl-portal.pages.dev (aliased to
+  portal.warsignallabs.net / main branch). Both verified live and working.
+
+  NEXT: push branch, open PR (docs/superpowers/plans/2026-07-17-portal-
+  phase1-foundation.md Task 11 Step 6), then superpowers:finishing-a-
+  development-branch once merged. Deferred out of this phase (flagged, not
+  dropped): shared frontend components (Modal/Toast/EmptyState/ConfirmDialog)
+  extraction — see PORTAL_OVERHAUL_PLAN.md.
+
 session_2026_07_17: |
   Clerk PRODUCTION migration executed (Claude driving Chrome, authorized by Russ).
   - Dev instance "Maximum lifetime" (Pro, custom 1 day) disabled -> default 7 days;

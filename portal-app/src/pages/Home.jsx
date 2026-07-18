@@ -77,7 +77,7 @@ export default function Home() {
     return (
       <div className="dashboard fade-in">
         <div className="dashboard__header">
-          <span className="label">// Dashboard</span>
+          <span className="label">Dashboard</span>
           <div className="skeleton skeleton--heading" />
         </div>
         <div className="dashboard__grid stagger-in">
@@ -92,7 +92,7 @@ export default function Home() {
   return (
     <div className="dashboard fade-in">
       <div className="dashboard__header">
-        <span className="label">// Dashboard</span>
+        <span className="label">Dashboard</span>
         <h1>Welcome back, {firstName}</h1>
       </div>
 

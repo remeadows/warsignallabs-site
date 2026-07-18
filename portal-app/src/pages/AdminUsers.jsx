@@ -178,7 +178,7 @@ export default function AdminUsers() {
       <div className="admin-page__header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <span className="label">// Admin</span>
+            <span className="label">Admin</span>
             <h1>User Management</h1>
             <div className="admin-page__subtitle">{users.length} user{users.length !== 1 ? 's' : ''} registered</div>
           </div>

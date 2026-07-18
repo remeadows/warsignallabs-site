@@ -67,7 +67,7 @@ export default function AdminAuditLog() {
   return (
     <div className="admin-page fade-in">
       <div className="admin-page__header">
-        <span className="label">// Admin</span>
+        <span className="label">Admin</span>
         <h1>Audit Log</h1>
       </div>
 

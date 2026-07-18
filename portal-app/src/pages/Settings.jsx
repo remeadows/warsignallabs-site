@@ -4,7 +4,7 @@ export default function Settings() {
   return (
     <div className="settings-page fade-in">
       <div style={{ marginBottom: '1.5rem' }}>
-        <span className="label">// Settings</span>
+        <span className="label">Settings</span>
         <h1 style={{ marginTop: '0.3rem' }}>Account Settings</h1>
       </div>
 

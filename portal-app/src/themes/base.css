@@ -3,7 +3,7 @@
    Import AFTER a theme file.
    ============================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Inter:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -115,14 +115,14 @@ a:hover {
 }
 
 .btn--primary {
-  background: var(--accent);
+  background: var(--cta-primary);
   color: var(--text-inverse);
-  border-color: var(--accent);
+  border-color: var(--cta-primary);
 }
 
 .btn--primary:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
+  background: var(--cta-primary-hover);
+  border-color: var(--cta-primary-hover);
 }
 
 .btn--secondary {
