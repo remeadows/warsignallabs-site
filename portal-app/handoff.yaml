@@ -51,13 +51,16 @@ session_2026_07_17: |
     - Live sign-in page (accounts.warsignallabs.net/sign-in) now shows exactly
       two buttons: Continue with Google, Continue with Microsoft. No email field,
       no GitHub, no password.
+  PHASE 0 CLOSED 2026-07-17: Chris confirmed sign-in works (per Russ). Note: audit_log
+    shows no new rows under Chris's clerk_id as of this check -- likely just because the
+    Home dashboard load (/api/me + /api/workspaces list) doesn't write an audit row (only
+    opening a specific workspace does); usr-004's clerk_id/updated_at unchanged from
+    2026-03-29. Not treated as blocking since Russ confirmed directly; worth a "did your
+    workspaces load?" sanity check next time it comes up naturally.
   REMAINING:
-    1. Chris signs in w/ Microsoft; confirm clerk_id rewrite in D1
-       (SELECT id, email, clerk_id, updated_at FROM users WHERE id='usr-004')
-    2. push branch feat/clerk-prod-migration + PR; update CONTEXT.md
-    3. later (>=1wk): delete dev Clerk instance (sharing-gator-67)
-    4. calendar reminder: rotate Microsoft client secret before 2027-01-13
-    5. note: an Azure/live.com OAuth consent tab was left mid-flow (Russ's own
+    1. later (>=2026-07-24, one week out): delete dev Clerk instance (sharing-gator-67)
+    2. calendar reminder: rotate Microsoft client secret before 2027-01-13
+    3. note: an Azure/live.com OAuth consent tab was left mid-flow (Russ's own
        Microsoft browser session, not completed) — inspect/close manually next
        session if still open; nothing was submitted on it
   NOTE: portal overhaul plan written this session -> portal-app/PORTAL_OVERHAUL_PLAN.md
@@ -104,21 +107,12 @@ current_initiative:
   branch: feat/clerk-prod-migration  # to be created in phase 3
 
 plan_status:
-  current_phase: 5
+  current_phase: 6  # Phase 0 fully closed; Phase 1 (portal-app/PORTAL_OVERHAUL_PLAN.md) next
   total_phases: 6
-  phases_1_2_3_4: complete_2026_07_17
-  auth_provider_hardening: complete_2026_07_17  # google+microsoft only, no email/password/github
-  microsoft_oauth_mechanism_verified: 2026-07-17  # russ signed in via Microsoft; audit_log
-    # shows workspace.view under existing clerk_id user_3GdtN8mgtz17pIfdlj8TdV1kzUi (usr-001)
-    # -- Clerk linked the Microsoft identity to the same Clerk user as Google (same verified
-    # email, russell.meadows@gmail.com), no duplicate D1 row created. Confirms the mechanism
-    # works end-to-end, but this was Russ's own account, not Chris's.
-  blocked_on: chris_test_signin
-  expected_user_input_to_unblock:
-    - "chris signs in with Microsoft at portal.warsignallabs.net"
-    - "if Chris's Microsoft account email != cdepalma@blueprintadvisory.net (usr-004 on file),
-       watch for the email-fallback rewrite in requireAuth to confirm it still maps correctly
-       rather than creating a new user row"
+  phase_0_clerk_migration: CLOSED_2026_07_17  # both Russ (Google) and Chris (Microsoft) verified
+  next_up: "PORTAL_OVERHAUL_PLAN.md Phase 1 -- Worker modularization, D1 migration scaffold,
+    executive retheme, hygiene/tests. Not started yet."
+  blocked_on: none
 
 phases:
   - id: 1
