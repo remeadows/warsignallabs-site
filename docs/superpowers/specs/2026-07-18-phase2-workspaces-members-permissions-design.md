@@ -28,10 +28,11 @@ Ceiling logic is implemented as small, pure, directly-unit-testable functions in
 - New `hasWorkspaceAdminPermission(user, workspaceSlug)` — the `wsAdmin` concept from
   §3.5: true if `user.role === 'admin'`, or if `user.workspacePermissions[slug] === 'admin'`.
 - New `canRemoveOrDowngradeMember(targetUser, wouldRemainAdminPermissionCount)` —
-  returns false (blocks the action) if `targetUser.role === 'admin'` (a global admin
-  can never be removed or have their workspace permission downgraded by anyone —
-  §3.1: *"a global admin cannot be removed, downgraded, or locked out of any
-  workspace by an owner"*), or if the resulting admin-permission member count for
+  returns false (blocks the action) if `targetUser.role === 'admin'` (a global-admin
+  user — Russ's primary account plus the inactive emergency account — can never be
+  removed or have their workspace permission downgraded by anyone — §3.1: *"a global
+  admin cannot be removed, downgraded, or locked out of any workspace by an
+  owner"*), or if the resulting admin-permission member count for
   that workspace would be zero. Both guards apply identically whether the caller is
   hitting `DELETE /members/:userId` (remove) or `PATCH /members/:userId`
   (permission change/downgrade) — a downgrade that would zero out the workspace's
@@ -53,7 +54,8 @@ Ceiling logic is implemented as small, pure, directly-unit-testable functions in
 | `handleAuditLog` | routes/admin.js:37 | admin+owner | **admin-only** |
 | `handleAdminAnalytics` | routes/admin.js:87 | admin+owner | **admin-only** |
 | `handleDashboardProjects` | routes/admin.js:136 | admin+owner | **admin-only** (ops dashboard; plan's blanket rule covers this even though it's not in the explicit ceiling-test list) |
-| `handleCreateWorkspace` | routes/workspaces.js:91 | admin-only | **admin+owner** (the one endpoint that widens, per §3.2.1) |
+| `handleCreateWorkspace` | routes/workspaces.js:91 | admin-only | **admin+owner** (widens, per §3.2.1) |
+| `handleUpdateWorkspace` | routes/workspaces.js:127 | admin-only | **admin OR wsAdmin** (widens — found in review 2026-07-18: §3.1's permission table grants "rename workspace, workspace settings" at `admin` permission, and §5's Settings tab depends on it; without this change the Settings tab would 403 for every non-global-admin) |
 
 ### Delete-path corrections (found by reading the actual code, not just the plan)
 
@@ -85,9 +87,19 @@ CREATE TABLE invitations (
 -- users.status gains 'invited' as a valid value (app-level only; column is TEXT already)
 ```
 
-Then, as a migration (with Russ's confirmation before running): `UPDATE users SET
-role='owner' WHERE id='usr-004'` — only after the authz rewrite above is merged and
-verified.
+Then, as a migration (with Russ's confirmation before running), two role changes —
+only after the authz rewrite above is merged and verified:
+
+```sql
+UPDATE users SET role='owner' WHERE id='usr-004';  -- Chris: client → owner
+UPDATE users SET role='admin' WHERE id='usr-003';  -- rmeadows: owner → admin
+```
+
+The second line was added in the 2026-07-18 review: `usr-003`
+(rmeadows / remeadows@warsignallabs.net, Russ's second account) is **already**
+`role='owner'` in production today, and the authz narrowing would silently strip
+its current all-access behavior. Russ's decision (2026-07-18): promote it to full
+`admin` so both of his accounts keep global access.
 
 ## 3. Invitation-acceptance wiring (mechanical detail not spelled out in the plan)
 
@@ -123,6 +135,19 @@ Inviting an email with no existing `users` row creates one (`status='invited'`,
 `role='client'`) + the `user_workspaces` row + the `invitations` row. Inviting an
 email that already has a D1 user only adds the `user_workspaces` + `invitations` rows.
 
+**Invitation edge rules (added in 2026-07-18 review):**
+
+- Emails are normalized to lowercase on write (`invitations.email` and any
+  `users.email` created through an invite) — `requireAuth` matches
+  `LOWER(email) = LOWER(?)`, so mixed-case invites must not create rows that only
+  match case-sensitively elsewhere.
+- Inviting an email whose user is **already a member** of that workspace → `409`
+  with a clear message ("already a member — change their permission from the
+  members list instead"). Russ's decision (2026-07-18): invites and permission
+  changes stay two separate, deliberate actions; no silent permission update.
+- Inviting an email that already has a **pending invitation** for that workspace →
+  `409` ("invitation already pending — revoke it first to re-send").
+
 ## 5. Frontend
 
 - **"New workspace" button** in the sidebar (per §3.3), visible to admin + owner.
@@ -133,7 +158,18 @@ email that already has a D1 user only adds the `user_workspaces` + `invitations`
   + remove, invite-by-email form, pending-invites list with revoke. Edit controls
   render only for wsAdmin — server-side checks are the actual enforcement, this is
   UI convenience only.
-- **Settings tab** (rename, color) for wsAdmin.
+- **Settings tab** (rename, color) for wsAdmin — depends on the
+  `handleUpdateWorkspace` widening in §1's call-site table.
+- **De-privilege `owner` in the existing UI (added in 2026-07-18 review — the spec
+  originally missed this).** Today the sidebar's Admin section
+  (`PortalLayout.jsx:114,129`) and the `AdminUsers` / `AdminWorkspaces` /
+  `AdminAuditLog` pages all gate on `isPrivileged` (`admin || owner`). After the
+  backend narrowing, an owner would still see every admin link and 403 on each
+  click. Change these gates from `isPrivileged` to `isAdmin`. `isPrivileged`
+  remains for the few things owners legitimately keep (the "New workspace"
+  sidebar button); audit each remaining `isPrivileged` use during implementation
+  and re-gate to `isAdmin` unless the capability is explicitly owner-granted in
+  this spec.
 
 ## 6. Testing
 
@@ -177,5 +213,8 @@ per task, final whole-branch review before merge:
 4. Frontend (§5): sidebar button, new-workspace modal, Members tab, Settings tab.
 5. Invitation emails via the existing Resend path; `member.invite`/`member.join`
    audit + notification events.
-6. Full acceptance pass: functional checklist + all ceiling tests, live against
+6. Version bump `0.3.0` → `0.4.0` in `portal-app/package.json` (per the plan's
+   "Phase 2 → v0.4.0"; the topnav badge picks it up automatically since Phase 1
+   wired it to package.json).
+7. Full acceptance pass: functional checklist + all ceiling tests, live against
    production — mirrors Phase 1's Task 11.
