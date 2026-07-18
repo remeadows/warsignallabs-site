@@ -297,7 +297,7 @@ export function requireRole(user, ...roles) {
 }
 
 export function requireWorkspaceAccess(user, workspaceSlug) {
-  if (user.role === 'admin' || user.role === 'owner') {
+  if (user.role === 'admin') {
     return
   }
   if (!user.workspaceSlugs.includes(workspaceSlug)) {
@@ -306,7 +306,26 @@ export function requireWorkspaceAccess(user, workspaceSlug) {
 }
 
 export function hasWorkspaceWriteAccess(user, workspaceSlug) {
-  if (user.role === 'admin' || user.role === 'owner') return true
+  if (user.role === 'admin') return true
   const perm = (user.workspacePermissions || {})[workspaceSlug]
   return perm === 'write' || perm === 'admin'
+}
+
+// wsAdmin (§3.5): global admin, or admin permission on this specific workspace.
+export function hasWorkspaceAdminPermission(user, workspaceSlug) {
+  if (user.role === 'admin') return true
+  return (user.workspacePermissions || {})[workspaceSlug] === 'admin'
+}
+
+// Ceiling check for member remove/downgrade (§3.1). remainingAdminCount is the
+// count of admin-permission members the workspace would have AFTER the action.
+// Returns a human-readable violation, or null if the change is allowed.
+export function memberChangeViolation(targetRole, remainingAdminCount) {
+  if (targetRole === 'admin') {
+    return 'Cannot remove or downgrade a global admin'
+  }
+  if (remainingAdminCount < 1) {
+    return 'Workspace must retain at least one admin-permission member'
+  }
+  return null
 }
