@@ -34,7 +34,7 @@ export const DASHBOARD_PROJECTS_DATA = [
  * D1 schema: audit_log(id, user_id, action, resource_type, resource_id, metadata_json, ip_address, created_at)
  */
 export async function handleAuditLog(request, env, user) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
 
   const url = new URL(request.url)
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200)
@@ -84,7 +84,7 @@ export async function handleAuditLog(request, env, user) {
  * GET /api/admin/analytics — admin/owner, workspace stats and overview
  */
 export async function handleAdminAnalytics(request, env, user) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
 
   const [
     workspaceStats,
@@ -133,7 +133,7 @@ export async function handleAdminAnalytics(request, env, user) {
  * v0.2.2: file-based (embedded JSON). Future: D1-backed.
  */
 export async function handleDashboardProjects(request, env, user) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
 
   // In v0.2.2, project data is embedded at deploy time from data/projects.json.
   // Future versions will read from D1 or fetch from Linear API.

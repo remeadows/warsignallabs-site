@@ -193,7 +193,7 @@ export async function handleDeleteWorkspace(request, env, user, params) {
  * GET /api/users/:id/workspaces — get workspace assignments for a user
  */
 export async function handleGetUserWorkspaces(request, env, user, params) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
   const targetId = params.id
 
   const result = await env.DB.prepare(
@@ -213,7 +213,7 @@ export async function handleGetUserWorkspaces(request, env, user, params) {
  * Replaces all assignments for the user.
  */
 export async function handleUpdateUserWorkspaces(request, env, user, params) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
   const targetId = params.id
 
   const target = await env.DB.prepare('SELECT id, username FROM users WHERE id = ?')

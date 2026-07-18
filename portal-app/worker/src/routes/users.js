@@ -8,7 +8,7 @@ import { notifyWorkspaceEvent } from '../notify.js'
  * GET /api/users — admin/owner, lists all users from D1
  */
 export async function handleListUsers(request, env, user) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
 
   const url = new URL(request.url)
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200)
@@ -137,7 +137,7 @@ export async function handleChangeRole(request, env, user, params) {
  * POST /api/users/:id/deactivate — admin/owner only
  */
 export async function handleDeactivateUser(request, env, user, params) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
   const targetId = params.id
 
   const target = await env.DB.prepare('SELECT id, username, role FROM users WHERE id = ?')
@@ -162,7 +162,7 @@ export async function handleDeactivateUser(request, env, user, params) {
  * POST /api/users/:id/activate — admin/owner only
  */
 export async function handleActivateUser(request, env, user, params) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
   const targetId = params.id
 
   const target = await env.DB.prepare('SELECT id, username FROM users WHERE id = ?')
