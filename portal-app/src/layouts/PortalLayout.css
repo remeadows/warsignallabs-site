@@ -137,6 +137,22 @@
   color: var(--warning);
 }
 
+.sidebar__link--action {
+  width: 100%;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-family: inherit;
+  text-align: left;
+}
+
+.sidebar__link--action:hover {
+  background: var(--bg-hover);
+  color: var(--text-muted);
+}
+
 .sidebar__dot {
   width: 6px;
   height: 6px;

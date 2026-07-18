@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useApiClient } from '../api/client'
 import { usePortalAuth } from '../contexts/PortalAuth'
+import { PRESET_COLORS } from '../constants/palette'
 import './Admin.css'
 
 function formatBytes(bytes) {
@@ -12,11 +13,9 @@ function formatBytes(bytes) {
   return `${(bytes / Math.pow(k, i)).toFixed(i > 0 ? 1 : 0)} ${sizes[i]}`
 }
 
-const PRESET_COLORS = ['#6F8FB8', '#4C9A6B', '#E6A51A', '#C9A557', '#9D7FB8', '#4CA3C9', '#D97757']
-
 export default function AdminWorkspaces() {
   const api = useApiClient()
-  const { isPrivileged, role, authLoading } = usePortalAuth()
+  const { isAdmin, role, authLoading } = usePortalAuth()
 
   const [workspaces, setWorkspaces] = useState([])
   const [loading, setLoading] = useState(true)
@@ -45,14 +44,14 @@ export default function AdminWorkspaces() {
   }, [api])
 
   useEffect(() => {
-    if (isPrivileged) fetchWorkspaces()
-  }, [isPrivileged]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (isAdmin) fetchWorkspaces()
+  }, [isAdmin]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (authLoading) {
     return <div className="loading-state"><span className="spinner" /> Loading…</div>
   }
 
-  if (!isPrivileged) {
+  if (!isAdmin) {
     return <Navigate to="/forbidden" replace />
   }
 

@@ -14,7 +14,7 @@ const ROLES = ['admin', 'owner', 'client']
 
 export default function AdminUsers() {
   const api = useApiClient()
-  const { isPrivileged, isAdmin, authLoading } = usePortalAuth()
+  const { isAdmin, authLoading } = usePortalAuth()
 
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -45,14 +45,14 @@ export default function AdminUsers() {
   }, [api])
 
   useEffect(() => {
-    if (isPrivileged) fetchUsers()
-  }, [isPrivileged]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (isAdmin) fetchUsers()
+  }, [isAdmin]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (authLoading) {
     return <div className="loading-state"><span className="spinner" /> Loading…</div>
   }
 
-  if (!isPrivileged) {
+  if (!isAdmin) {
     return <Navigate to="/forbidden" replace />
   }
 
