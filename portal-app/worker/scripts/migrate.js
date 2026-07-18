@@ -4,7 +4,7 @@
 // schema_migrations. Idempotent: re-running with nothing new is a no-op.
 
 import { execSync } from 'node:child_process'
-import { readdirSync, readFileSync } from 'node:fs'
+import { readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
