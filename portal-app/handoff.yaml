@@ -3,67 +3,62 @@
 # Update this file at the end of every working session.
 
 last_updated: 2026-07-18
-session_2026_07_18_phase1_complete: |
-  PHASE 1 COMPLETE (subagent-driven-development, plan approved by Russ). All 11
-  tasks done, task-reviewed and approved; both Worker and frontend deployed to
-  production and verified live.
-  Plan: docs/superpowers/plans/2026-07-17-portal-phase1-foundation.md
-  Branch: feat/portal-phase1-foundation
-  Progress ledger + per-task briefs/reports:
-    .claude/worktrees/feat+portal-phase1-foundation/.superpowers/sdd/
+session_2026_07_18_phase1_closed: |
+  PHASE 1 CLOSED — merged to main, deployed, verified. PR #26 merged
+  (squash commit 6ffbd70). Branch feat/portal-phase1-foundation and its
+  worktree (.claude/worktrees/feat+portal-phase1-foundation) both deleted
+  post-merge — per-task briefs/reports/progress ledger that lived under
+  its .superpowers/sdd/ are gone with it (git-ignored scratch); this entry
+  plus PR #26's history and docs/superpowers/plans/2026-07-17-portal-
+  phase1-foundation.md (now on main) are the durable record.
 
-  SHIPPED:
-    1. D1 migration scaffold — schema_migrations table + idempotent
-       000_baseline.sql, npm run migrate. Ran for real against remote
-       wsl-portal D1; verified idempotent, existing 9 tables untouched.
-    2-7. worker/index.js (2,607 lines) fully modularized into 11 files:
-       worker/src/{cors,auth,audit,notify,router}.js + worker/src/routes/
-       {me,workspaces,files,folders,users,admin,briefs}.js. index.js is now an
-       18-line thin entry point. Every function body verified byte-identical.
-    8. Smoke-test script (worker/scripts/smoke-test.js) run against real
-       production before and after deploying the refactored Worker (fresh
-       Clerk bearer tokens captured via DevTools each time — tokens are
-       60s-lived and can't pass through the assistant's Bash tool, so Russ
-       ran the commands himself). All 12 GET endpoints returned 200 both
-       times; before/after snapshots byte-identical. Worker deployed
-       (version c6cfb8ec) — zero observable behavior change confirmed live.
-    9. Executive retheme — navy/steel-blue/gold, IBM Plex fonts, matching
-       the marketing site. Kill-list grep zero. Dashboard.jsx (dead
-       duplicate) and dark-professional.css (retired) deleted.
-    10. Hygiene — version bumped to 0.3.0, first Vitest suite (9/9 passing,
-        RBAC permission helpers), version badge now reads from package.json.
-    11. Full-flow acceptance checklist run against live production (sign-in,
-        dashboard, workspace browse/file view, all 4 admin/ops pages,
-        settings) both before and after the frontend deploy. Upload/replace/
-        move were NOT exercised against real production documents (IRS/
-        approval PDFs) — relied on Task 6/7's verbatim-move + byte-identical
-        smoke test instead, a deliberate judgment call to avoid mutating
-        real business files.
+  SHIPPED (11 tasks, subagent-driven-development, all task-reviewed):
+    1. D1 migration scaffold — schema_migrations + 000_baseline.sql,
+       npm run migrate. Ran for real against remote wsl-portal D1, idempotent.
+    2-7. worker/index.js (2,607 lines) fully modularized into 11 files under
+       worker/src/. index.js is now an 18-line thin entry point. Every
+       function body verified byte-identical (smoke-tested before/after).
+    8. Worker deployed to production, zero observable behavior change
+       confirmed via a 12-endpoint before/after smoke test.
+    9. Executive retheme — navy/steel-blue/gold, IBM Plex fonts. Kill-list
+       grep zero. Dead Dashboard.jsx + dark-professional.css removed.
+    10. Version bumped to 0.3.0, first Vitest suite (9/9), version badge
+        reads from package.json.
+    11. Full-flow acceptance checklist passed against live production both
+        before and after the frontend deploy.
 
-  INCIDENT DURING THIS SESSION (self-caused, self-fixed, ~2 min window):
-    The Phase 1 work happens in a git worktree
-    (.claude/worktrees/feat+portal-phase1-foundation), which `git worktree add`
-    does NOT copy gitignored files into — including portal-app/.env. The
-    first frontend deploy was built from the worktree without .env present,
-    so VITE_CLERK_PUBLISHABLE_KEY was missing from the bundle and production
-    went blank (same failure class as the historical third-party-cookie
-    blank-screen bug, different root cause). Fixed by copying .env from the
-    main checkout into the worktree (file copy only — contents never read
-    or displayed, permissions locked to 600), rebuilding (confirmed pk_live_
-    present via `grep -c`, never printed), and redeploying. Re-verified live:
-    correct bundle hash, v0.3.0 badge, executive theme, all pages render, no
-    console errors post-fix. LESSON: any future frontend build from a fresh
-    worktree needs its own .env copied in first — it will not inherit one.
+  POST-REVIEW FIXES (found and fixed during PR review, both real, both
+  independently verified against actual code/prod before fixing — not
+  just applied on a bot's say-so):
+    - 000_baseline.sql was wrong in most tables, not just the one CodeRabbit/
+      Codex flagged (briefs was missing 10 columns + had the wrong PK — prod
+      has no `id` column, `date` is the real PK). Queried real prod schema
+      for every table + index and rewrote the whole file to match exactly.
+    - CRITICAL SECURITY: requireAuth's fallback (worker/src/auth.js) granted
+      role/workspaceSlugs straight from Clerk publicMetadata when no D1 user
+      matched — contradicts this project's own "D1 is authoritative, never
+      trust Clerk metadata" principle (documented in PortalAuth.jsx /
+      PortalLayout.jsx). Pre-existing since before this refactor (verbatim-
+      moved in Task 5), not introduced by it, but real: a Clerk account with
+      stale admin metadata and no D1 row would get full API access. Fixed —
+      unprovisioned users now get 403. Deployed to production ahead of the
+      PR merge given the severity (Russ approved). Regression test not
+      added: requireAuth does live JWT verification + D1 I/O inline, no
+      extraction point for a pure unit test without a larger refactor —
+      flagged as a follow-up, not silently dropped.
+    - Also found (twice) a wrong-checkout mistake where a task implementer's
+      output briefly landed in the main checkout instead of the worktree
+      (Task 9, then Task 10) — both times caught, verified byte-identical
+      to the correct/merged version, and discarded safely from main.
 
-  Current production state: Worker version c6cfb8ec-f177-419b-a5eb-ecf794449452,
-  Pages deployment https://3c7a8730.wsl-portal.pages.dev (aliased to
-  portal.warsignallabs.net / main branch). Both verified live and working.
+  Current production state: Worker version 052fc10b-c0d8-4e5e-a504-
+  1211016e94c0 (includes the auth fix, deployed ahead of merge), Pages
+  serving the executive retheme + v0.3.0 badge. Both verified live.
 
-  NEXT: push branch, open PR (docs/superpowers/plans/2026-07-17-portal-
-  phase1-foundation.md Task 11 Step 6), then superpowers:finishing-a-
-  development-branch once merged. Deferred out of this phase (flagged, not
-  dropped): shared frontend components (Modal/Toast/EmptyState/ConfirmDialog)
-  extraction — see PORTAL_OVERHAUL_PLAN.md.
+  NEXT: Phase 2 — Workspaces, members, permissions → v0.4.0 (see
+  PORTAL_OVERHAUL_PLAN.md). Not started. Deferred from Phase 1 (flagged,
+  not dropped): shared frontend components (Modal/Toast/EmptyState/
+  ConfirmDialog) extraction.
 
 session_2026_07_17: |
   Clerk PRODUCTION migration executed (Claude driving Chrome, authorized by Russ).
