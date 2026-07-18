@@ -1,6 +1,6 @@
 // worker/src/routes/files.js
 import { jsonResponse, errorResponse, CORS_HEADERS, SECURITY_HEADERS } from '../cors.js'
-import { requireRole, requireWorkspaceAccess, hasWorkspaceWriteAccess } from '../auth.js'
+import { requireWorkspaceAccess, hasWorkspaceWriteAccess, hasWorkspaceAdminPermission } from '../auth.js'
 import { logAudit, getClientIp } from '../audit.js'
 import { notifyWorkspaceEvent, checkStorageThreshold } from '../notify.js'
 
@@ -418,18 +418,28 @@ export async function handleGetFileVersions(request, env, user, params) {
 }
 
 export async function handleDeleteFile(request, env, user, params, ctx) {
-  requireRole(user, 'admin')
-
   const fileId = params.id
 
   const file = await env.DB.prepare(
-    'SELECT id, filename, r2_key, workspace_id FROM files WHERE id = ?',
+    `SELECT f.id, f.filename, f.r2_key, f.workspace_id, w.slug AS workspace_slug
+     FROM files f INNER JOIN workspaces w ON w.id = f.workspace_id
+     WHERE f.id = ?`,
   )
     .bind(fileId)
     .first()
 
   if (!file) {
     return errorResponse('File not found', 404)
+  }
+
+  // Ceiling (§3.1): global admin anywhere; otherwise admin permission on THIS
+  // workspace. write/read members — including owners — cannot delete files.
+  if (!hasWorkspaceAdminPermission(user, file.workspace_slug)) {
+    await logAudit(env, user.userId, 'file.delete.denied', {
+      resourceType: 'file', resourceId: fileId,
+      workspaceSlug: file.workspace_slug, ipAddress: getClientIp(request),
+    })
+    throw errorResponse('Forbidden: workspace admin permission required to delete files', 403)
   }
 
   if (env.FILES && file.r2_key) {
