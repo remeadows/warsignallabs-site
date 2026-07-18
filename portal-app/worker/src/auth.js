@@ -272,8 +272,7 @@ export async function requireAuth(request, env) {
     }
 
     if (!dbUserId) {
-      role = publicMetadata.role || null
-      workspaceSlugs = publicMetadata.workspace_slugs || null
+      throw errorResponse('Account is not provisioned. Contact your administrator.', 403)
     }
   }
 
