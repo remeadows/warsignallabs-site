@@ -2,7 +2,20 @@
 # Companion to memory.yaml (long-lived project context).
 # Update this file at the end of every working session.
 
-last_updated: 2026-07-17
+last_updated: 2026-07-18
+pointer_phase1_in_progress: |
+  PORTAL_OVERHAUL_PLAN.md Phase 1 (Worker modularization, D1 migration
+  scaffold, executive retheme, hygiene/tests) is being executed via
+  subagent-driven-development on branch feat/portal-phase1-foundation, in
+  worktree .claude/worktrees/feat+portal-phase1-foundation (NOT this main
+  checkout). Progress ledger, task briefs/reports, and review packages live
+  under .superpowers/sdd/ inside that worktree. See
+  docs/superpowers/plans/2026-07-17-portal-phase1-foundation.md for the
+  11-task plan. As of 2026-07-18: Tasks 1-7 (D1 migrations + full Worker
+  modularization) and Task 9 (executive retheme) complete and reviewed;
+  Task 8 (smoke-test deploy) blocked pending a decision on live-token
+  verification; Task 10-11 not started. Production Worker still running
+  pre-Phase-1 index.js -- refactor not yet deployed.
 session_2026_07_17: |
   Clerk PRODUCTION migration executed (Claude driving Chrome, authorized by Russ).
   - Dev instance "Maximum lifetime" (Pro, custom 1 day) disabled -> default 7 days;
