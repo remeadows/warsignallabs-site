@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "migrate": "node worker/scripts/migrate.js"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.6",
