@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import { UserButton, useUser } from '@clerk/clerk-react'
 import { useState, useEffect, useMemo } from 'react'
+import pkg from '../../package.json'
 import { useApiClient } from '../api/client'
 import { PortalAuthProvider } from '../contexts/PortalAuth'
 import './PortalLayout.css'
@@ -73,7 +74,7 @@ export default function PortalLayout() {
             </button>
             <img className="topnav__logo" src="/favicon-32x32.png" alt="WSLabs" />
             <span className="topnav__name">{PORTAL_NAME}</span>
-            <span className="topnav__version mono">v0.2.0</span>
+            <span className="topnav__version mono">v{pkg.version}</span>
           </div>
           <div className="topnav__user">
             <span className="topnav__username mono">{user?.username || user?.firstName || 'User'}</span>
