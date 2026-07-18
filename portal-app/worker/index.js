@@ -13,23 +13,6 @@
  */
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Constants & Shared Headers
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Max-Age': '86400',
-}
-
-const SECURITY_HEADERS = {
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
 // Dashboard Projects Data (embedded at deploy time — v0.2.2 file-based)
 // Source: data/projects.json exported from Linear
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -55,26 +38,6 @@ const DASHBOARD_PROJECTS_DATA = [
   { id: "2bf478cc", title: "ClaudeArchitect Hardening Plan", category: "Infrastructure", priority: 2, status: "Completed", linearUrl: "https://linear.app/remeadows/project/claudearchitect-hardening-plan-f3f36cf0ba38", repoUrl: null, targetDate: "2026-03-27" },
   { id: "ecbb7da8", title: "NetNynja Enterprise Stabilization", category: "Enterprise", priority: 3, status: "Completed", linearUrl: "https://linear.app/remeadows/project/netnynja-enterprise-stabilization-8daa0e0a5527", repoUrl: null, targetDate: null },
 ]
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// Response Helpers
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function jsonResponse(data, status = 200, extraHeaders = {}) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      'Content-Type': 'application/json',
-      ...CORS_HEADERS,
-      ...SECURITY_HEADERS,
-      ...extraHeaders,
-    },
-  })
-}
-
-function errorResponse(message, status = 400) {
-  return jsonResponse({ error: message }, status)
-}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // JWT Verification (RS256 via Web Crypto API)
