@@ -4,6 +4,7 @@
 import { jsonResponse, errorResponse } from '../cors.js'
 import { requireWorkspaceAccess, hasWorkspaceAdminPermission, memberChangeViolation } from '../auth.js'
 import { logAudit, getClientIp } from '../audit.js'
+import { sendEmail, buildEmailHtml } from '../notify.js'
 
 export async function getWorkspaceBySlug(env, slug) {
   return env.DB.prepare('SELECT id, name, slug FROM workspaces WHERE slug = ?')
@@ -119,4 +120,151 @@ export async function handleRemoveMember(request, env, user, params) {
   })
 
   return jsonResponse({ message: 'Member removed' })
+}
+
+/** POST /api/workspaces/:slug/invitations — wsAdmin. Body: {email, permission} */
+export async function handleCreateInvitation(request, env, user, params, ctx) {
+  if (!hasWorkspaceAdminPermission(user, params.slug)) {
+    throw errorResponse('Forbidden: workspace admin permission required', 403)
+  }
+  const workspace = await getWorkspaceBySlug(env, params.slug)
+  if (!workspace) return errorResponse('Workspace not found', 404)
+
+  let body
+  try { body = await request.json() } catch { return errorResponse('Invalid JSON', 400) }
+  const email = (body.email || '').trim().toLowerCase()
+  const { permission } = body
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return errorResponse('A valid email is required', 400)
+  }
+  if (!['read', 'write', 'admin'].includes(permission)) {
+    return errorResponse("permission must be one of: read, write, admin", 400)
+  }
+
+  // Edge rules (spec §4): already a member -> 409; already pending -> 409.
+  let invitee = await env.DB.prepare('SELECT id, username, status FROM users WHERE LOWER(email) = ?')
+    .bind(email).first()
+  if (invitee) {
+    const existingMembership = await env.DB.prepare(
+      'SELECT id FROM user_workspaces WHERE user_id = ? AND workspace_id = ?',
+    ).bind(invitee.id, workspace.id).first()
+    if (existingMembership) {
+      return errorResponse('Already a member — change their permission from the members list instead', 409)
+    }
+  }
+  const pendingInvite = await env.DB.prepare(
+    `SELECT id FROM invitations WHERE email = ? AND workspace_id = ? AND status = 'pending'`,
+  ).bind(email, workspace.id).first()
+  if (pendingInvite) {
+    return errorResponse('Invitation already pending — revoke it first to re-send', 409)
+  }
+
+  // Create the user row if none exists (status='invited'; activated by
+  // requireAuth's email auto-map on first sign-in — no Clerk API dependency).
+  if (!invitee) {
+    const base = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'invited'
+    let username = base
+    for (let n = 2; ; n++) {
+      const clash = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username).first()
+      if (!clash) break
+      username = `${base}-${n}`
+    }
+    const newUserId = `usr-${crypto.randomUUID().slice(0, 8)}`
+    await env.DB.prepare(
+      `INSERT INTO users (id, username, email, role, status, created_at, updated_at)
+       VALUES (?, ?, ?, 'client', 'invited', datetime('now'), datetime('now'))`,
+    ).bind(newUserId, username, email).run()
+    invitee = { id: newUserId, username, status: 'invited' }
+  }
+
+  // Membership row now; it goes live the moment their sign-in maps.
+  await env.DB.prepare(
+    `INSERT INTO user_workspaces (id, user_id, workspace_id, permission, created_at)
+     VALUES (?, ?, ?, ?, datetime('now'))`,
+  ).bind(crypto.randomUUID(), invitee.id, workspace.id, permission).run()
+
+  const invId = `inv-${crypto.randomUUID().slice(0, 8)}`
+  await env.DB.prepare(
+    `INSERT INTO invitations (id, workspace_id, email, permission, invited_by, status, created_at)
+     VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))`,
+  ).bind(invId, workspace.id, email, permission, user.dbUserId).run()
+
+  await logAudit(env, user.userId, 'member.invite', {
+    resourceType: 'invitation', resourceId: invId,
+    workspaceSlug: params.slug, email, permission,
+    ipAddress: getClientIp(request),
+  })
+
+  const html = buildEmailHtml(`You've been invited to ${workspace.name}`, [
+    `<strong>Workspace:</strong> ${workspace.name}`,
+    `<strong>Access level:</strong> ${permission}`,
+    `<strong>Invited by:</strong> ${user.email || 'the workspace admin'}`,
+    `Sign in with this email address at <a href="https://portal.warsignallabs.net">portal.warsignallabs.net</a> — your access is ready.`,
+  ])
+  ctx.waitUntil(sendEmail(env, {
+    to: email,
+    subject: `WarSignalLabs Portal — invitation to ${workspace.name}`,
+    html,
+    text: `You've been invited to ${workspace.name} (${permission}). Sign in with this email at https://portal.warsignallabs.net`,
+    eventType: 'member.invite',
+    workspaceId: workspace.id,
+    recipientUserId: invitee.id,
+    metadata: { invitationId: invId, permission },
+  }))
+
+  return jsonResponse({ invitation: { id: invId, email, permission, status: 'pending' } }, 201)
+}
+
+/** GET /api/workspaces/:slug/invitations — wsAdmin */
+export async function handleListInvitations(request, env, user, params) {
+  if (!hasWorkspaceAdminPermission(user, params.slug)) {
+    throw errorResponse('Forbidden: workspace admin permission required', 403)
+  }
+  const workspace = await getWorkspaceBySlug(env, params.slug)
+  if (!workspace) return errorResponse('Workspace not found', 404)
+
+  const result = await env.DB.prepare(
+    `SELECT id, email, permission, status, created_at FROM invitations
+     WHERE workspace_id = ? AND status = 'pending' ORDER BY created_at DESC`,
+  ).bind(workspace.id).all()
+
+  return jsonResponse({ invitations: result.results })
+}
+
+/** DELETE /api/invitations/:id — wsAdmin on the invitation's workspace. Revoke + undo. */
+export async function handleRevokeInvitation(request, env, user, params) {
+  const invitation = await env.DB.prepare(
+    `SELECT i.id, i.email, i.status, i.workspace_id, w.slug AS workspace_slug
+     FROM invitations i INNER JOIN workspaces w ON w.id = i.workspace_id
+     WHERE i.id = ?`,
+  ).bind(params.id).first()
+  if (!invitation) return errorResponse('Invitation not found', 404)
+
+  if (!hasWorkspaceAdminPermission(user, invitation.workspace_slug)) {
+    throw errorResponse('Forbidden: workspace admin permission required', 403)
+  }
+  if (invitation.status !== 'pending') {
+    return errorResponse(`Cannot revoke an invitation that is ${invitation.status}`, 409)
+  }
+
+  await env.DB.prepare(`UPDATE invitations SET status = 'revoked' WHERE id = ?`)
+    .bind(invitation.id).run()
+
+  // Undo the pre-created membership. Safe: inviting an existing member is
+  // 409-blocked, so a membership row matching a pending invite can only have
+  // come from that invite.
+  const invitee = await env.DB.prepare('SELECT id FROM users WHERE LOWER(email) = ?')
+    .bind(invitation.email).first()
+  if (invitee) {
+    await env.DB.prepare('DELETE FROM user_workspaces WHERE user_id = ? AND workspace_id = ?')
+      .bind(invitee.id, invitation.workspace_id).run()
+  }
+
+  await logAudit(env, user.userId, 'invitation.revoke', {
+    resourceType: 'invitation', resourceId: invitation.id,
+    workspaceSlug: invitation.workspace_slug, email: invitation.email,
+    ipAddress: getClientIp(request),
+  })
+
+  return jsonResponse({ message: 'Invitation revoked' })
 }

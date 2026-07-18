@@ -53,6 +53,9 @@ import {
   handleListMembers,
   handleUpdateMemberPermission,
   handleRemoveMember,
+  handleCreateInvitation,
+  handleListInvitations,
+  handleRevokeInvitation,
 } from './routes/members.js'
 
 function matchPath(pattern, pathname) {
@@ -177,6 +180,19 @@ export default {
         }
         if (params && method === 'DELETE') {
           return handleRemoveMember(request, env, user, params)
+        }
+
+        params = matchPath('/api/workspaces/:slug/invitations', pathname)
+        if (params && method === 'GET') {
+          return handleListInvitations(request, env, user, params)
+        }
+        if (params && method === 'POST') {
+          return handleCreateInvitation(request, env, user, params, ctx)
+        }
+
+        params = matchPath('/api/invitations/:id', pathname)
+        if (params && method === 'DELETE') {
+          return handleRevokeInvitation(request, env, user, params)
         }
 
         if (pathname === '/api/users' && method === 'GET') {

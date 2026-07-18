@@ -3,6 +3,7 @@
 // D1-authoritative requireAuth/RBAC middleware.
 
 import { errorResponse } from './cors.js'
+import { logAudit } from './audit.js'
 
 let jwksCache = null
 const JWKS_CACHE_TTL_MS = 60 * 60 * 1000
@@ -222,6 +223,23 @@ export async function requireAuth(request, env) {
         await env.DB.prepare('UPDATE users SET clerk_id = ? WHERE id = ?')
           .bind(clerkUserId, matched.id).run()
         console.log(`Auto-mapped Clerk ${clerkUserId} → ${matched.id} via email`)
+
+        // Invitation acceptance (Phase 2 spec §3): first sign-in of an invited
+        // user activates the account and closes out their pending invitations.
+        if (matched.status === 'invited') {
+          await env.DB.prepare(`UPDATE users SET status = 'active', updated_at = datetime('now') WHERE id = ?`)
+            .bind(matched.id).run()
+        }
+        const accepted = await env.DB.prepare(
+          `UPDATE invitations SET status = 'accepted', accepted_at = datetime('now')
+           WHERE LOWER(email) = LOWER(?) AND status = 'pending'`,
+        ).bind(email).run()
+        if (accepted?.meta?.changes > 0) {
+          await logAudit(env, matched.id, 'member.join', {
+            resourceType: 'user', resourceId: matched.id,
+            invitationsAccepted: accepted.meta.changes,
+          })
+        }
 
         const wsResult = await env.DB.prepare(
           `SELECT w.slug, uw.permission FROM workspaces w
