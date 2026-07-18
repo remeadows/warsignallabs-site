@@ -23,7 +23,7 @@ export default function DashboardLayout() {
   return (
     <div className="ops-dashboard fade-in">
       <div className="ops-dashboard__header">
-        <span className="label">// Operations Dashboard</span>
+        <span className="label">Operations Dashboard</span>
       </div>
 
       <div className="ops-dashboard__body">

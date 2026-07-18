@@ -69,7 +69,7 @@ export default function PortalLayout() {
               onClick={() => setSidebarOpen(!sidebarOpen)}
               aria-label="Toggle menu"
             >
-              {sidebarOpen ? '[ CLOSE ]' : '[ MENU ]'}
+              {sidebarOpen ? 'Close' : 'Menu'}
             </button>
             <img className="topnav__logo" src="/favicon-32x32.png" alt="WSLabs" />
             <span className="topnav__name">{PORTAL_NAME}</span>

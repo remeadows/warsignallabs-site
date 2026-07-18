@@ -365,7 +365,7 @@ export default function WorkspaceDetail() {
   return (
     <div className="workspace fade-in">
       <div className="workspace__header">
-        <span className="label">// Workspace</span>
+        <span className="label">Workspace</span>
         <h1 style={{ color: workspace.color }}>{workspace.name}</h1>
         <div className="workspace__meta">
           {workspace.fileCount} files &middot; {workspace.memberCount} members

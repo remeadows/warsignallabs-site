@@ -12,7 +12,7 @@ function formatBytes(bytes) {
   return `${(bytes / Math.pow(k, i)).toFixed(i > 0 ? 1 : 0)} ${sizes[i]}`
 }
 
-const PRESET_COLORS = ['#00c8d4', '#39ff14', '#ffaa00', '#ff6b9d', '#9d4edd', '#4cc9f0', '#f77f00']
+const PRESET_COLORS = ['#6F8FB8', '#4C9A6B', '#E6A51A', '#C9A557', '#9D7FB8', '#4CA3C9', '#D97757']
 
 export default function AdminWorkspaces() {
   const api = useApiClient()
@@ -24,7 +24,7 @@ export default function AdminWorkspaces() {
 
   // Create modal
   const [showCreate, setShowCreate] = useState(false)
-  const [createForm, setCreateForm] = useState({ name: '', slug: '', color: '#00c8d4' })
+  const [createForm, setCreateForm] = useState({ name: '', slug: '', color: '#6F8FB8' })
   const [createLoading, setCreateLoading] = useState(false)
 
   // Edit modal
@@ -84,7 +84,7 @@ export default function AdminWorkspaces() {
       await api.createWorkspace(createForm)
       setShowCreate(false)
       showMessage(`Workspace "${createForm.name}" created`)
-      setCreateForm({ name: '', slug: '', color: '#00c8d4' })
+      setCreateForm({ name: '', slug: '', color: '#6F8FB8' })
       await fetchWorkspaces()
     } catch (err) {
       setError(err.data?.error || 'Failed to create workspace')
@@ -125,7 +125,7 @@ export default function AdminWorkspaces() {
       <div className="admin-page__header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <span className="label">// Admin</span>
+            <span className="label">Admin</span>
             <h1>Workspace Management</h1>
             <div className="admin-page__subtitle">{workspaces.length} workspace{workspaces.length !== 1 ? 's' : ''}</div>
           </div>

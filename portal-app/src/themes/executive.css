@@ -1,0 +1,62 @@
+/* ============================================
+   THEME: Executive
+   Description: Matches the marketing site's post-2026-05-05 identity —
+   dark navy ground, single steel-blue accent, gold for primary CTAs only.
+   Replaces the cyberpunk "Dark Professional" theme (see git history for
+   the retired file: src/themes/dark-professional.css).
+   ============================================ */
+
+:root {
+  /* Backgrounds */
+  --bg-primary: #0E1726;
+  --bg-surface: #141F31;
+  --bg-elevated: #1A2740;
+  --bg-hover: rgba(111, 143, 184, 0.06);
+  --bg-active: rgba(111, 143, 184, 0.1);
+
+  /* Text */
+  --text-primary: #E8EDF5;
+  --text-secondary: #8390A2;
+  --text-muted: #5A6A7A;
+  --text-inverse: #0E1726;
+
+  /* Accent */
+  --accent: #6F8FB8;
+  --accent-hover: #85A2C6;
+  --accent-muted: rgba(111, 143, 184, 0.15);
+  --accent-secondary: #C9A557;
+
+  /* Primary CTA (buttons only — see base.css .btn--primary) */
+  --cta-primary: #C9A557;
+  --cta-primary-hover: #E8C66B;
+
+  /* Borders */
+  --border: rgba(111, 143, 184, 0.12);
+  --border-strong: rgba(111, 143, 184, 0.25);
+  --border-accent: rgba(111, 143, 184, 0.4);
+
+  /* Status */
+  --success: #4C9A6B;
+  --warning: #E6A51A;
+  --error: #ED5F5F;
+  --info: #6F8FB8;
+
+  /* Typography */
+  --font-body: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-heading: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Spacing */
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+
+  /* Sidebar */
+  --sidebar-width: 220px;
+  --topnav-height: 52px;
+}
