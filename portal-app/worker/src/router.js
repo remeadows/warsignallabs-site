@@ -49,6 +49,11 @@ import {
   handleGetLatestBrief,
   handleGetBrief,
 } from './routes/briefs.js'
+import {
+  handleListMembers,
+  handleUpdateMemberPermission,
+  handleRemoveMember,
+} from './routes/members.js'
 
 function matchPath(pattern, pathname) {
   const patternParts = pattern.split('/')
@@ -159,6 +164,19 @@ export default {
         params = matchPath('/api/folders/:id/move', pathname)
         if (params && method === 'PATCH') {
           return handleMoveFolder(request, env, user, params, ctx)
+        }
+
+        params = matchPath('/api/workspaces/:slug/members', pathname)
+        if (params && method === 'GET') {
+          return handleListMembers(request, env, user, params)
+        }
+
+        params = matchPath('/api/workspaces/:slug/members/:userId', pathname)
+        if (params && method === 'PATCH') {
+          return handleUpdateMemberPermission(request, env, user, params)
+        }
+        if (params && method === 'DELETE') {
+          return handleRemoveMember(request, env, user, params)
         }
 
         if (pathname === '/api/users' && method === 'GET') {
