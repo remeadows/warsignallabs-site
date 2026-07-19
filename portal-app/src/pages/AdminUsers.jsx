@@ -10,6 +10,14 @@ const roleBadge = {
   client: 'badge badge--warning',
 }
 
+// Display labels — "owner" is an internal role name; the portal shows it as
+// "Collaborator" everywhere a human reads it (underlying value is unchanged).
+const ROLE_LABELS = {
+  admin: 'Admin',
+  owner: 'Collaborator',
+  client: 'Client',
+}
+
 const ROLES = ['admin', 'owner', 'client']
 
 export default function AdminUsers() {
@@ -83,12 +91,14 @@ export default function AdminUsers() {
 
   const handleRoleChange = async (u, newRole) => {
     if (newRole === u.role) return
-    if (!confirm(`Change ${u.username}'s role from "${u.role}" to "${newRole}"?`)) return
+    const fromLabel = ROLE_LABELS[u.role] || u.role
+    const toLabel = ROLE_LABELS[newRole] || newRole
+    if (!confirm(`Change ${u.username}'s role from "${fromLabel}" to "${toLabel}"?`)) return
 
     setActionLoading(u.id)
     try {
       await api.changeRole(u.id, newRole)
-      showMessage(`${u.username} role changed to ${newRole}`)
+      showMessage(`${u.username} role changed to ${toLabel}`)
       await fetchUsers()
     } catch (err) {
       setError(err.data?.error || 'Failed to change role')
@@ -224,11 +234,11 @@ export default function AdminUsers() {
                       disabled={actionLoading === u.id}
                     >
                       {ROLES.map(r => (
-                        <option key={r} value={r}>{r}</option>
+                        <option key={r} value={r}>{ROLE_LABELS[r] || r}</option>
                       ))}
                     </select>
                   ) : (
-                    <span className={roleBadge[u.role] || 'badge'}>{u.role}</span>
+                    <span className={roleBadge[u.role] || 'badge'}>{ROLE_LABELS[u.role] || u.role}</span>
                   )}
                 </td>
                 <td>
@@ -294,7 +304,7 @@ export default function AdminUsers() {
                   onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
                 >
                   {ROLES.map(r => (
-                    <option key={r} value={r}>{r}</option>
+                    <option key={r} value={r}>{ROLE_LABELS[r] || r}</option>
                   ))}
                 </select>
               </div>
