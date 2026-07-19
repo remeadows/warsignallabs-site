@@ -89,176 +89,176 @@ export default {
 
     try {
       if (pathname === '/api/health' && method === 'GET') {
-        return handleHealth(request, env)
+        return await handleHealth(request, env)
       }
 
       if (pathname === '/api/briefs' && method === 'POST') {
-        return handlePostBrief(request, env)
+        return await handlePostBrief(request, env)
       }
 
       if (pathname.startsWith('/api/')) {
         const user = await requireAuth(request, env)
 
         if (pathname === '/api/me' && method === 'GET') {
-          return handleMe(request, env, user)
+          return await handleMe(request, env, user)
         }
 
         if (pathname === '/api/workspaces' && method === 'GET') {
-          return handleListWorkspaces(request, env, user)
+          return await handleListWorkspaces(request, env, user)
         }
 
         let params = matchPath('/api/workspaces/:slug', pathname)
         if (params && method === 'GET') {
-          return handleGetWorkspace(request, env, user, params)
+          return await handleGetWorkspace(request, env, user, params)
         }
 
         params = matchPath('/api/workspaces/:slug/files', pathname)
         if (params && method === 'GET') {
-          return handleListFiles(request, env, user, params)
+          return await handleListFiles(request, env, user, params)
         }
         if (params && method === 'POST') {
-          return handleUploadFile(request, env, user, params, ctx)
+          return await handleUploadFile(request, env, user, params, ctx)
         }
 
         params = matchPath('/api/files/:id', pathname)
         if (params && method === 'PUT') {
-          return handleReplaceFile(request, env, user, params, ctx)
+          return await handleReplaceFile(request, env, user, params, ctx)
         }
         if (params && method === 'DELETE') {
-          return handleDeleteFile(request, env, user, params, ctx)
+          return await handleDeleteFile(request, env, user, params, ctx)
         }
 
         params = matchPath('/api/files/:id/download', pathname)
         if (params && method === 'GET') {
-          return handleDownloadFile(request, env, user, params, ctx)
+          return await handleDownloadFile(request, env, user, params, ctx)
         }
 
         params = matchPath('/api/files/:id/versions', pathname)
         if (params && method === 'GET') {
-          return handleGetFileVersions(request, env, user, params)
+          return await handleGetFileVersions(request, env, user, params)
         }
 
         params = matchPath('/api/files/:id/move', pathname)
         if (params && method === 'PATCH') {
-          return handleMoveFile(request, env, user, params, ctx)
+          return await handleMoveFile(request, env, user, params, ctx)
         }
 
         params = matchPath('/api/workspaces/:slug/folders', pathname)
         if (params && method === 'GET') {
-          return handleListFolderContents(request, env, user, params)
+          return await handleListFolderContents(request, env, user, params)
         }
         if (params && method === 'POST') {
-          return handleCreateFolder(request, env, user, params, ctx)
+          return await handleCreateFolder(request, env, user, params, ctx)
         }
 
         params = matchPath('/api/workspaces/:slug/folders/:folderId', pathname)
         if (params && method === 'GET') {
-          return handleListFolderContents(request, env, user, params)
+          return await handleListFolderContents(request, env, user, params)
         }
 
         params = matchPath('/api/folders/:id', pathname)
         if (params && method === 'PATCH') {
-          return handleRenameFolder(request, env, user, params)
+          return await handleRenameFolder(request, env, user, params)
         }
         if (params && method === 'DELETE') {
-          return handleDeleteFolder(request, env, user, params, ctx)
+          return await handleDeleteFolder(request, env, user, params, ctx)
         }
 
         params = matchPath('/api/folders/:id/move', pathname)
         if (params && method === 'PATCH') {
-          return handleMoveFolder(request, env, user, params, ctx)
+          return await handleMoveFolder(request, env, user, params, ctx)
         }
 
         params = matchPath('/api/workspaces/:slug/members', pathname)
         if (params && method === 'GET') {
-          return handleListMembers(request, env, user, params)
+          return await handleListMembers(request, env, user, params)
         }
 
         params = matchPath('/api/workspaces/:slug/members/:userId', pathname)
         if (params && method === 'PATCH') {
-          return handleUpdateMemberPermission(request, env, user, params)
+          return await handleUpdateMemberPermission(request, env, user, params)
         }
         if (params && method === 'DELETE') {
-          return handleRemoveMember(request, env, user, params)
+          return await handleRemoveMember(request, env, user, params)
         }
 
         params = matchPath('/api/workspaces/:slug/invitations', pathname)
         if (params && method === 'GET') {
-          return handleListInvitations(request, env, user, params)
+          return await handleListInvitations(request, env, user, params)
         }
         if (params && method === 'POST') {
-          return handleCreateInvitation(request, env, user, params, ctx)
+          return await handleCreateInvitation(request, env, user, params, ctx)
         }
 
         params = matchPath('/api/invitations/:id', pathname)
         if (params && method === 'DELETE') {
-          return handleRevokeInvitation(request, env, user, params)
+          return await handleRevokeInvitation(request, env, user, params)
         }
 
         if (pathname === '/api/users' && method === 'GET') {
-          return handleListUsers(request, env, user)
+          return await handleListUsers(request, env, user)
         }
 
         if (pathname === '/api/users' && method === 'POST') {
-          return handleCreateUser(request, env, user, ctx)
+          return await handleCreateUser(request, env, user, ctx)
         }
 
         params = matchPath('/api/users/:id/role', pathname)
         if (params && method === 'PATCH') {
-          return handleChangeRole(request, env, user, params)
+          return await handleChangeRole(request, env, user, params)
         }
 
         params = matchPath('/api/users/:id/deactivate', pathname)
         if (params && method === 'POST') {
-          return handleDeactivateUser(request, env, user, params)
+          return await handleDeactivateUser(request, env, user, params)
         }
 
         params = matchPath('/api/users/:id/activate', pathname)
         if (params && method === 'POST') {
-          return handleActivateUser(request, env, user, params)
+          return await handleActivateUser(request, env, user, params)
         }
 
         params = matchPath('/api/users/:id/workspaces', pathname)
         if (params && method === 'GET') {
-          return handleGetUserWorkspaces(request, env, user, params)
+          return await handleGetUserWorkspaces(request, env, user, params)
         }
         if (params && method === 'PATCH') {
-          return handleUpdateUserWorkspaces(request, env, user, params)
+          return await handleUpdateUserWorkspaces(request, env, user, params)
         }
 
         if (pathname === '/api/workspaces' && method === 'POST') {
-          return handleCreateWorkspace(request, env, user)
+          return await handleCreateWorkspace(request, env, user)
         }
 
         params = matchPath('/api/workspaces/:slug', pathname)
         if (params && method === 'PATCH') {
-          return handleUpdateWorkspace(request, env, user, params)
+          return await handleUpdateWorkspace(request, env, user, params)
         }
         if (params && method === 'DELETE') {
-          return handleDeleteWorkspace(request, env, user, params)
+          return await handleDeleteWorkspace(request, env, user, params)
         }
 
         if (pathname === '/api/audit-log' && method === 'GET') {
-          return handleAuditLog(request, env, user)
+          return await handleAuditLog(request, env, user)
         }
 
         if (pathname === '/api/admin/analytics' && method === 'GET') {
-          return handleAdminAnalytics(request, env, user)
+          return await handleAdminAnalytics(request, env, user)
         }
 
         if (pathname === '/api/dashboard/projects' && method === 'GET') {
-          return handleDashboardProjects(request, env, user)
+          return await handleDashboardProjects(request, env, user)
         }
 
         if (pathname === '/api/briefs/latest' && method === 'GET') {
-          return handleGetLatestBrief(request, env, user)
+          return await handleGetLatestBrief(request, env, user)
         }
         if (pathname === '/api/briefs' && method === 'GET') {
-          return handleListBriefs(request, env, user)
+          return await handleListBriefs(request, env, user)
         }
         const briefDateMatch = pathname.match(/^\/api\/briefs\/(\d{4}-\d{2}-\d{2})$/)
         if (briefDateMatch && method === 'GET') {
-          return handleGetBrief(request, env, user, briefDateMatch[1])
+          return await handleGetBrief(request, env, user, briefDateMatch[1])
         }
 
         return errorResponse('Not found', 404)
