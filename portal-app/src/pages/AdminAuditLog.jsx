@@ -29,7 +29,7 @@ function actionBadgeClass(action) {
 
 export default function AdminAuditLog() {
   const api = useApiClient()
-  const { isPrivileged, authLoading } = usePortalAuth()
+  const { isAdmin, authLoading } = usePortalAuth()
 
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -37,7 +37,7 @@ export default function AdminAuditLog() {
   const [actionFilter, setActionFilter] = useState('')
 
   const fetchLog = useCallback(async () => {
-    if (!isPrivileged) return
+    if (!isAdmin) return
     try {
       setLoading(true)
       const params = {}
@@ -50,7 +50,7 @@ export default function AdminAuditLog() {
     } finally {
       setLoading(false)
     }
-  }, [api, actionFilter, isPrivileged])
+  }, [api, actionFilter, isAdmin])
 
   useEffect(() => {
     fetchLog()
@@ -60,7 +60,7 @@ export default function AdminAuditLog() {
     return <div className="loading-state"><span className="spinner" /> Loading…</div>
   }
 
-  if (!isPrivileged) {
+  if (!isAdmin) {
     return <Navigate to="/forbidden" replace />
   }
 

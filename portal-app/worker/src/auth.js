@@ -3,6 +3,7 @@
 // D1-authoritative requireAuth/RBAC middleware.
 
 import { errorResponse } from './cors.js'
+import { logAudit } from './audit.js'
 
 let jwksCache = null
 const JWKS_CACHE_TTL_MS = 60 * 60 * 1000
@@ -223,6 +224,23 @@ export async function requireAuth(request, env) {
           .bind(clerkUserId, matched.id).run()
         console.log(`Auto-mapped Clerk ${clerkUserId} → ${matched.id} via email`)
 
+        // Invitation acceptance (Phase 2 spec §3): first sign-in of an invited
+        // user activates the account and closes out their pending invitations.
+        if (matched.status === 'invited') {
+          await env.DB.prepare(`UPDATE users SET status = 'active', updated_at = datetime('now') WHERE id = ?`)
+            .bind(matched.id).run()
+        }
+        const accepted = await env.DB.prepare(
+          `UPDATE invitations SET status = 'accepted', accepted_at = datetime('now')
+           WHERE LOWER(email) = LOWER(?) AND status = 'pending'`,
+        ).bind(email).run()
+        if (accepted?.meta?.changes > 0) {
+          await logAudit(env, matched.id, 'member.join', {
+            resourceType: 'user', resourceId: matched.id,
+            invitationsAccepted: accepted.meta.changes,
+          })
+        }
+
         const wsResult = await env.DB.prepare(
           `SELECT w.slug, uw.permission FROM workspaces w
            INNER JOIN user_workspaces uw ON uw.workspace_id = w.id
@@ -297,7 +315,7 @@ export function requireRole(user, ...roles) {
 }
 
 export function requireWorkspaceAccess(user, workspaceSlug) {
-  if (user.role === 'admin' || user.role === 'owner') {
+  if (user.role === 'admin') {
     return
   }
   if (!user.workspaceSlugs.includes(workspaceSlug)) {
@@ -306,7 +324,26 @@ export function requireWorkspaceAccess(user, workspaceSlug) {
 }
 
 export function hasWorkspaceWriteAccess(user, workspaceSlug) {
-  if (user.role === 'admin' || user.role === 'owner') return true
+  if (user.role === 'admin') return true
   const perm = (user.workspacePermissions || {})[workspaceSlug]
   return perm === 'write' || perm === 'admin'
+}
+
+// wsAdmin (§3.5): global admin, or admin permission on this specific workspace.
+export function hasWorkspaceAdminPermission(user, workspaceSlug) {
+  if (user.role === 'admin') return true
+  return (user.workspacePermissions || {})[workspaceSlug] === 'admin'
+}
+
+// Ceiling check for member remove/downgrade (§3.1). remainingAdminCount is the
+// count of admin-permission members the workspace would have AFTER the action.
+// Returns a human-readable violation, or null if the change is allowed.
+export function memberChangeViolation(targetRole, remainingAdminCount) {
+  if (targetRole === 'admin') {
+    return 'Cannot remove or downgrade a global admin'
+  }
+  if (remainingAdminCount < 1) {
+    return 'Workspace must retain at least one admin-permission member'
+  }
+  return null
 }

@@ -2,6 +2,8 @@ import { useParams } from 'react-router-dom'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApiClient } from '../api/client'
 import { usePortalAuth } from '../contexts/PortalAuth'
+import MembersTab from '../components/workspace/MembersTab'
+import WorkspaceSettingsTab from '../components/workspace/WorkspaceSettingsTab'
 import './WorkspaceDetail.css'
 
 function formatBytes(bytes) {
@@ -63,11 +65,13 @@ function parseApiError(err, fallback) {
 
 export default function WorkspaceDetail() {
   const { slug } = useParams()
-  const { role, isAdmin } = usePortalAuth()
+  const { role, isAdmin, d1User } = usePortalAuth()
   const api = useApiClient()
 
   const canDelete = isAdmin
+  const wsAdmin = isAdmin || d1User?.workspacePermissions?.[slug] === 'admin'
 
+  const [activeTab, setActiveTab] = useState('files')
   const [workspace, setWorkspace] = useState(null)
   const [folders, setFolders] = useState([])
   const [files, setFiles] = useState([])
@@ -77,7 +81,7 @@ export default function WorkspaceDetail() {
   const [error, setError] = useState(null)
 
   // Upload permission
-  const canUpload = role === 'admin' || role === 'owner' ||
+  const canUpload = role === 'admin' ||
     (workspace?.userPermission === 'write' || workspace?.userPermission === 'admin')
   const canWrite = canUpload
 
@@ -372,178 +376,195 @@ export default function WorkspaceDetail() {
         </div>
       </div>
 
-      {/* Breadcrumb Navigation */}
-      <nav className="breadcrumbs" aria-label="Folder navigation">
-        <button className="breadcrumb__item breadcrumb__root" onClick={() => navigateToFolder(null)}>
-          {workspace.name}
-        </button>
-        {breadcrumbs.map((crumb, i) => (
-          <span key={crumb.id} className="breadcrumb__segment">
-            <span className="breadcrumb__sep">/</span>
-            {i === breadcrumbs.length - 1 ? (
-              <span className="breadcrumb__current">{crumb.name}</span>
-            ) : (
-              <button className="breadcrumb__item" onClick={() => navigateToFolder(crumb.id)}>
-                {crumb.name}
-              </button>
-            )}
-          </span>
-        ))}
-      </nav>
-
-      {error && (
-        <div className="workspace__alert workspace__alert--error">
-          {error}
-          <button className="workspace__alert-dismiss" onClick={() => setError(null)}>&times;</button>
-        </div>
-      )}
-
-      <div
-        className={`workspace__content card ${dragOver ? 'workspace__content--dragover' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <div className="workspace__toolbar">
-          <span className="label">
-            {folders.length} folder{folders.length !== 1 ? 's' : ''} &middot; {files.length} file{files.length !== 1 ? 's' : ''}
-          </span>
-          {canWrite && (
-            <div className="workspace__upload-actions">
-              {uploading && <span className="workspace__upload-status mono">{uploadProgress}</span>}
-              <button
-                className="btn btn--secondary"
-                onClick={() => { setNewFolderName(''); setShowNewFolderModal(true) }}
-                disabled={uploading}
-              >
-                New Folder
-              </button>
-              <button
-                className="btn btn--primary"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                {uploading ? 'Uploading...' : 'Upload File'}
-              </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                style={{ display: 'none' }}
-                onChange={(e) => handleUpload(e.target.files)}
-              />
-              <input
-                ref={replaceInputRef}
-                type="file"
-                style={{ display: 'none' }}
-                onChange={handleReplaceFile}
-              />
-            </div>
-          )}
-        </div>
-
-        {loading && workspace ? (
-          <div className="workspace__loading" style={{ minHeight: '200px' }}>
-            <div className="spinner" />
-          </div>
-        ) : totalItems === 0 ? (
-          <div className="workspace__files-empty">
-            {canWrite
-              ? 'This folder is empty. Create a folder or upload a file.'
-              : 'This folder is empty.'}
-          </div>
-        ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Name</th>
-                <th>Size</th>
-                <th>Uploaded By</th>
-                <th>Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {/* Folders first */}
-              {folders.map(folder => (
-                <tr key={`folder-${folder.id}`} className="folder-row" onDoubleClick={() => navigateToFolder(folder.id)}>
-                  <td><span className="file-type-badge file-type-badge--folder">FLD</span></td>
-                  <td className="file-name">
-                    <button className="folder-link" onClick={() => navigateToFolder(folder.id)}>
-                      {folder.name}
-                    </button>
-                  </td>
-                  <td className="mono">—</td>
-                  <td className="mono">—</td>
-                  <td>{formatDate(folder.created_at)}</td>
-                  <td className="file-actions">
-                    {canWrite && (
-                      <>
-                        <button
-                          className="btn btn--secondary btn--sm"
-                          onClick={() => { setRenamingFolder(folder); setRenameValue(folder.name) }}
-                        >
-                          Rename
-                        </button>
-                        <button
-                          className="btn btn--danger btn--sm"
-                          onClick={() => setDeletingFolder(folder)}
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
-              ))}
-
-              {/* Files */}
-              {files.map(file => (
-                <tr key={file.id}>
-                  <td><span className="file-type-badge">{fileIcon(file.mime_type)}</span></td>
-                  <td className="file-name">
-                    {file.filename}
-                    {file.version > 1 && (
-                      <span className="version-badge" title={`Version ${file.version}`}>v{file.version}</span>
-                    )}
-                  </td>
-                  <td className="mono">{formatBytes(file.size_bytes)}</td>
-                  <td className="mono">{file.uploaded_by_name || '—'}</td>
-                  <td>{formatDate(file.created_at)}</td>
-                  <td className="file-actions">
-                    <button className="btn btn--secondary btn--sm" onClick={() => handleDownload(file)}>
-                      Download
-                    </button>
-                    {canUpload && (
-                      <>
-                        <button
-                          className="btn btn--accent btn--sm"
-                          onClick={() => handleReplace(file)}
-                          disabled={uploading}
-                        >
-                          Replace
-                        </button>
-                        <button
-                          className="btn btn--secondary btn--sm"
-                          onClick={() => openMoveFilePicker(file)}
-                        >
-                          Move
-                        </button>
-                      </>
-                    )}
-                    {canDelete && (
-                      <button className="btn btn--danger btn--sm" onClick={() => handleDelete(file)}>
-                        Delete
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="workspace__tabs">
+        <button className={`workspace__tab ${activeTab === 'files' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('files')}>Files</button>
+        <button className={`workspace__tab ${activeTab === 'members' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('members')}>Members</button>
+        {wsAdmin && (
+          <button className={`workspace__tab ${activeTab === 'settings' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('settings')}>Settings</button>
         )}
       </div>
+
+      {activeTab === 'members' && <MembersTab slug={slug} />}
+      {activeTab === 'settings' && wsAdmin && (
+        <WorkspaceSettingsTab slug={slug} workspace={workspace} onSaved={() => fetchWorkspace()} />
+      )}
+
+      {activeTab === 'files' && (
+        <>
+          {/* Breadcrumb Navigation */}
+          <nav className="breadcrumbs" aria-label="Folder navigation">
+            <button className="breadcrumb__item breadcrumb__root" onClick={() => navigateToFolder(null)}>
+              {workspace.name}
+            </button>
+            {breadcrumbs.map((crumb, i) => (
+              <span key={crumb.id} className="breadcrumb__segment">
+                <span className="breadcrumb__sep">/</span>
+                {i === breadcrumbs.length - 1 ? (
+                  <span className="breadcrumb__current">{crumb.name}</span>
+                ) : (
+                  <button className="breadcrumb__item" onClick={() => navigateToFolder(crumb.id)}>
+                    {crumb.name}
+                  </button>
+                )}
+              </span>
+            ))}
+          </nav>
+
+          {error && (
+            <div className="workspace__alert workspace__alert--error">
+              {error}
+              <button className="workspace__alert-dismiss" onClick={() => setError(null)}>&times;</button>
+            </div>
+          )}
+
+          <div
+            className={`workspace__content card ${dragOver ? 'workspace__content--dragover' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+              <div className="workspace__toolbar">
+                <span className="label">
+                {folders.length} folder{folders.length !== 1 ? 's' : ''} &middot; {files.length} file{files.length !== 1 ? 's' : ''}
+              </span>
+              {canWrite && (
+                <div className="workspace__upload-actions">
+                  {uploading && <span className="workspace__upload-status mono">{uploadProgress}</span>}
+                  <button
+                    className="btn btn--secondary"
+                    onClick={() => { setNewFolderName(''); setShowNewFolderModal(true) }}
+                    disabled={uploading}
+                  >
+                    New Folder
+                  </button>
+                  <button
+                    className="btn btn--primary"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? 'Uploading...' : 'Upload File'}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={(e) => handleUpload(e.target.files)}
+                  />
+                  <input
+                    ref={replaceInputRef}
+                    type="file"
+                    style={{ display: 'none' }}
+                    onChange={handleReplaceFile}
+                  />
+                </div>
+              )}
+            </div>
+
+            {loading && workspace ? (
+              <div className="workspace__loading" style={{ minHeight: '200px' }}>
+                <div className="spinner" />
+              </div>
+            ) : totalItems === 0 ? (
+              <div className="workspace__files-empty">
+                {canWrite
+                  ? 'This folder is empty. Create a folder or upload a file.'
+                  : 'This folder is empty.'}
+              </div>
+            ) : (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Type</th>
+                    <th>Name</th>
+                    <th>Size</th>
+                    <th>Uploaded By</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Folders first */}
+                  {folders.map(folder => (
+                    <tr key={`folder-${folder.id}`} className="folder-row" onDoubleClick={() => navigateToFolder(folder.id)}>
+                      <td><span className="file-type-badge file-type-badge--folder">FLD</span></td>
+                      <td className="file-name">
+                        <button className="folder-link" onClick={() => navigateToFolder(folder.id)}>
+                          {folder.name}
+                        </button>
+                      </td>
+                      <td className="mono">—</td>
+                      <td className="mono">—</td>
+                      <td>{formatDate(folder.created_at)}</td>
+                      <td className="file-actions">
+                        {canWrite && (
+                          <>
+                            <button
+                              className="btn btn--secondary btn--sm"
+                              onClick={() => { setRenamingFolder(folder); setRenameValue(folder.name) }}
+                            >
+                              Rename
+                            </button>
+                            <button
+                              className="btn btn--danger btn--sm"
+                              onClick={() => setDeletingFolder(folder)}
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+
+                  {/* Files */}
+                  {files.map(file => (
+                    <tr key={file.id}>
+                      <td><span className="file-type-badge">{fileIcon(file.mime_type)}</span></td>
+                      <td className="file-name">
+                        {file.filename}
+                        {file.version > 1 && (
+                          <span className="version-badge" title={`Version ${file.version}`}>v{file.version}</span>
+                        )}
+                      </td>
+                      <td className="mono">{formatBytes(file.size_bytes)}</td>
+                      <td className="mono">{file.uploaded_by_name || '—'}</td>
+                      <td>{formatDate(file.created_at)}</td>
+                      <td className="file-actions">
+                        <button className="btn btn--secondary btn--sm" onClick={() => handleDownload(file)}>
+                          Download
+                        </button>
+                        {canUpload && (
+                          <>
+                            <button
+                              className="btn btn--accent btn--sm"
+                              onClick={() => handleReplace(file)}
+                              disabled={uploading}
+                            >
+                              Replace
+                            </button>
+                            <button
+                              className="btn btn--secondary btn--sm"
+                              onClick={() => openMoveFilePicker(file)}
+                            >
+                              Move
+                            </button>
+                          </>
+                        )}
+                        {canDelete && (
+                          <button className="btn btn--danger btn--sm" onClick={() => handleDelete(file)}>
+                            Delete
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
 
       {dragOver && canUpload && (
         <div className="workspace__drop-overlay">

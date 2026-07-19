@@ -1,6 +1,6 @@
 // worker/src/routes/workspaces.js
 import { jsonResponse, errorResponse } from '../cors.js'
-import { requireRole, requireWorkspaceAccess } from '../auth.js'
+import { requireRole, requireWorkspaceAccess, hasWorkspaceAdminPermission } from '../auth.js'
 import { logAudit, getClientIp } from '../audit.js'
 
 /**
@@ -9,13 +9,13 @@ import { logAudit, getClientIp } from '../audit.js'
 export async function handleListWorkspaces(request, env, user) {
   let workspaces
 
-  if (user.role === 'admin' || user.role === 'owner') {
+  if (user.role === 'admin') {
     const result = await env.DB.prepare(
       'SELECT id, name, slug, color, created_at FROM workspaces ORDER BY name',
     ).all()
     workspaces = result.results
   } else {
-    // Client: filter by workspace_slugs from auth
+    // Owner/client: filter by workspace_slugs from auth
     if (user.workspaceSlugs.length === 0) {
       return jsonResponse({ workspaces: [] })
     }
@@ -70,7 +70,7 @@ export async function handleGetWorkspace(request, env, user, params) {
   })
 
   // Determine current user's effective permission on this workspace
-  const userPermission = (user.role === 'admin' || user.role === 'owner')
+  const userPermission = user.role === 'admin'
     ? 'admin'
     : (user.workspacePermissions || {})[params.slug] || 'read'
 
@@ -85,10 +85,10 @@ export async function handleGetWorkspace(request, env, user, params) {
 }
 
 /**
- * POST /api/workspaces — create a new workspace (admin only)
+ * POST /api/workspaces — create a new workspace (admin or owner)
  */
 export async function handleCreateWorkspace(request, env, user) {
-  requireRole(user, 'admin')
+  requireRole(user, 'admin', 'owner')
 
   let body
   try { body = await request.json() } catch { return errorResponse('Invalid JSON', 400) }
@@ -96,35 +96,44 @@ export async function handleCreateWorkspace(request, env, user) {
   const { name, slug, color } = body
   if (!name || !slug) return errorResponse('name and slug are required', 400)
 
-  // Validate slug format
   if (!/^[a-z0-9-]+$/.test(slug)) {
     return errorResponse('slug must be lowercase alphanumeric with hyphens only', 400)
   }
 
-  // Check uniqueness
   const existing = await env.DB.prepare('SELECT id FROM workspaces WHERE slug = ?')
     .bind(slug).first()
   if (existing) return errorResponse('A workspace with this slug already exists', 409)
 
+  const wsColor = color || '#6F8FB8'
   const wsId = crypto.randomUUID()
   await env.DB.prepare(
     `INSERT INTO workspaces (id, name, slug, color, storage_quota_mb, storage_used_mb, created_at, updated_at)
      VALUES (?, ?, ?, ?, 2048, 0, datetime('now'), datetime('now'))`,
-  ).bind(wsId, name, slug, color || '#00c8d4').run()
+  ).bind(wsId, name, slug, wsColor).run()
+
+  // Creator becomes an admin-permission member (§3.2.1). Global admins get the
+  // row too — harmless, and it keeps the "last admin-permission member" guard
+  // meaningful from day one.
+  await env.DB.prepare(
+    `INSERT INTO user_workspaces (id, user_id, workspace_id, permission, created_at)
+     VALUES (?, ?, ?, 'admin', datetime('now'))`,
+  ).bind(crypto.randomUUID(), user.dbUserId, wsId).run()
 
   await logAudit(env, user.userId, 'workspace.create', {
     resourceType: 'workspace', resourceId: wsId,
     name, slug, ipAddress: getClientIp(request),
   })
 
-  return jsonResponse({ workspace: { id: wsId, name, slug, color: color || '#00c8d4' } }, 201)
+  return jsonResponse({ workspace: { id: wsId, name, slug, color: wsColor } }, 201)
 }
 
 /**
- * PATCH /api/workspaces/:slug — update workspace (admin only)
+ * PATCH /api/workspaces/:slug — update workspace (workspace admin permission or global admin)
  */
 export async function handleUpdateWorkspace(request, env, user, params) {
-  requireRole(user, 'admin')
+  if (!hasWorkspaceAdminPermission(user, params.slug)) {
+    throw errorResponse('Forbidden: workspace admin permission required', 403)
+  }
 
   const workspace = await env.DB.prepare('SELECT id, name, slug, color FROM workspaces WHERE slug = ?')
     .bind(params.slug).first()
@@ -132,6 +141,12 @@ export async function handleUpdateWorkspace(request, env, user, params) {
 
   let body
   try { body = await request.json() } catch { return errorResponse('Invalid JSON', 400) }
+
+  // Storage quota is infrastructure, not workspace settings (§3.1 grants
+  // wsAdmin "rename workspace, workspace settings" only).
+  if (body.storage_quota_mb && user.role !== 'admin') {
+    return errorResponse('Forbidden: only a global admin can change storage quota', 403)
+  }
 
   const updates = []
   const bindings = []
@@ -175,8 +190,12 @@ export async function handleDeleteWorkspace(request, env, user, params) {
     try { await env.FILES.delete(f.r2_key) } catch { /* continue */ }
   }
 
-  // Delete D1 records: files, user_workspaces, then workspace
+  // Delete D1 records: files, invitations, user_workspaces, then workspace.
+  // Invitations must go before the workspace itself — its FK has no cascade,
+  // so a workspace with any invitation history (pending, accepted, or
+  // revoked) would otherwise fail this delete with a foreign-key error.
   await env.DB.prepare('DELETE FROM files WHERE workspace_id = ?').bind(workspace.id).run()
+  await env.DB.prepare('DELETE FROM invitations WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM user_workspaces WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM workspaces WHERE id = ?').bind(workspace.id).run()
 
@@ -193,7 +212,7 @@ export async function handleDeleteWorkspace(request, env, user, params) {
  * GET /api/users/:id/workspaces — get workspace assignments for a user
  */
 export async function handleGetUserWorkspaces(request, env, user, params) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
   const targetId = params.id
 
   const result = await env.DB.prepare(
@@ -213,7 +232,7 @@ export async function handleGetUserWorkspaces(request, env, user, params) {
  * Replaces all assignments for the user.
  */
 export async function handleUpdateUserWorkspaces(request, env, user, params) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
   const targetId = params.id
 
   const target = await env.DB.prepare('SELECT id, username FROM users WHERE id = ?')

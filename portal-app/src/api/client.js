@@ -158,6 +158,23 @@ export function useApiClient() {
     }),
     deleteWorkspace: (slug) => apiFetch(`/api/workspaces/${slug}`, getToken, { method: 'DELETE' }),
 
+    // Members & invitations (Phase 2)
+    listMembers: (slug) => apiFetch(`/api/workspaces/${slug}/members`, getToken),
+    updateMemberPermission: (slug, userId, permission) =>
+      apiFetch(`/api/workspaces/${slug}/members/${userId}`, getToken, {
+        method: 'PATCH',
+        body: JSON.stringify({ permission }),
+      }),
+    removeMember: (slug, userId) =>
+      apiFetch(`/api/workspaces/${slug}/members/${userId}`, getToken, { method: 'DELETE' }),
+    listInvitations: (slug) => apiFetch(`/api/workspaces/${slug}/invitations`, getToken),
+    createInvitation: (slug, email, permission) =>
+      apiFetch(`/api/workspaces/${slug}/invitations`, getToken, {
+        method: 'POST',
+        body: JSON.stringify({ email, permission }),
+      }),
+    revokeInvitation: (id) => apiFetch(`/api/invitations/${id}`, getToken, { method: 'DELETE' }),
+
     // Audit log (admin)
     getAuditLog: (params = {}) =>
       apiFetch(`/api/audit-log?${new URLSearchParams(params)}`, getToken),

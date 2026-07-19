@@ -91,6 +91,15 @@ export async function resolveRecipients(env, workspaceId) {
 }
 
 /**
+ * Escape user-controlled text before interpolating into email HTML.
+ */
+export function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]))
+}
+
+/**
  * Build a branded HTML email body.
  */
 export function buildEmailHtml(title, bodyLines) {

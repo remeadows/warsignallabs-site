@@ -3,7 +3,7 @@ import { usePortalAuth } from '../contexts/PortalAuth'
 import './DashboardLayout.css'
 
 export default function DashboardLayout() {
-  const { isPrivileged, authLoading } = usePortalAuth()
+  const { isAdmin, authLoading } = usePortalAuth()
   const location = useLocation()
 
   if (authLoading) {
@@ -16,7 +16,7 @@ export default function DashboardLayout() {
     )
   }
 
-  if (!isPrivileged) {
+  if (!isAdmin) {
     return <Navigate to="/forbidden" state={{ from: location }} replace />
   }
 

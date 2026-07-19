@@ -1,9 +1,10 @@
-import { Outlet, NavLink, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { UserButton, useUser } from '@clerk/clerk-react'
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { version } from '../../package.json'
 import { useApiClient } from '../api/client'
 import { PortalAuthProvider } from '../contexts/PortalAuth'
+import NewWorkspaceModal from '../components/NewWorkspaceModal'
 import './PortalLayout.css'
 
 const PORTAL_NAME = import.meta.env.VITE_PORTAL_NAME || 'WARSIGNALLABS PORTAL'
@@ -11,8 +12,10 @@ const PORTAL_NAME = import.meta.env.VITE_PORTAL_NAME || 'WARSIGNALLABS PORTAL'
 export default function PortalLayout() {
   const { user } = useUser()
   const location = useLocation()
+  const navigate = useNavigate()
   const api = useApiClient()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [showNewWorkspace, setShowNewWorkspace] = useState(false)
 
   // D1-authoritative user data (fetched from /api/me)
   const [d1User, setD1User] = useState(null)
@@ -20,6 +23,17 @@ export default function PortalLayout() {
   const [workspaces, setWorkspaces] = useState([])
   // Auth loading gate — prevents route guards from redirecting before API responds
   const [authLoading, setAuthLoading] = useState(true)
+
+  // Re-fetches the sidebar's workspace catalog. Used on mount and after
+  // creating a new workspace via the sidebar modal.
+  const refreshWorkspaces = useCallback(async () => {
+    try {
+      const wsData = await api.listWorkspaces()
+      setWorkspaces(wsData.workspaces || [])
+    } catch {
+      // Leave existing list in place on error
+    }
+  }, [api])
 
   useEffect(() => {
     let cancelled = false
@@ -109,9 +123,14 @@ export default function PortalLayout() {
                   {ws.name}
                 </NavLink>
               ))}
+              {isPrivileged && (
+                <button className="sidebar__link sidebar__link--action" onClick={() => setShowNewWorkspace(true)}>
+                  + New Workspace
+                </button>
+              )}
             </div>
 
-            {isPrivileged && (
+            {isAdmin && (
               <div className="sidebar__section">
                 <span className="sidebar__label label">Admin</span>
                 <NavLink to="/admin/users" className={({ isActive }) => `sidebar__link sidebar__link--admin ${isActive ? 'sidebar__link--active' : ''}`}>
@@ -126,7 +145,7 @@ export default function PortalLayout() {
               </div>
             )}
 
-            {isPrivileged && (
+            {isAdmin && (
               <div className="sidebar__section">
                 <span className="sidebar__label label">Operations</span>
                 <NavLink to="/dashboard/projects" className={({ isActive }) => `sidebar__link sidebar__link--ops ${isActive ? 'sidebar__link--active' : ''}`}>
@@ -148,6 +167,17 @@ export default function PortalLayout() {
           </main>
         </div>
       </div>
+
+      {showNewWorkspace && (
+        <NewWorkspaceModal
+          onClose={() => setShowNewWorkspace(false)}
+          onCreated={(ws) => {
+            setShowNewWorkspace(false)
+            refreshWorkspaces()
+            navigate(`/workspace/${ws.slug}`)
+          }}
+        />
+      )}
     </PortalAuthProvider>
   )
 }

@@ -2,7 +2,67 @@
 # Companion to memory.yaml (long-lived project context).
 # Update this file at the end of every working session.
 
-last_updated: 2026-07-18
+last_updated: 2026-07-19
+session_2026_07_19_phase2_collab: |
+  PHASE 2 BUILT + DEPLOYED — v0.4.0 live in production, PR pending merge.
+  Branch feat/portal-phase2-collab (worktree .claude/worktrees/feat-portal-
+  phase2-collab). Plan: docs/superpowers/plans/2026-07-18-portal-phase2-
+  collab.md. Spec: docs/superpowers/specs/2026-07-18-phase2-workspaces-
+  members-permissions-design.md. 10 tasks, subagent-driven-development,
+  every task independently reviewed.
+
+  SHIPPED:
+    - Authz model: `owner` role (Chris/usr-004, displayed as "Collaborator"
+      in all UI) no longer bypasses per-workspace checks — only global
+      `admin` does. New ceiling helpers hasWorkspaceAdminPermission +
+      memberChangeViolation (unit-tested). Admin plane (users/audit/
+      analytics/dashboard) narrowed to admin-only. Owner CAN create
+      workspaces (auto admin membership) and manage members/settings on
+      workspaces where they hold admin permission; CANNOT delete any
+      workspace, touch global admins, or see admin endpoints.
+    - Members + invitations: routes/members.js (list/patch/remove members;
+      create/list/revoke invitations), invitation acceptance wired into
+      requireAuth's email-match path, Resend email on invite. Migrations
+      002 (invitations table) + 003 (usr-004 -> owner, usr-003 -> admin).
+    - Frontend: workspace Members + Settings tabs, sidebar New Workspace
+      modal, admin plane hidden for non-admins, shared role labels.
+
+  THREE PRODUCTION BUGS found + fixed during acceptance (all latent,
+  none introduced by Phase 2 — Phase 2's new traffic patterns exposed them):
+    1. users.status CHECK constraint lacked 'invited' -> invites 503'd.
+       Fixed via migration 004 (table rebuild).
+    2. D1's ALTER TABLE RENAME auto-retargets OTHER tables' FK references
+       (local sqlite3 does NOT reproduce this) -> 004's rebuild broke all
+       writes to files/user_workspaces/invitations (active outage: uploads
+       dead). Fixed via migration 005 (rebuilt 4 tables in dependency
+       order, one transaction). Data verified intact: 4 users, 4
+       workspaces, 18 files, FK check clean.
+    3. router.js returned async handlers WITHOUT await -> any Response
+       thrown inside a handler escaped the try/catch as an unhandled
+       rejection -> Cloudflare 1101 instead of clean 403 JSON. Latent since
+       Phase 1 (requireAuth IS awaited, so 401s always worked; no live
+       request had ever thrown from inside a handler until the owner-role
+       ceiling tests). Fixed cb1c079 (await on all 40 returns + behavioral
+       regression test, verified red->green).
+
+  CEILING TESTS: all 10 pass live (usr-001 temporarily flipped to owner
+  with Russ's approval, reverted + verified after): admin endpoints 403 x4,
+  no-membership workspace 403, workspace delete 403 (even own), file
+  delete w/ write-only 403, remove/downgrade global admin 403 x2, owner
+  workspace create 201. All test artifacts cleaned up; final prod state
+  verified at baseline counts with correct roles.
+
+  INCIDENT (resolved): usr-001 briefly self-demoted to owner via an
+  accidental click on the Admin Users role dropdown during the deploy
+  window (root-caused via audit_log, restored via D1). Led to the
+  ROLE_LABELS UI fix (2c11fb1) — raw "owner" value no longer shown.
+
+  NEXT: merge PR (after final whole-branch review). Deferred/follow-ups
+  tracked in .superpowers/sdd/progress.md while the worktree lives, and in
+  the PR description: buildEmailHtml HTML-escaping (all notify.js callers,
+  standalone task), route-handler integration tests, TOCTOU on last-admin
+  check (academic at 4 users), stale "admin/owner" doc comments.
+
 session_2026_07_18_phase1_closed: |
   PHASE 1 CLOSED — merged to main, deployed, verified. PR #26 merged
   (squash commit 6ffbd70). Branch feat/portal-phase1-foundation and its

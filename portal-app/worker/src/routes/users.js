@@ -5,10 +5,10 @@ import { logAudit, getClientIp } from '../audit.js'
 import { notifyWorkspaceEvent } from '../notify.js'
 
 /**
- * GET /api/users — admin/owner, lists all users from D1
+ * GET /api/users — admin only, lists all users from D1
  */
 export async function handleListUsers(request, env, user) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
 
   const url = new URL(request.url)
   const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200)
@@ -120,6 +120,23 @@ export async function handleChangeRole(request, env, user, params) {
     return errorResponse(`role must be one of: ${validRoles.join(', ')}`, 400)
   }
 
+  // Ceiling: never demote the last active global admin — doing so locks
+  // everyone out of the admin plane (this exact scenario caused a real
+  // production incident via this endpoint, see handoff.yaml).
+  if (target.role === 'admin' && newRole !== 'admin') {
+    const remainingAdmins = await env.DB.prepare(
+      `SELECT COUNT(*) AS cnt FROM users WHERE role = 'admin' AND status = 'active' AND id != ?`,
+    ).bind(targetId).first()
+    if ((remainingAdmins?.cnt || 0) < 1) {
+      await logAudit(env, user.userId, 'user.role.change.denied', {
+        resourceType: 'user', resourceId: targetId,
+        username: target.username, attempted: newRole,
+        reason: 'last active admin', ipAddress: getClientIp(request),
+      })
+      return errorResponse('Cannot change role: at least one active admin must remain', 403)
+    }
+  }
+
   await env.DB.prepare("UPDATE users SET role = ?, updated_at = datetime('now') WHERE id = ?")
     .bind(newRole, targetId).run()
 
@@ -134,10 +151,10 @@ export async function handleChangeRole(request, env, user, params) {
 }
 
 /**
- * POST /api/users/:id/deactivate — admin/owner only
+ * POST /api/users/:id/deactivate — admin only
  */
 export async function handleDeactivateUser(request, env, user, params) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
   const targetId = params.id
 
   const target = await env.DB.prepare('SELECT id, username, role FROM users WHERE id = ?')
@@ -159,10 +176,10 @@ export async function handleDeactivateUser(request, env, user, params) {
 }
 
 /**
- * POST /api/users/:id/activate — admin/owner only
+ * POST /api/users/:id/activate — admin only
  */
 export async function handleActivateUser(request, env, user, params) {
-  requireRole(user, 'admin', 'owner')
+  requireRole(user, 'admin')
   const targetId = params.id
 
   const target = await env.DB.prepare('SELECT id, username FROM users WHERE id = ?')
