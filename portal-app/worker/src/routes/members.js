@@ -206,7 +206,18 @@ export async function handleCreateInvitation(request, env, user, params, ctx) {
   // All-or-nothing: a new user row, its membership, and its invitation must
   // never partially land — a membership row with no invitation record is
   // orphaned (handleRevokeInvitation can never find it to clean up).
-  await env.DB.batch(statements)
+  try {
+    await env.DB.batch(statements)
+  } catch (err) {
+    // A concurrent request can win the race between the pendingInvite check
+    // above and this batch — idx_invitations_pending_workspace_email (or
+    // user_workspaces' own UNIQUE(user_id, workspace_id)) turns that race
+    // into a constraint violation here rather than a silent duplicate.
+    if (String(err?.message || '').includes('UNIQUE constraint failed')) {
+      return errorResponse('Already invited or already a member — refresh and try again', 409)
+    }
+    throw err
+  }
 
   await logAudit(env, user.userId, 'member.invite', {
     resourceType: 'invitation', resourceId: invId,
