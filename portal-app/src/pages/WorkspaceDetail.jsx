@@ -81,7 +81,7 @@ export default function WorkspaceDetail() {
   const [error, setError] = useState(null)
 
   // Upload permission
-  const canUpload = role === 'admin' || role === 'owner' ||
+  const canUpload = role === 'admin' ||
     (workspace?.userPermission === 'write' || workspace?.userPermission === 'admin')
   const canWrite = canUpload
 

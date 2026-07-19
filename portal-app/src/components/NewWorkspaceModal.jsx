@@ -13,11 +13,15 @@ export default function NewWorkspaceModal({ onClose, onCreated }) {
   const [error, setError] = useState(null)
   const [saving, setSaving] = useState(false)
 
+  const handleClose = () => { if (!saving) onClose() }
+
   const handleCreate = async () => {
-    if (!name.trim()) { setError('Name is required.'); return }
+    const trimmedName = name.trim()
+    if (!trimmedName) { setError('Name is required.'); return }
+    const base = slugify(trimmedName)
+    if (!base) { setError('Name must include at least one letter or number.'); return }
     setSaving(true)
     setError(null)
-    const base = slugify(name)
     // Auto-slug with numeric suffix on collision (spec §5).
     for (let n = 1; n <= 10; n++) {
       const slug = n === 1 ? base : `${base}-${n}`
@@ -37,11 +41,11 @@ export default function NewWorkspaceModal({ onClose, onCreated }) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleClose}>
       <div className="modal card" onClick={(e) => e.stopPropagation()}>
         <div className="modal__header">
           <h2>New Workspace</h2>
-          <button className="modal__close" onClick={onClose}>&times;</button>
+          <button className="modal__close" onClick={handleClose} disabled={saving}>&times;</button>
         </div>
         <div className="modal__body">
           {error && (
@@ -67,8 +71,11 @@ export default function NewWorkspaceModal({ onClose, onCreated }) {
               {PRESET_COLORS.map(c => (
                 <button
                   key={c}
+                  type="button"
                   className={`color-swatch ${color === c ? 'color-swatch--active' : ''}`}
                   style={{ background: c }}
+                  aria-label={`Color ${c}`}
+                  aria-pressed={color === c}
                   onClick={() => setColor(c)}
                 />
               ))}
@@ -76,7 +83,7 @@ export default function NewWorkspaceModal({ onClose, onCreated }) {
           </div>
         </div>
         <div className="modal__footer">
-          <button className="btn btn--secondary" onClick={onClose} disabled={saving}>Cancel</button>
+          <button className="btn btn--secondary" onClick={handleClose} disabled={saving}>Cancel</button>
           <button className="btn btn--primary" onClick={handleCreate} disabled={saving}>
             {saving ? 'Creating…' : 'Create Workspace'}
           </button>

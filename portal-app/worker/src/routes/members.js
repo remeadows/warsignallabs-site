@@ -4,7 +4,7 @@
 import { jsonResponse, errorResponse } from '../cors.js'
 import { requireWorkspaceAccess, hasWorkspaceAdminPermission, memberChangeViolation } from '../auth.js'
 import { logAudit, getClientIp } from '../audit.js'
-import { sendEmail, buildEmailHtml } from '../notify.js'
+import { sendEmail, buildEmailHtml, escapeHtml } from '../notify.js'
 
 export async function getWorkspaceBySlug(env, slug) {
   return env.DB.prepare('SELECT id, name, slug FROM workspaces WHERE slug = ?')
@@ -142,7 +142,7 @@ export async function handleCreateInvitation(request, env, user, params, ctx) {
   }
 
   // Edge rules (spec §4): already a member -> 409; already pending -> 409.
-  let invitee = await env.DB.prepare('SELECT id, username, status FROM users WHERE LOWER(email) = ?')
+  let invitee = await env.DB.prepare('SELECT id, username, status, clerk_id FROM users WHERE LOWER(email) = ?')
     .bind(email).first()
   if (invitee) {
     const existingMembership = await env.DB.prepare(
@@ -161,6 +161,7 @@ export async function handleCreateInvitation(request, env, user, params, ctx) {
 
   // Create the user row if none exists (status='invited'; activated by
   // requireAuth's email auto-map on first sign-in — no Clerk API dependency).
+  const statements = []
   if (!invitee) {
     const base = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'invited'
     let username = base
@@ -170,24 +171,42 @@ export async function handleCreateInvitation(request, env, user, params, ctx) {
       username = `${base}-${n}`
     }
     const newUserId = `usr-${crypto.randomUUID().slice(0, 8)}`
-    await env.DB.prepare(
+    statements.push(env.DB.prepare(
       `INSERT INTO users (id, username, email, role, status, created_at, updated_at)
        VALUES (?, ?, ?, 'client', 'invited', datetime('now'), datetime('now'))`,
-    ).bind(newUserId, username, email).run()
-    invitee = { id: newUserId, username, status: 'invited' }
+    ).bind(newUserId, username, email))
+    invitee = { id: newUserId, username, status: 'invited', clerk_id: null }
   }
 
-  // Membership row now; it goes live the moment their sign-in maps.
-  await env.DB.prepare(
+  // An invitee who has already signed in before (clerk_id already mapped)
+  // gets access immediately — there's no future "first sign-in" acceptance
+  // step to wait for, so record the invitation as accepted right away. A
+  // pending invite for an already-active member could otherwise be revoked
+  // later as if it were never accepted, stripping access that was in fact
+  // already granted.
+  const alreadyProvisioned = !!invitee.clerk_id
+  const invStatus = alreadyProvisioned ? 'accepted' : 'pending'
+
+  // Membership row now; it goes live the moment their sign-in maps (or
+  // immediately, if they're already provisioned).
+  statements.push(env.DB.prepare(
     `INSERT INTO user_workspaces (id, user_id, workspace_id, permission, created_at)
      VALUES (?, ?, ?, ?, datetime('now'))`,
-  ).bind(crypto.randomUUID(), invitee.id, workspace.id, permission).run()
+  ).bind(crypto.randomUUID(), invitee.id, workspace.id, permission))
 
   const invId = `inv-${crypto.randomUUID().slice(0, 8)}`
-  await env.DB.prepare(
-    `INSERT INTO invitations (id, workspace_id, email, permission, invited_by, status, created_at)
-     VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))`,
-  ).bind(invId, workspace.id, email, permission, user.dbUserId).run()
+  statements.push(env.DB.prepare(
+    alreadyProvisioned
+      ? `INSERT INTO invitations (id, workspace_id, email, permission, invited_by, status, created_at, accepted_at)
+         VALUES (?, ?, ?, ?, ?, 'accepted', datetime('now'), datetime('now'))`
+      : `INSERT INTO invitations (id, workspace_id, email, permission, invited_by, status, created_at)
+         VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))`,
+  ).bind(invId, workspace.id, email, permission, user.dbUserId))
+
+  // All-or-nothing: a new user row, its membership, and its invitation must
+  // never partially land — a membership row with no invitation record is
+  // orphaned (handleRevokeInvitation can never find it to clean up).
+  await env.DB.batch(statements)
 
   await logAudit(env, user.userId, 'member.invite', {
     resourceType: 'invitation', resourceId: invId,
@@ -195,10 +214,10 @@ export async function handleCreateInvitation(request, env, user, params, ctx) {
     ipAddress: getClientIp(request),
   })
 
-  const html = buildEmailHtml(`You've been invited to ${workspace.name}`, [
-    `<strong>Workspace:</strong> ${workspace.name}`,
-    `<strong>Access level:</strong> ${permission}`,
-    `<strong>Invited by:</strong> ${user.email || 'the workspace admin'}`,
+  const html = buildEmailHtml(`You've been invited to ${escapeHtml(workspace.name)}`, [
+    `<strong>Workspace:</strong> ${escapeHtml(workspace.name)}`,
+    `<strong>Access level:</strong> ${escapeHtml(permission)}`,
+    `<strong>Invited by:</strong> ${escapeHtml(user.email || 'the workspace admin')}`,
     `Sign in with this email address at <a href="https://portal.warsignallabs.net">portal.warsignallabs.net</a> — your access is ready.`,
   ])
   ctx.waitUntil(sendEmail(env, {
@@ -212,7 +231,7 @@ export async function handleCreateInvitation(request, env, user, params, ctx) {
     metadata: { invitationId: invId, permission },
   }))
 
-  return jsonResponse({ invitation: { id: invId, email, permission, status: 'pending' } }, 201)
+  return jsonResponse({ invitation: { id: invId, email, permission, status: invStatus } }, 201)
 }
 
 /** GET /api/workspaces/:slug/invitations — wsAdmin */

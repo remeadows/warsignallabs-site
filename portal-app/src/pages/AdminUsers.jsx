@@ -91,6 +91,13 @@ export default function AdminUsers() {
 
   const handleRoleChange = async (u, newRole) => {
     if (newRole === u.role) return
+    if (u.role === 'admin' && newRole !== 'admin') {
+      const activeAdmins = users.filter(x => x.role === 'admin' && x.status === 'active').length
+      if (activeAdmins <= 1) {
+        setError('Cannot change role: at least one active admin must remain.')
+        return
+      }
+    }
     const fromLabel = ROLE_LABELS[u.role] || u.role
     const toLabel = ROLE_LABELS[newRole] || newRole
     if (!confirm(`Change ${u.username}'s role from "${fromLabel}" to "${toLabel}"?`)) return

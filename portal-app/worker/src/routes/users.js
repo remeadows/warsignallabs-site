@@ -120,6 +120,23 @@ export async function handleChangeRole(request, env, user, params) {
     return errorResponse(`role must be one of: ${validRoles.join(', ')}`, 400)
   }
 
+  // Ceiling: never demote the last active global admin — doing so locks
+  // everyone out of the admin plane (this exact scenario caused a real
+  // production incident via this endpoint, see handoff.yaml).
+  if (target.role === 'admin' && newRole !== 'admin') {
+    const remainingAdmins = await env.DB.prepare(
+      `SELECT COUNT(*) AS cnt FROM users WHERE role = 'admin' AND status = 'active' AND id != ?`,
+    ).bind(targetId).first()
+    if ((remainingAdmins?.cnt || 0) < 1) {
+      await logAudit(env, user.userId, 'user.role.change.denied', {
+        resourceType: 'user', resourceId: targetId,
+        username: target.username, attempted: newRole,
+        reason: 'last active admin', ipAddress: getClientIp(request),
+      })
+      return errorResponse('Cannot change role: at least one active admin must remain', 403)
+    }
+  }
+
   await env.DB.prepare("UPDATE users SET role = ?, updated_at = datetime('now') WHERE id = ?")
     .bind(newRole, targetId).run()
 

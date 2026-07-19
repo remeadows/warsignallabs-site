@@ -190,8 +190,12 @@ export async function handleDeleteWorkspace(request, env, user, params) {
     try { await env.FILES.delete(f.r2_key) } catch { /* continue */ }
   }
 
-  // Delete D1 records: files, user_workspaces, then workspace
+  // Delete D1 records: files, invitations, user_workspaces, then workspace.
+  // Invitations must go before the workspace itself — its FK has no cascade,
+  // so a workspace with any invitation history (pending, accepted, or
+  // revoked) would otherwise fail this delete with a foreign-key error.
   await env.DB.prepare('DELETE FROM files WHERE workspace_id = ?').bind(workspace.id).run()
+  await env.DB.prepare('DELETE FROM invitations WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM user_workspaces WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM workspaces WHERE id = ?').bind(workspace.id).run()
 
