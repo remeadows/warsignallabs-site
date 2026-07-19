@@ -9,13 +9,13 @@ import { logAudit, getClientIp } from '../audit.js'
 export async function handleListWorkspaces(request, env, user) {
   let workspaces
 
-  if (user.role === 'admin' || user.role === 'owner') {
+  if (user.role === 'admin') {
     const result = await env.DB.prepare(
       'SELECT id, name, slug, color, created_at FROM workspaces ORDER BY name',
     ).all()
     workspaces = result.results
   } else {
-    // Client: filter by workspace_slugs from auth
+    // Owner/client: filter by workspace_slugs from auth
     if (user.workspaceSlugs.length === 0) {
       return jsonResponse({ workspaces: [] })
     }
@@ -70,7 +70,7 @@ export async function handleGetWorkspace(request, env, user, params) {
   })
 
   // Determine current user's effective permission on this workspace
-  const userPermission = (user.role === 'admin' || user.role === 'owner')
+  const userPermission = user.role === 'admin'
     ? 'admin'
     : (user.workspacePermissions || {})[params.slug] || 'read'
 

@@ -5,7 +5,7 @@ import { logAudit, getClientIp } from '../audit.js'
 import { notifyWorkspaceEvent } from '../notify.js'
 
 /**
- * GET /api/users — admin/owner, lists all users from D1
+ * GET /api/users — admin only, lists all users from D1
  */
 export async function handleListUsers(request, env, user) {
   requireRole(user, 'admin')
@@ -134,7 +134,7 @@ export async function handleChangeRole(request, env, user, params) {
 }
 
 /**
- * POST /api/users/:id/deactivate — admin/owner only
+ * POST /api/users/:id/deactivate — admin only
  */
 export async function handleDeactivateUser(request, env, user, params) {
   requireRole(user, 'admin')
@@ -159,7 +159,7 @@ export async function handleDeactivateUser(request, env, user, params) {
 }
 
 /**
- * POST /api/users/:id/activate — admin/owner only
+ * POST /api/users/:id/activate — admin only
  */
 export async function handleActivateUser(request, env, user, params) {
   requireRole(user, 'admin')

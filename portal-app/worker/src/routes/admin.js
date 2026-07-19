@@ -30,7 +30,7 @@ export const DASHBOARD_PROJECTS_DATA = [
 ]
 
 /**
- * GET /api/audit-log — admin/owner, returns audit log entries
+ * GET /api/audit-log — admin only, returns audit log entries
  * D1 schema: audit_log(id, user_id, action, resource_type, resource_id, metadata_json, ip_address, created_at)
  */
 export async function handleAuditLog(request, env, user) {
@@ -81,7 +81,7 @@ export async function handleAuditLog(request, env, user) {
 }
 
 /**
- * GET /api/admin/analytics — admin/owner, workspace stats and overview
+ * GET /api/admin/analytics — admin only, workspace stats and overview
  */
 export async function handleAdminAnalytics(request, env, user) {
   requireRole(user, 'admin')
@@ -128,7 +128,7 @@ export async function handleAdminAnalytics(request, env, user) {
 }
 
 /**
- * GET /api/dashboard/projects — admin/owner only
+ * GET /api/dashboard/projects — admin only
  * Serves the operational dashboard projects list.
  * v0.2.2: file-based (embedded JSON). Future: D1-backed.
  */
