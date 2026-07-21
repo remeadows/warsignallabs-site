@@ -162,23 +162,26 @@ export async function handleDeactivateUser(request, env, user, params) {
   if (!target) return errorResponse('User not found', 404)
 
   // Ceiling: never deactivate the last active global admin — same lockout
-  // this endpoint's role-change sibling already guards against.
-  if (target.role === 'admin') {
-    const remainingAdmins = await env.DB.prepare(
-      `SELECT COUNT(*) AS cnt FROM users WHERE role = 'admin' AND status = 'active' AND id != ?`,
-    ).bind(targetId).first()
-    if ((remainingAdmins?.cnt || 0) < 1) {
-      await logAudit(env, user.userId, 'user.deactivate.denied', {
-        resourceType: 'user', resourceId: targetId,
-        username: target.username, reason: 'last active admin',
-        ipAddress: getClientIp(request),
-      })
-      return errorResponse('Cannot deactivate: at least one active admin must remain', 403)
-    }
-  }
+  // this endpoint's role-change sibling already guards against. The
+  // eligibility check and the update must be one atomic statement: a
+  // separate COUNT-then-UPDATE lets two concurrent deactivations both pass
+  // the check before either write lands, zeroing out active admins.
+  const result = await env.DB.prepare(
+    `UPDATE users SET status = 'inactive', updated_at = datetime('now')
+     WHERE id = ?
+       AND (role != 'admin' OR (
+         SELECT COUNT(*) FROM users WHERE role = 'admin' AND status = 'active' AND id != ?
+       ) >= 1)`,
+  ).bind(targetId, targetId).run()
 
-  await env.DB.prepare("UPDATE users SET status = 'inactive', updated_at = datetime('now') WHERE id = ?")
-    .bind(targetId).run()
+  if (result.meta.changes === 0) {
+    await logAudit(env, user.userId, 'user.deactivate.denied', {
+      resourceType: 'user', resourceId: targetId,
+      username: target.username, reason: 'last active admin',
+      ipAddress: getClientIp(request),
+    })
+    return errorResponse('Cannot deactivate: at least one active admin must remain', 403)
+  }
 
   await logAudit(env, user.userId, 'user.deactivate', {
     resourceType: 'user', resourceId: targetId,
