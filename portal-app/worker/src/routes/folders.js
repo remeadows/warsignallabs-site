@@ -2,7 +2,7 @@
 import { jsonResponse, errorResponse } from '../cors.js'
 import { requireWorkspaceAccess, hasWorkspaceWriteAccess } from '../auth.js'
 import { logAudit, getClientIp } from '../audit.js'
-import { notifyWorkspaceEvent } from '../notify.js'
+import { notifyWorkspaceEvent, escapeHtml } from '../notify.js'
 
 /**
  * Validate folder name: no slashes, max 100 chars, non-empty.
@@ -147,11 +147,11 @@ export async function handleCreateFolder(request, env, user, params, ctx) {
     eventType: 'folder.create',
     workspaceId: workspace.id,
     workspaceName: workspace.name,
-    title: `Folder Created: ${folderName}`,
+    title: `Folder Created: ${escapeHtml(folderName)}`,
     bodyLines: [
-      `<strong>Folder:</strong> ${folderName}`,
-      `<strong>Workspace:</strong> ${workspace.name}`,
-      `<strong>Created by:</strong> ${user.email || user.userId}`,
+      `<strong>Folder:</strong> ${escapeHtml(folderName)}`,
+      `<strong>Workspace:</strong> ${escapeHtml(workspace.name)}`,
+      `<strong>Created by:</strong> ${escapeHtml(user.email || user.userId)}`,
     ],
     actorEmail: user.email,
     metadata: { folderId, folderName, workspaceSlug: params.slug },
@@ -252,11 +252,11 @@ export async function handleDeleteFolder(request, env, user, params, ctx) {
     eventType: 'folder.delete',
     workspaceId: folder.workspace_id,
     workspaceName: folder.workspace_name,
-    title: `Folder Deleted: ${folder.name}`,
+    title: `Folder Deleted: ${escapeHtml(folder.name)}`,
     bodyLines: [
-      `<strong>Folder:</strong> ${folder.name}`,
-      `<strong>Workspace:</strong> ${folder.workspace_name}`,
-      `<strong>Deleted by:</strong> ${user.email || user.userId}`,
+      `<strong>Folder:</strong> ${escapeHtml(folder.name)}`,
+      `<strong>Workspace:</strong> ${escapeHtml(folder.workspace_name)}`,
+      `<strong>Deleted by:</strong> ${escapeHtml(user.email || user.userId)}`,
     ],
     actorEmail: user.email,
     metadata: { folderId: folder.id, folderName: folder.name, workspaceSlug: folder.workspace_slug },
@@ -340,11 +340,11 @@ export async function handleMoveFolder(request, env, user, params, ctx) {
     eventType: 'folder.move',
     workspaceId: folder.workspace_id,
     workspaceName: folder.workspace_name,
-    title: `Folder Moved: ${folder.name}`,
+    title: `Folder Moved: ${escapeHtml(folder.name)}`,
     bodyLines: [
-      `<strong>Folder:</strong> ${folder.name}`,
-      `<strong>Workspace:</strong> ${folder.workspace_name}`,
-      `<strong>Moved by:</strong> ${user.email || user.userId}`,
+      `<strong>Folder:</strong> ${escapeHtml(folder.name)}`,
+      `<strong>Workspace:</strong> ${escapeHtml(folder.workspace_name)}`,
+      `<strong>Moved by:</strong> ${escapeHtml(user.email || user.userId)}`,
     ],
     actorEmail: user.email,
     metadata: { folderId: folder.id, folderName: folder.name, fromParentId: folder.parent_folder_id, toParentId: newParentId },

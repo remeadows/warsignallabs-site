@@ -2,7 +2,7 @@
 import { jsonResponse, errorResponse } from '../cors.js'
 import { requireRole } from '../auth.js'
 import { logAudit, getClientIp } from '../audit.js'
-import { notifyWorkspaceEvent } from '../notify.js'
+import { notifyWorkspaceEvent, escapeHtml } from '../notify.js'
 
 /**
  * GET /api/users — admin only, lists all users from D1
@@ -82,12 +82,12 @@ export async function handleCreateUser(request, env, user, ctx) {
     eventType: 'user.create',
     workspaceId: null,
     workspaceName: null,
-    title: `New User Created: ${username}`,
+    title: `New User Created: ${escapeHtml(username)}`,
     bodyLines: [
-      `<strong>Username:</strong> ${username}`,
-      `<strong>Email:</strong> ${email}`,
-      `<strong>Role:</strong> ${newRole || 'client'}`,
-      `<strong>Created by:</strong> ${user.email || user.userId}`,
+      `<strong>Username:</strong> ${escapeHtml(username)}`,
+      `<strong>Email:</strong> ${escapeHtml(email)}`,
+      `<strong>Role:</strong> ${escapeHtml(newRole || 'client')}`,
+      `<strong>Created by:</strong> ${escapeHtml(user.email || user.userId)}`,
     ],
     actorEmail: user.email,
     metadata: { userId, username, email, role: newRole || 'client' },

@@ -202,9 +202,9 @@ export function checkStorageThreshold(env, ctx, { workspaceId, workspaceName, wo
           eventType: 'workspace.threshold',
           workspaceId,
           workspaceName: workspaceName || workspaceSlug,
-          title: `Storage Alert: ${workspaceName || workspaceSlug} at ${pct}%`,
+          title: `Storage Alert: ${escapeHtml(workspaceName || workspaceSlug)} at ${pct}%`,
           bodyLines: [
-            `<strong>Workspace:</strong> ${workspaceName || workspaceSlug}`,
+            `<strong>Workspace:</strong> ${escapeHtml(workspaceName || workspaceSlug)}`,
             `<strong>Storage Used:</strong> ${usedMb.toFixed(1)} MB of ${quotaMb} MB (${pct}%)`,
             `<strong>Status:</strong> ${pct >= 90 ? '🔴 Critical' : '🟡 Warning'} — storage is ${pct >= 90 ? 'nearly full' : 'approaching capacity'}`,
             `Consider archiving old files or increasing the workspace quota.`,

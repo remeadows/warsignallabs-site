@@ -2,7 +2,7 @@
 import { jsonResponse, errorResponse, CORS_HEADERS, SECURITY_HEADERS } from '../cors.js'
 import { requireWorkspaceAccess, hasWorkspaceWriteAccess, hasWorkspaceAdminPermission } from '../auth.js'
 import { logAudit, getClientIp } from '../audit.js'
-import { notifyWorkspaceEvent, checkStorageThreshold } from '../notify.js'
+import { notifyWorkspaceEvent, checkStorageThreshold, escapeHtml } from '../notify.js'
 
 /**
  * Allowed MIME types for upload.
@@ -198,13 +198,13 @@ export async function handleUploadFile(request, env, user, params, ctx) {
     eventType: 'file.upload',
     workspaceId: workspace.id,
     workspaceName: wsInfo?.name || params.slug,
-    title: `File Uploaded: ${sanitized}`,
+    title: `File Uploaded: ${escapeHtml(sanitized)}`,
     bodyLines: [
-      `<strong>File:</strong> ${sanitized}`,
-      `<strong>Workspace:</strong> ${wsInfo?.name || params.slug}`,
-      `<strong>Category:</strong> ${category}`,
+      `<strong>File:</strong> ${escapeHtml(sanitized)}`,
+      `<strong>Workspace:</strong> ${escapeHtml(wsInfo?.name || params.slug)}`,
+      `<strong>Category:</strong> ${escapeHtml(category)}`,
       `<strong>Size:</strong> ${sizeMb} MB`,
-      `<strong>Uploaded by:</strong> ${user.email || user.userId}`,
+      `<strong>Uploaded by:</strong> ${escapeHtml(user.email || user.userId)}`,
     ],
     actorEmail: user.email,
     metadata: { fileId, filename: sanitized, workspaceSlug: params.slug, category, sizeBytes: file.size },
@@ -327,13 +327,13 @@ export async function handleReplaceFile(request, env, user, params, ctx) {
     eventType: 'file.replace',
     workspaceId: file.workspace_id,
     workspaceName: file.workspace_name || file.workspace_slug,
-    title: `File Updated: ${sanitized} (v${newVersion})`,
+    title: `File Updated: ${escapeHtml(sanitized)} (v${newVersion})`,
     bodyLines: [
-      `<strong>File:</strong> ${sanitized}`,
-      `<strong>Workspace:</strong> ${file.workspace_name || file.workspace_slug}`,
+      `<strong>File:</strong> ${escapeHtml(sanitized)}`,
+      `<strong>Workspace:</strong> ${escapeHtml(file.workspace_name || file.workspace_slug)}`,
       `<strong>Version:</strong> v${file.version || 1} → v${newVersion}`,
       `<strong>Size:</strong> ${sizeMb} MB`,
-      `<strong>Updated by:</strong> ${user.email || user.userId}`,
+      `<strong>Updated by:</strong> ${escapeHtml(user.email || user.userId)}`,
     ],
     actorEmail: user.email,
     metadata: { fileId, filename: sanitized, version: newVersion, workspaceSlug: file.workspace_slug },
@@ -466,11 +466,11 @@ export async function handleDeleteFile(request, env, user, params, ctx) {
     eventType: 'file.delete',
     workspaceId: file.workspace_id,
     workspaceName: wsInfo?.name || file.workspace_id,
-    title: `File Deleted: ${file.filename}`,
+    title: `File Deleted: ${escapeHtml(file.filename)}`,
     bodyLines: [
-      `<strong>File:</strong> ${file.filename}`,
-      `<strong>Workspace:</strong> ${wsInfo?.name || file.workspace_id}`,
-      `<strong>Deleted by:</strong> ${user.email || user.userId}`,
+      `<strong>File:</strong> ${escapeHtml(file.filename)}`,
+      `<strong>Workspace:</strong> ${escapeHtml(wsInfo?.name || file.workspace_id)}`,
+      `<strong>Deleted by:</strong> ${escapeHtml(user.email || user.userId)}`,
     ],
     actorEmail: user.email,
     metadata: { fileId, filename: file.filename, workspaceId: file.workspace_id },
@@ -523,11 +523,11 @@ export async function handleDownloadFile(request, env, user, params, ctx) {
     eventType: 'file.download',
     workspaceId: wsInfo?.id || null,
     workspaceName: wsInfo?.name || file.workspace_slug,
-    title: `File Downloaded: ${file.filename}`,
+    title: `File Downloaded: ${escapeHtml(file.filename)}`,
     bodyLines: [
-      `<strong>File:</strong> ${file.filename}`,
-      `<strong>Workspace:</strong> ${wsInfo?.name || file.workspace_slug}`,
-      `<strong>Downloaded by:</strong> ${user.email || user.userId}`,
+      `<strong>File:</strong> ${escapeHtml(file.filename)}`,
+      `<strong>Workspace:</strong> ${escapeHtml(wsInfo?.name || file.workspace_slug)}`,
+      `<strong>Downloaded by:</strong> ${escapeHtml(user.email || user.userId)}`,
     ],
     actorEmail: user.email,
     metadata: { fileId, filename: file.filename, workspaceSlug: file.workspace_slug },
@@ -593,11 +593,11 @@ export async function handleMoveFile(request, env, user, params, ctx) {
     eventType: 'file.move',
     workspaceId: file.workspace_id,
     workspaceName: file.workspace_name,
-    title: `File Moved: ${file.filename}`,
+    title: `File Moved: ${escapeHtml(file.filename)}`,
     bodyLines: [
-      `<strong>File:</strong> ${file.filename}`,
-      `<strong>Workspace:</strong> ${file.workspace_name}`,
-      `<strong>Moved by:</strong> ${user.email || user.userId}`,
+      `<strong>File:</strong> ${escapeHtml(file.filename)}`,
+      `<strong>Workspace:</strong> ${escapeHtml(file.workspace_name)}`,
+      `<strong>Moved by:</strong> ${escapeHtml(user.email || user.userId)}`,
     ],
     actorEmail: user.email,
     metadata: { fileId: file.id, filename: file.filename, fromFolderId: file.folder_id, toFolderId: targetFolderId },
