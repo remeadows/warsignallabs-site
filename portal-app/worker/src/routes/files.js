@@ -184,6 +184,7 @@ export async function handleUploadFile(request, env, user, params, ctx) {
   await logAudit(env, user.userId, 'file.upload', {
     resourceType: 'file',
     resourceId: fileId,
+    workspaceId: workspace.id,
     filename: sanitized,
     workspaceSlug: params.slug,
     sizeBytes: file.size,
@@ -316,6 +317,7 @@ export async function handleReplaceFile(request, env, user, params, ctx) {
 
   await logAudit(env, user.userId, 'file.replace', {
     resourceType: 'file', resourceId: fileId,
+    workspaceId: file.workspace_id,
     filename: sanitized, previousVersion: file.version || 1, newVersion,
     workspaceSlug: file.workspace_slug, sizeBytes: newFile.size,
     ipAddress: getClientIp(request),
@@ -437,6 +439,7 @@ export async function handleDeleteFile(request, env, user, params, ctx) {
   if (!hasWorkspaceAdminPermission(user, file.workspace_slug)) {
     await logAudit(env, user.userId, 'file.delete.denied', {
       resourceType: 'file', resourceId: fileId,
+      workspaceId: file.workspace_id,
       workspaceSlug: file.workspace_slug, ipAddress: getClientIp(request),
     })
     throw errorResponse('Forbidden: workspace admin permission required to delete files', 403)
@@ -455,6 +458,7 @@ export async function handleDeleteFile(request, env, user, params, ctx) {
   await logAudit(env, user.userId, 'file.delete', {
     resourceType: 'file',
     resourceId: fileId,
+    workspaceId: file.workspace_id,
     filename: file.filename,
     r2Key: file.r2_key,
     ipAddress: getClientIp(request),
@@ -487,7 +491,7 @@ export async function handleDownloadFile(request, env, user, params, ctx) {
   const fileId = params.id
 
   const file = await env.DB.prepare(
-    `SELECT f.id, f.filename, f.r2_key, f.content_type, f.size_bytes, w.slug AS workspace_slug
+    `SELECT f.id, f.filename, f.r2_key, f.content_type, f.size_bytes, f.workspace_id, w.slug AS workspace_slug
      FROM files f
      INNER JOIN workspaces w ON w.id = f.workspace_id
      WHERE f.id = ?`,
@@ -513,6 +517,7 @@ export async function handleDownloadFile(request, env, user, params, ctx) {
   await logAudit(env, user.userId, 'file.download', {
     resourceType: 'file',
     resourceId: fileId,
+    workspaceId: file.workspace_id,
     filename: file.filename,
     ipAddress: getClientIp(request),
   })
@@ -582,6 +587,7 @@ export async function handleMoveFile(request, env, user, params, ctx) {
   await logAudit(env, user.userId, 'file.move', {
     resourceType: 'file',
     resourceId: file.id,
+    workspaceId: file.workspace_id,
     filename: file.filename,
     fromFolderId: file.folder_id,
     toFolderId: targetFolderId,

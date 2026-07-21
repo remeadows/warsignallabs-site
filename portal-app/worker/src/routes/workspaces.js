@@ -65,6 +65,7 @@ export async function handleGetWorkspace(request, env, user, params) {
   await logAudit(env, user.userId, 'workspace.view', {
     resourceType: 'workspace',
     resourceId: workspace.id,
+    workspaceId: workspace.id,
     workspaceSlug: params.slug,
     ipAddress: getClientIp(request),
   })
@@ -169,6 +170,7 @@ export async function handleUpdateWorkspace(request, env, user, params) {
 
   await logAudit(env, user.userId, 'workspace.update', {
     resourceType: 'workspace', resourceId: workspace.id,
+    workspaceId: workspace.id,
     slug: params.slug, changes: Object.keys(body),
     ipAddress: getClientIp(request),
   })

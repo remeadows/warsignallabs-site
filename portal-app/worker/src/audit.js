@@ -5,8 +5,8 @@ export async function logAudit(env, userId, action, details = {}) {
   try {
     const id = crypto.randomUUID()
     await env.DB.prepare(
-      `INSERT INTO audit_log (id, user_id, action, resource_type, resource_id, metadata_json, ip_address, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+      `INSERT INTO audit_log (id, user_id, action, resource_type, resource_id, workspace_id, metadata_json, ip_address, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
     )
       .bind(
         id,
@@ -14,6 +14,7 @@ export async function logAudit(env, userId, action, details = {}) {
         action,
         details.resourceType || null,
         details.resourceId || null,
+        details.workspaceId || null,
         JSON.stringify(details),
         details.ipAddress || null,
       )
