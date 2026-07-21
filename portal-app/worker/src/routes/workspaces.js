@@ -106,18 +106,21 @@ export async function handleCreateWorkspace(request, env, user) {
 
   const wsColor = color || '#6F8FB8'
   const wsId = crypto.randomUUID()
-  await env.DB.prepare(
-    `INSERT INTO workspaces (id, name, slug, color, storage_quota_mb, storage_used_mb, created_at, updated_at)
-     VALUES (?, ?, ?, ?, 2048, 0, datetime('now'), datetime('now'))`,
-  ).bind(wsId, name, slug, wsColor).run()
 
   // Creator becomes an admin-permission member (§3.2.1). Global admins get the
   // row too — harmless, and it keeps the "last admin-permission member" guard
-  // meaningful from day one.
-  await env.DB.prepare(
-    `INSERT INTO user_workspaces (id, user_id, workspace_id, permission, created_at)
-     VALUES (?, ?, ?, 'admin', datetime('now'))`,
-  ).bind(crypto.randomUUID(), user.dbUserId, wsId).run()
+  // meaningful from day one. Atomic: a failure on the membership insert must
+  // not leave an orphaned workspace with no admin-permission member.
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO workspaces (id, name, slug, color, storage_quota_mb, storage_used_mb, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 2048, 0, datetime('now'), datetime('now'))`,
+    ).bind(wsId, name, slug, wsColor),
+    env.DB.prepare(
+      `INSERT INTO user_workspaces (id, user_id, workspace_id, permission, created_at)
+       VALUES (?, ?, ?, 'admin', datetime('now'))`,
+    ).bind(crypto.randomUUID(), user.dbUserId, wsId),
+  ])
 
   await logAudit(env, user.userId, 'workspace.create', {
     resourceType: 'workspace', resourceId: wsId,
