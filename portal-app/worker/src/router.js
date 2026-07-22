@@ -20,6 +20,7 @@ import {
   handleDeleteWorkspace,
   handleGetUserWorkspaces,
   handleUpdateUserWorkspaces,
+  handleGetActivity,
 } from './routes/workspaces.js'
 import {
   handleListFiles,
@@ -179,6 +180,11 @@ export default {
         params = matchPath('/api/folders/:id/move', pathname)
         if (params && method === 'PATCH') {
           return await handleMoveFolder(request, env, user, params, ctx)
+        }
+
+        params = matchPath('/api/workspaces/:slug/activity', pathname)
+        if (params && method === 'GET') {
+          return await handleGetActivity(request, env, user, params)
         }
 
         params = matchPath('/api/workspaces/:slug/members', pathname)

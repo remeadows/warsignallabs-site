@@ -86,6 +86,42 @@ export async function handleGetWorkspace(request, env, user, params) {
 }
 
 /**
+ * GET /api/workspaces/:slug/activity — paginated audit_log scoped to this
+ * workspace. Excludes workspace.view (Global Constraints: populated in the
+ * column for consistency, but noisy in a human-facing feed — filtered here,
+ * not at write time, so the exclusion is visible and easy to revisit).
+ */
+export async function handleGetActivity(request, env, user, params) {
+  requireWorkspaceAccess(user, params.slug)
+  const workspace = await env.DB.prepare('SELECT id FROM workspaces WHERE slug = ?')
+    .bind(params.slug).first()
+  if (!workspace) return errorResponse('Workspace not found', 404)
+
+  const url = new URL(request.url)
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200)
+  const before = url.searchParams.get('before')
+
+  const conditions = ['a.workspace_id = ?', "a.action != 'workspace.view'"]
+  const bindings = [workspace.id]
+  if (before) { conditions.push('a.created_at < ?'); bindings.push(before) }
+
+  const result = await env.DB.prepare(
+    `SELECT a.id, a.action, a.resource_type, a.resource_id, a.metadata_json, a.created_at,
+            u.username AS actor_username
+     FROM audit_log a LEFT JOIN users u ON u.id = a.user_id OR u.clerk_id = a.user_id
+     WHERE ${conditions.join(' AND ')}
+     ORDER BY a.created_at DESC LIMIT ?`,
+  ).bind(...bindings, limit).all()
+
+  const activity = result.results.map((r) => ({
+    ...r,
+    metadata: r.metadata_json ? JSON.parse(r.metadata_json) : {},
+  }))
+
+  return jsonResponse({ activity })
+}
+
+/**
  * POST /api/workspaces — create a new workspace (admin or owner)
  */
 export async function handleCreateWorkspace(request, env, user) {
