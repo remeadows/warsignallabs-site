@@ -31,6 +31,7 @@ export default function ActivityTab({ slug }) {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
+  const [error, setError] = useState(null)
 
   const load = useCallback(async (before) => {
     const data = await api.listActivity(slug, before ? { before } : {})
@@ -40,7 +41,10 @@ export default function ActivityTab({ slug }) {
 
   useEffect(() => {
     setLoading(true)
-    load().then(setItems).finally(() => setLoading(false))
+    load()
+      .then((data) => { setItems(data); setError(null) })
+      .catch(() => setError('Could not load activity.'))
+      .finally(() => setLoading(false))
   }, [load])
 
   const loadMore = async () => {
@@ -49,6 +53,9 @@ export default function ActivityTab({ slug }) {
     try {
       const more = await load(items[items.length - 1].created_at)
       setItems((prev) => [...prev, ...more])
+      setError(null)
+    } catch {
+      setError('Could not load more activity.')
     } finally {
       setLoadingMore(false)
     }
@@ -58,6 +65,7 @@ export default function ActivityTab({ slug }) {
 
   return (
     <div className="activity-tab">
+      {error && <div className="workspace__alert workspace__alert--error">{error}</div>}
       {items.length === 0 ? (
         <div className="activity-tab__empty">No activity yet.</div>
       ) : (

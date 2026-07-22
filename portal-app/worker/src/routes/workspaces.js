@@ -98,7 +98,8 @@ export async function handleGetActivity(request, env, user, params) {
   if (!workspace) return errorResponse('Workspace not found', 404)
 
   const url = new URL(request.url)
-  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200)
+  const rawLimit = parseInt(url.searchParams.get('limit'), 10)
+  const limit = Number.isInteger(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 200) : 50
   const before = url.searchParams.get('before')
 
   const conditions = ['a.workspace_id = ?', "a.action != 'workspace.view'"]
@@ -231,11 +232,12 @@ export async function handleDeleteWorkspace(request, env, user, params) {
     try { await env.FILES.delete(f.r2_key) } catch { /* continue */ }
   }
 
-  // Delete D1 records: files, invitations, user_workspaces, then workspace.
-  // Invitations must go before the workspace itself — its FK has no cascade,
-  // so a workspace with any invitation history (pending, accepted, or
-  // revoked) would otherwise fail this delete with a foreign-key error.
+  // Delete D1 records: files, comments, invitations, user_workspaces, then
+  // workspace. Each of these FKs has no cascade (ADR-0004), so a workspace
+  // with any comment or invitation history would otherwise fail this delete
+  // with a foreign-key error.
   await env.DB.prepare('DELETE FROM files WHERE workspace_id = ?').bind(workspace.id).run()
+  await env.DB.prepare('DELETE FROM comments WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM invitations WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM user_workspaces WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM workspaces WHERE id = ?').bind(workspace.id).run()

@@ -20,7 +20,13 @@ task-assignment events, Home redesign. The `comments.entity_type` CHECK constrai
 does include `'task'` now (see §1) as prep for Phase 4, but no task-commenting code
 ships this phase.
 
-## 1. Schema — `003_comments_notifications.sql`
+## 1. Schema — `007_comments_notifications.sql`
+
+> Filename corrected post-review: this doc originally said `003_` from the
+> 2026-07-17 sketch, written before Phase 2 claimed migrations `002`–`006`.
+> The actual shipped file is `007_comments_notifications.sql` (see
+> `docs/superpowers/plans/2026-07-21-portal-phase3-collab.md` Global
+> Constraints, and ADR-0004).
 
 ```sql
 CREATE TABLE comments (
@@ -203,7 +209,7 @@ member cannot edit or delete another member's comment (403); a member with only
 non-member username is a silent no-op (no inbox row, no email, no error); deleting a
 comment with replies leaves the replies visible under its `"[deleted]"` stub.
 
-**Rollout ordering:** migration `003_comments_notifications.sql` first — unlike
+**Rollout ordering:** migration `007_comments_notifications.sql` first — unlike
 Phase 2, there's no "narrow authz before widening data" sequencing constraint here,
 since everything in this migration is additive (new tables + `ADD COLUMN`s, no
 promotion-style data mutation). Then Worker deploy, then frontend deploy. Version

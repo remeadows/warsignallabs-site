@@ -42,18 +42,26 @@ export default function NotificationBell() {
 
   const openItem = async (item) => {
     if (!item.read_at) {
-      await api.markNotificationsRead({ ids: [item.id] })
-      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, read_at: new Date().toISOString() } : i)))
-      setUnreadCount((c) => Math.max(0, c - 1))
+      try {
+        await api.markNotificationsRead({ ids: [item.id] })
+        setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, read_at: new Date().toISOString() } : i)))
+        setUnreadCount((c) => Math.max(0, c - 1))
+      } catch {
+        // Navigation should still proceed even if marking read fails.
+      }
     }
     setOpen(false)
     if (item.link) navigate(item.link)
   }
 
   const markAllRead = async () => {
-    await api.markNotificationsRead({ all: true })
-    setItems((prev) => prev.map((i) => ({ ...i, read_at: i.read_at || new Date().toISOString() })))
-    setUnreadCount(0)
+    try {
+      await api.markNotificationsRead({ all: true })
+      setItems((prev) => prev.map((i) => ({ ...i, read_at: i.read_at || new Date().toISOString() })))
+      setUnreadCount(0)
+    } catch {
+      // Leave state unchanged; user can retry.
+    }
   }
 
   return (

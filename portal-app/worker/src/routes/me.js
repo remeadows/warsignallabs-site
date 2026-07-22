@@ -31,7 +31,8 @@ export async function handleMe(request, env, user) {
 export async function handleListNotifications(request, env, user) {
   const url = new URL(request.url)
   const unreadOnly = url.searchParams.get('unread') === '1'
-  const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200)
+  const rawLimit = parseInt(url.searchParams.get('limit'), 10)
+  const limit = Number.isInteger(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 200) : 50
   const before = url.searchParams.get('before')
 
   const conditions = ['user_id = ?']
@@ -51,9 +52,12 @@ export async function handleListNotifications(request, env, user) {
 export async function handleMarkNotificationsRead(request, env, user) {
   let body
   try { body = await request.json() } catch { return errorResponse('Invalid JSON', 400) }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return errorResponse('JSON object body is required', 400)
+  }
 
   const userId = user.dbUserId || user.userId
-  if (body.all) {
+  if (body.all === true) {
     await env.DB.prepare(`UPDATE notification_inbox SET read_at = datetime('now') WHERE user_id = ? AND read_at IS NULL`)
       .bind(userId).run()
     return jsonResponse({ message: 'All notifications marked read' })
@@ -74,6 +78,9 @@ export async function handleMarkNotificationsRead(request, env, user) {
 export async function handleUpdatePreferences(request, env, user) {
   let body
   try { body = await request.json() } catch { return errorResponse('Invalid JSON', 400) }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return errorResponse('JSON object body is required', 400)
+  }
 
   const { email_pref: emailPref } = body
   if (!['all', 'mentions', 'none'].includes(emailPref)) {

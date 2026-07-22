@@ -68,7 +68,7 @@ function parseApiError(err, fallback) {
 
 export default function WorkspaceDetail() {
   const { slug } = useParams()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { role, isAdmin, d1User } = usePortalAuth()
   const api = useApiClient()
 
@@ -77,6 +77,26 @@ export default function WorkspaceDetail() {
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'files')
   const [commentingFile, setCommentingFile] = useState(null)
+
+  // Keep activeTab in sync with ?tab= after mount too — a notification link
+  // to a tab on an already-mounted workspace page (same route, new search
+  // params) doesn't remount the component, so the mount-time useState
+  // initializer alone would miss it.
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab && tab !== activeTab) setActiveTab(tab)
+  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Switching tabs by click also writes the URL, so the selection is
+  // shareable/bookmarkable/refresh-safe — not just readable on first load.
+  const changeTab = (tab) => {
+    setActiveTab(tab)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('tab', tab)
+      return next
+    })
+  }
   const [workspace, setWorkspace] = useState(null)
   const [folders, setFolders] = useState([])
   const [files, setFiles] = useState([])
@@ -382,12 +402,12 @@ export default function WorkspaceDetail() {
       </div>
 
       <div className="workspace__tabs">
-        <button className={`workspace__tab ${activeTab === 'files' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('files')}>Files</button>
-        <button className={`workspace__tab ${activeTab === 'discussion' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('discussion')}>Discussion</button>
-        <button className={`workspace__tab ${activeTab === 'activity' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('activity')}>Activity</button>
-        <button className={`workspace__tab ${activeTab === 'members' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('members')}>Members</button>
+        <button className={`workspace__tab ${activeTab === 'files' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('files')}>Files</button>
+        <button className={`workspace__tab ${activeTab === 'discussion' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('discussion')}>Discussion</button>
+        <button className={`workspace__tab ${activeTab === 'activity' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('activity')}>Activity</button>
+        <button className={`workspace__tab ${activeTab === 'members' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('members')}>Members</button>
         {wsAdmin && (
-          <button className={`workspace__tab ${activeTab === 'settings' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('settings')}>Settings</button>
+          <button className={`workspace__tab ${activeTab === 'settings' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('settings')}>Settings</button>
         )}
       </div>
 

@@ -27,11 +27,13 @@ export default function WorkspaceSettingsTab({ slug, workspace, onSaved }) {
   }
 
   const savePref = async (pref) => {
+    const previous = emailPref
     setEmailPref(pref)
     setPrefSaving(true)
     try {
       await api.updatePreferences(pref)
     } catch {
+      setEmailPref(previous)
       setMessage({ kind: 'err', text: 'Could not save email preference.' })
     } finally {
       setPrefSaving(false)
