@@ -30,7 +30,7 @@ export default function ActivityTab({ slug }) {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
+  const [cursor, setCursor] = useState(null)
   const [error, setError] = useState(null)
 
   // Reused across workspace navigation without remounting (WorkspaceDetail
@@ -43,8 +43,7 @@ export default function ActivityTab({ slug }) {
   useEffect(() => { slugRef.current = slug }, [slug])
 
   const load = useCallback(async (before) => {
-    const data = await api.listActivity(slug, before ? { before } : {})
-    return data.activity
+    return await api.listActivity(slug, before ? { before } : {})
   }, [api, slug])
 
   useEffect(() => {
@@ -53,12 +52,12 @@ export default function ActivityTab({ slug }) {
     setLoadingMore(false)
     setItems([])
     setError(null)
-    setHasMore(true)
+    setCursor(null)
     load()
       .then((data) => {
         if (cancelled) return
-        setItems(data)
-        setHasMore(data.length === 50)
+        setItems(data.activity)
+        setCursor(data.next_cursor)
       })
       .catch(() => { if (!cancelled) setError('Could not load activity.') })
       .finally(() => { if (!cancelled) setLoading(false) })
@@ -66,14 +65,14 @@ export default function ActivityTab({ slug }) {
   }, [load])
 
   const loadMore = async () => {
-    if (items.length === 0) return
+    if (!cursor) return
     const requestSlug = slug
     setLoadingMore(true)
     try {
-      const more = await load(items[items.length - 1].created_at)
+      const data = await load(cursor)
       if (slugRef.current !== requestSlug) return
-      setItems((prev) => [...prev, ...more])
-      setHasMore(more.length === 50)
+      setItems((prev) => [...prev, ...data.activity])
+      setCursor(data.next_cursor)
       setError(null)
     } catch {
       if (slugRef.current === requestSlug) setError('Could not load more activity.')
@@ -100,7 +99,7 @@ export default function ActivityTab({ slug }) {
           ))}
         </ul>
       )}
-      {hasMore && items.length > 0 && (
+      {cursor && items.length > 0 && (
         <button className="btn btn--secondary" onClick={loadMore} disabled={loadingMore}>
           {loadingMore ? 'Loading…' : 'Load more'}
         </button>
