@@ -95,12 +95,6 @@ export default function WorkspaceDetail() {
     if (next !== activeTab) setActiveTab(next)
   }, [searchParams, wsAdmin]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // WorkspaceDetail is reused across slug changes (no remount) — an open
-  // file-comment panel must not keep showing a previous workspace's file.
-  useEffect(() => {
-    setCommentingFile(null)
-  }, [slug])
-
   // Switching tabs by click also writes the URL, so the selection is
   // shareable/bookmarkable/refresh-safe — not just readable on first load.
   const changeTab = (tab) => {
@@ -574,7 +568,7 @@ export default function WorkspaceDetail() {
                       <td className="mono">{file.uploaded_by_name || '—'}</td>
                       <td>{formatDate(file.created_at)}</td>
                       <td className="file-actions">
-                        <button className="btn btn--secondary btn--sm" onClick={() => setCommentingFile(file)}>
+                        <button className="btn btn--secondary btn--sm" onClick={() => setCommentingFile({ slug, file })}>
                           Comments
                         </button>
                         <button className="btn btn--secondary btn--sm" onClick={() => handleDownload(file)}>
@@ -735,8 +729,8 @@ export default function WorkspaceDetail() {
         </div>
       )}
 
-      {commentingFile && (
-        <FileCommentPanel workspaceSlug={slug} file={commentingFile} onClose={() => setCommentingFile(null)} />
+      {commentingFile?.slug === slug && (
+        <FileCommentPanel workspaceSlug={slug} file={commentingFile.file} onClose={() => setCommentingFile(null)} />
       )}
     </div>
   )

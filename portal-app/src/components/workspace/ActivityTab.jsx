@@ -50,6 +50,7 @@ export default function ActivityTab({ slug }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
+    setLoadingMore(false)
     setItems([])
     setError(null)
     setHasMore(true)
