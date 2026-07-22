@@ -66,6 +66,9 @@ function parseApiError(err, fallback) {
   return err.data?.error || err.message || fallback
 }
 
+// Tabs visible to every member; 'settings' is appended only for wsAdmin.
+const WORKSPACE_TABS = ['files', 'discussion', 'activity', 'members']
+
 export default function WorkspaceDetail() {
   const { slug } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -81,11 +84,22 @@ export default function WorkspaceDetail() {
   // Keep activeTab in sync with ?tab= after mount too — a notification link
   // to a tab on an already-mounted workspace page (same route, new search
   // params) doesn't remount the component, so the mount-time useState
-  // initializer alone would miss it.
+  // initializer alone would miss it. Also normalizes missing/invalid/
+  // unauthorized values to 'files' — otherwise switching workspaces via a
+  // plain (tab-less) sidebar link left whatever tab was active before,
+  // including 'settings' in a workspace where the user isn't wsAdmin.
   useEffect(() => {
     const tab = searchParams.get('tab')
-    if (tab && tab !== activeTab) setActiveTab(tab)
-  }, [searchParams]) // eslint-disable-line react-hooks/exhaustive-deps
+    const allowed = wsAdmin ? [...WORKSPACE_TABS, 'settings'] : WORKSPACE_TABS
+    const next = tab && allowed.includes(tab) ? tab : 'files'
+    if (next !== activeTab) setActiveTab(next)
+  }, [searchParams, wsAdmin]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // WorkspaceDetail is reused across slug changes (no remount) — an open
+  // file-comment panel must not keep showing a previous workspace's file.
+  useEffect(() => {
+    setCommentingFile(null)
+  }, [slug])
 
   // Switching tabs by click also writes the URL, so the selection is
   // shareable/bookmarkable/refresh-safe — not just readable on first load.

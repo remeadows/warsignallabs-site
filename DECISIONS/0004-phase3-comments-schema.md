@@ -37,20 +37,23 @@ Phase 3 (`worker/migrations/007_comments_notifications.sql`) adds workspace/file
 
 ### Negative / things to watch
 - The `'task'` value in `entity_type`'s `CHECK` is unused until Phase 4. If Phase 4's task-comment design ends up needing a different shape than "file comments but for tasks," this pre-provisioning was wasted (low cost — it's one CHECK-list value, not a structural commitment).
-- `comments` deletion on workspace-delete is now application-level, meaning a future direct-SQL deletion path that bypasses `handleDeleteWorkspace` could leave orphaned comment rows. Same risk already existed for `files`/`folders`/`invitations`/`user_workspaces` — not new, but worth remembering if `handleDeleteWorkspace` is ever refactored.
+- `comments` deletion on workspace-delete is now application-level: a future direct-SQL `DELETE FROM workspaces` that bypasses `handleDeleteWorkspace` would be **rejected** by the FK constraint while comment rows still reference it (not silently orphaned — orphans are only possible if FK enforcement is bypassed or disabled entirely). Same behavior already applies to `files`/`folders`/`invitations`/`user_workspaces` — not new, but worth remembering if `handleDeleteWorkspace` is ever refactored: the app-level deletes must stay in sync with what references `workspaces.id`.
 
 ## Verification
 
 ```bash
-sqlite3 /tmp/check.db < worker/migrations/000_baseline.sql   # ... through 007 in order
+rm -f /tmp/check.db
+for migration in portal-app/worker/migrations/*.sql; do
+  sqlite3 /tmp/check.db < "$migration"
+done
 sqlite3 /tmp/check.db ".schema audit_log" | grep "ON DELETE SET NULL"
 sqlite3 /tmp/check.db ".indexes audit_log" | grep idx_audit_log_workspace_activity
 ```
 
 ## References
 
-- `worker/migrations/007_comments_notifications.sql`
-- `worker/src/routes/comments.js` (entity_type validation, workspace-delete wiring)
-- `worker/src/routes/workspaces.js` (`handleDeleteWorkspace`, `handleGetActivity`)
+- `portal-app/worker/migrations/007_comments_notifications.sql`
+- `portal-app/worker/src/routes/comments.js` (entity_type validation, workspace-delete wiring)
+- `portal-app/worker/src/routes/workspaces.js` (`handleDeleteWorkspace`, `handleGetActivity`)
 - `docs/superpowers/specs/2026-07-19-phase3-comments-activity-notifications-design.md` §1
 - `docs/superpowers/plans/2026-07-21-portal-phase3-collab.md` Task 1

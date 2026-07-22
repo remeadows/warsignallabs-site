@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApiClient } from '../api/client'
 import { usePortalAuth } from '../contexts/PortalAuth'
 
@@ -27,20 +27,36 @@ export default function CommentThread({ workspaceSlug, entityType, entityId }) {
   const [editDraft, setEditDraft] = useState('')
   const [posting, setPosting] = useState(false)
 
+  // Mounted once per mount point (Discussion tab, file panel) but reused
+  // across identity changes — e.g. switching workspaces doesn't remount the
+  // Discussion tab's CommentThread, it just gets a new entityId. This ref
+  // lets an in-flight request recognize it's stale once a newer identity has
+  // taken over, instead of overwriting the new thread with the old one's data.
+  // Updated only via effect, never during render.
+  const identity = `${workspaceSlug}:${entityType}:${entityId}`
+  const identityRef = useRef(identity)
+  useEffect(() => { identityRef.current = identity }, [identity])
+
   const load = useCallback(async () => {
+    const requestIdentity = identity
     setLoading(true)
     try {
       const data = await api.listComments(workspaceSlug, entityType, entityId)
+      if (identityRef.current !== requestIdentity) return
       setComments(data.comments)
       setError(null)
     } catch {
-      setError('Could not load comments.')
+      if (identityRef.current === requestIdentity) setError('Could not load comments.')
     } finally {
-      setLoading(false)
+      if (identityRef.current === requestIdentity) setLoading(false)
     }
-  }, [api, workspaceSlug, entityType, entityId])
+  }, [api, workspaceSlug, entityType, entityId, identity])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    setComments([])
+    setError(null)
+    load()
+  }, [load])
 
   const post = async () => {
     if (!draft.trim()) return

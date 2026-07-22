@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useApiClient } from '../../api/client'
 import { usePortalAuth } from '../../contexts/PortalAuth'
 import { PRESET_COLORS } from '../../constants/palette'
@@ -12,6 +12,19 @@ export default function WorkspaceSettingsTab({ slug, workspace, onSaved }) {
   const [saving, setSaving] = useState(false)
   const [prefSaving, setPrefSaving] = useState(false)
   const [message, setMessage] = useState(null)
+
+  // d1User can still be null on first render (PortalLayout's /api/me fetch
+  // hasn't resolved yet) — this adopts the real value once it loads. The
+  // ref makes it a one-time catch-up: once synced, later d1User changes
+  // (e.g. re-renders from unrelated context updates) never again override
+  // whatever the user has since chosen locally.
+  const syncedFromServer = useRef(!!d1User?.emailPref)
+  useEffect(() => {
+    if (!syncedFromServer.current && d1User?.emailPref) {
+      setEmailPref(d1User.emailPref)
+      syncedFromServer.current = true
+    }
+  }, [d1User?.emailPref])
 
   const save = async () => {
     setSaving(true)
