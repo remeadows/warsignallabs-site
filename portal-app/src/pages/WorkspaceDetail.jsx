@@ -1,9 +1,12 @@
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApiClient } from '../api/client'
 import { usePortalAuth } from '../contexts/PortalAuth'
 import MembersTab from '../components/workspace/MembersTab'
 import WorkspaceSettingsTab from '../components/workspace/WorkspaceSettingsTab'
+import ActivityTab from '../components/workspace/ActivityTab'
+import CommentThread from '../components/CommentThread'
+import FileCommentPanel from '../components/FileCommentPanel'
 import './WorkspaceDetail.css'
 
 function formatBytes(bytes) {
@@ -65,13 +68,15 @@ function parseApiError(err, fallback) {
 
 export default function WorkspaceDetail() {
   const { slug } = useParams()
+  const [searchParams] = useSearchParams()
   const { role, isAdmin, d1User } = usePortalAuth()
   const api = useApiClient()
 
   const canDelete = isAdmin
   const wsAdmin = isAdmin || d1User?.workspacePermissions?.[slug] === 'admin'
 
-  const [activeTab, setActiveTab] = useState('files')
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'files')
+  const [commentingFile, setCommentingFile] = useState(null)
   const [workspace, setWorkspace] = useState(null)
   const [folders, setFolders] = useState([])
   const [files, setFiles] = useState([])
@@ -378,12 +383,16 @@ export default function WorkspaceDetail() {
 
       <div className="workspace__tabs">
         <button className={`workspace__tab ${activeTab === 'files' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('files')}>Files</button>
+        <button className={`workspace__tab ${activeTab === 'discussion' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('discussion')}>Discussion</button>
+        <button className={`workspace__tab ${activeTab === 'activity' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('activity')}>Activity</button>
         <button className={`workspace__tab ${activeTab === 'members' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('members')}>Members</button>
         {wsAdmin && (
           <button className={`workspace__tab ${activeTab === 'settings' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('settings')}>Settings</button>
         )}
       </div>
 
+      {activeTab === 'discussion' && <CommentThread workspaceSlug={slug} entityType="workspace" entityId={workspace.id} />}
+      {activeTab === 'activity' && <ActivityTab slug={slug} />}
       {activeTab === 'members' && <MembersTab slug={slug} />}
       {activeTab === 'settings' && wsAdmin && (
         <WorkspaceSettingsTab slug={slug} workspace={workspace} onSaved={() => fetchWorkspace()} />
@@ -531,6 +540,9 @@ export default function WorkspaceDetail() {
                       <td className="mono">{file.uploaded_by_name || '—'}</td>
                       <td>{formatDate(file.created_at)}</td>
                       <td className="file-actions">
+                        <button className="btn btn--secondary btn--sm" onClick={() => setCommentingFile(file)}>
+                          Comments
+                        </button>
                         <button className="btn btn--secondary btn--sm" onClick={() => handleDownload(file)}>
                           Download
                         </button>
@@ -687,6 +699,10 @@ export default function WorkspaceDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {commentingFile && (
+        <FileCommentPanel workspaceSlug={slug} file={commentingFile} onClose={() => setCommentingFile(null)} />
       )}
     </div>
   )
