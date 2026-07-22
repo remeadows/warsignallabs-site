@@ -57,6 +57,12 @@ import {
   handleListInvitations,
   handleRevokeInvitation,
 } from './routes/members.js'
+import {
+  handleListComments,
+  handleCreateComment,
+  handleEditComment,
+  handleDeleteComment,
+} from './routes/comments.js'
 
 function matchPath(pattern, pathname) {
   const patternParts = pattern.split('/')
@@ -193,6 +199,22 @@ export default {
         params = matchPath('/api/invitations/:id', pathname)
         if (params && method === 'DELETE') {
           return await handleRevokeInvitation(request, env, user, params)
+        }
+
+        params = matchPath('/api/workspaces/:slug/comments', pathname)
+        if (params && method === 'GET') {
+          return await handleListComments(request, env, user, params)
+        }
+        if (params && method === 'POST') {
+          return await handleCreateComment(request, env, user, params, ctx)
+        }
+
+        params = matchPath('/api/comments/:id', pathname)
+        if (params && method === 'PATCH') {
+          return await handleEditComment(request, env, user, params)
+        }
+        if (params && method === 'DELETE') {
+          return await handleDeleteComment(request, env, user, params)
         }
 
         if (pathname === '/api/users' && method === 'GET') {
