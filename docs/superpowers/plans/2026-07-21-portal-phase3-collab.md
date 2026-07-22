@@ -532,6 +532,14 @@ export async function handleCreateComment(request, env, user, params, ctx) {
     if (parent.parent_comment_id) return errorResponse('Cannot reply to a reply', 400)
   }
 
+  // Post-review update: the snippet above doesn't validate that entityId
+  // actually belongs to this workspace, nor that a reply's parent shares the
+  // same entity_type/entity_id — both were flagged in PR #29 review as real
+  // gaps (cross-workspace/mismatched-entity comments) and fixed in the
+  // shipped code. It also drops 'task' from the request-validation allowlist
+  // until Phase 4 exists. See the actual `handleCreateComment` in
+  // worker/src/routes/comments.js for what shipped.
+
   const commentId = `cmt-${crypto.randomUUID().slice(0, 8)}`
   await env.DB.prepare(
     `INSERT INTO comments (id, workspace_id, entity_type, entity_id, parent_comment_id, author_id, body, created_at)
@@ -665,6 +673,8 @@ export async function handleDeleteComment(request, env, user, params) {
   return jsonResponse({ message: 'Comment deleted' })
 }
 ```
+
+Post-review update: the snippet above omits `workspaceId` from `comment.edit`, `comment.edit.denied`, and `comment.delete.denied`'s audit payloads — flagged in PR #29 review since `handleGetActivity` filters on `audit_log.workspace_id`, so those events would never surface in the Activity feed. Fixed in the shipped `handleEditComment`/`handleDeleteComment` (both select `c.workspace_id` and pass it on every audit call).
 
 - [ ] **Step 2: Wire the router.** In `worker/src/router.js`, add the import:
 

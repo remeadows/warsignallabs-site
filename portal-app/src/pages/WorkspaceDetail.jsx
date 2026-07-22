@@ -105,6 +105,36 @@ export default function WorkspaceDetail() {
       return next
     })
   }
+
+  // Consumes the fileId/comments=1 params a file-comment notification link
+  // carries (see comments.js's `link` construction) — these are server-
+  // authored, always pointing at a file in this workspace, so a plain
+  // fetch-by-id is enough without resolving it through the folder tree.
+  // Strips the params once consumed so re-rendering doesn't refetch/reopen.
+  useEffect(() => {
+    const fileId = searchParams.get('fileId')
+    if (!fileId || searchParams.get('comments') !== '1') return
+    let cancelled = false
+    api.getFileVersions(fileId)
+      .then((data) => {
+        if (cancelled) return
+        setCommentingFile({ slug, file: { id: fileId, filename: data.filename } })
+        setActiveTab('files')
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev)
+          next.set('tab', 'files')
+          next.delete('fileId')
+          next.delete('comments')
+          return next
+        }, { replace: true })
+      })
+      .catch(() => {
+        // Stale/invalid link (file deleted, no access) — fail silently,
+        // same as any other dead notification link.
+      })
+    return () => { cancelled = true }
+  }, [searchParams, slug, api, setSearchParams])
+
   const [workspace, setWorkspace] = useState(null)
   const [folders, setFolders] = useState([])
   const [files, setFiles] = useState([])
