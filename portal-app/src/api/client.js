@@ -175,6 +175,27 @@ export function useApiClient() {
       }),
     revokeInvitation: (id) => apiFetch(`/api/invitations/${id}`, getToken, { method: 'DELETE' }),
 
+    // Comments (Phase 3)
+    listComments: (slug, entityType, entityId) =>
+      apiFetch(`/api/workspaces/${slug}/comments?${new URLSearchParams({ entity_type: entityType, entity_id: entityId })}`, getToken),
+    createComment: (slug, data) =>
+      apiFetch(`/api/workspaces/${slug}/comments`, getToken, { method: 'POST', body: JSON.stringify(data) }),
+    editComment: (id, body) =>
+      apiFetch(`/api/comments/${id}`, getToken, { method: 'PATCH', body: JSON.stringify({ body }) }),
+    deleteComment: (id) => apiFetch(`/api/comments/${id}`, getToken, { method: 'DELETE' }),
+
+    // Activity (Phase 3)
+    listActivity: (slug, params = {}) =>
+      apiFetch(`/api/workspaces/${slug}/activity?${new URLSearchParams(params)}`, getToken),
+
+    // Notifications (Phase 3)
+    listNotifications: (params = {}) =>
+      apiFetch(`/api/notifications?${new URLSearchParams(params)}`, getToken),
+    markNotificationsRead: (data) =>
+      apiFetch('/api/notifications/mark-read', getToken, { method: 'POST', body: JSON.stringify(data) }),
+    updatePreferences: (emailPref) =>
+      apiFetch('/api/me/preferences', getToken, { method: 'PATCH', body: JSON.stringify({ email_pref: emailPref }) }),
+
     // Audit log (admin)
     getAuditLog: (params = {}) =>
       apiFetch(`/api/audit-log?${new URLSearchParams(params)}`, getToken),
