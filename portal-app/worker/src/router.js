@@ -5,7 +5,13 @@
 
 import { CORS_HEADERS, errorResponse } from './cors.js'
 import { requireAuth } from './auth.js'
-import { handleHealth, handleMe } from './routes/me.js'
+import {
+  handleHealth,
+  handleMe,
+  handleListNotifications,
+  handleMarkNotificationsRead,
+  handleUpdatePreferences,
+} from './routes/me.js'
 import {
   handleListWorkspaces,
   handleGetWorkspace,
@@ -215,6 +221,17 @@ export default {
         }
         if (params && method === 'DELETE') {
           return await handleDeleteComment(request, env, user, params)
+        }
+
+        if (pathname === '/api/notifications' && method === 'GET') {
+          return await handleListNotifications(request, env, user)
+        }
+        if (pathname === '/api/notifications/mark-read' && method === 'POST') {
+          return await handleMarkNotificationsRead(request, env, user)
+        }
+
+        if (pathname === '/api/me/preferences' && method === 'PATCH') {
+          return await handleUpdatePreferences(request, env, user)
         }
 
         if (pathname === '/api/users' && method === 'GET') {
