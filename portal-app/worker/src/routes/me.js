@@ -1,5 +1,6 @@
 // worker/src/routes/me.js
 import { jsonResponse, errorResponse } from '../cors.js'
+import { encodeCursor, decodeCursor, seekCondition } from '../pagination.js'
 
 export async function handleHealth(request, env) {
   return jsonResponse({
@@ -38,14 +39,23 @@ export async function handleListNotifications(request, env, user) {
   const conditions = ['user_id = ?']
   const bindings = [user.dbUserId || user.userId]
   if (unreadOnly) conditions.push('read_at IS NULL')
-  if (before) { conditions.push('created_at < ?'); bindings.push(before) }
+  if (before) {
+    const cursor = decodeCursor(before)
+    if (!cursor) return errorResponse('Invalid before cursor', 400)
+    const { clause, params } = seekCondition(cursor)
+    conditions.push(clause)
+    bindings.push(...params)
+  }
 
   const result = await env.DB.prepare(
     `SELECT id, event_type, title, body, link, read_at, created_at FROM notification_inbox
-     WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC LIMIT ?`,
+     WHERE ${conditions.join(' AND ')} ORDER BY created_at DESC, id DESC LIMIT ?`,
   ).bind(...bindings, limit).all()
 
-  return jsonResponse({ notifications: result.results })
+  const notifications = result.results
+  const nextCursor = notifications.length === limit ? encodeCursor(notifications[notifications.length - 1]) : null
+
+  return jsonResponse({ notifications, next_cursor: nextCursor })
 }
 
 /** POST /api/notifications/mark-read — self. Body: {ids: [...]} or {all: true} */
