@@ -1489,3 +1489,19 @@ git commit -m "chore(portal): bump to v0.5.0 — Phase 3 comments, activity, not
   - A mention of a non-member username is a silent no-op (no inbox row, no email, no error).
   - Deleting a comment with replies leaves the replies visible under its `"[deleted]"` stub.
   - **Acceptance (from the plan/spec):** Russ comments on a file → Chris (pref `all`) sees bell badge + inbox entry + email; with pref `mentions`, a plain comment gives Chris the bell badge + inbox entry but no email, while `@cdepalma` gets him the email too; the Activity tab shows Phase 2's own recent events (now populated with `workspace_id`) plus the new comment events, with no `workspace.view` noise.
+
+---
+
+## Addendum (2026-07-22): compound cursor fix
+
+Task 6 and Task 7 above shipped `handleListNotifications` and `handleGetActivity`
+with a `created_at`-only pagination cursor. CodeRabbit flagged this on PR #29 as
+a Major finding — `created_at` has only second-level precision, so a page
+boundary falling inside a group of same-second rows silently drops the rest of
+that group — and it was deferred out of that PR's scope. Fixed in
+`docs/superpowers/plans/2026-07-22-activity-notification-cursor-fix.md`: both
+endpoints now seek on `(created_at, id)` via `worker/src/pagination.js` and
+return an opaque `next_cursor`; `ActivityTab.jsx` consumes it instead of
+deriving a cursor from the last row's `created_at`. `NotificationBell.jsx` and
+`api/client.js` needed no change — the bell never paginates, and the client's
+`listActivity`/`listNotifications` methods are opaque passthroughs.

@@ -2,6 +2,7 @@
 import { jsonResponse, errorResponse } from '../cors.js'
 import { requireRole, requireWorkspaceAccess, hasWorkspaceAdminPermission } from '../auth.js'
 import { logAudit, getClientIp } from '../audit.js'
+import { encodeCursor, decodeCursor, seekCondition } from '../pagination.js'
 
 /**
  * GET /api/workspaces — returns workspaces filtered by user access
@@ -104,22 +105,29 @@ export async function handleGetActivity(request, env, user, params) {
 
   const conditions = ['a.workspace_id = ?', "a.action != 'workspace.view'"]
   const bindings = [workspace.id]
-  if (before) { conditions.push('a.created_at < ?'); bindings.push(before) }
+  if (before) {
+    const cursor = decodeCursor(before)
+    if (!cursor) return errorResponse('Invalid before cursor', 400)
+    const { clause, params: cursorParams } = seekCondition(cursor, 'a.')
+    conditions.push(clause)
+    bindings.push(...cursorParams)
+  }
 
   const result = await env.DB.prepare(
     `SELECT a.id, a.action, a.resource_type, a.resource_id, a.metadata_json, a.created_at,
             u.username AS actor_username
      FROM audit_log a LEFT JOIN users u ON u.id = a.user_id OR u.clerk_id = a.user_id
      WHERE ${conditions.join(' AND ')}
-     ORDER BY a.created_at DESC LIMIT ?`,
+     ORDER BY a.created_at DESC, a.id DESC LIMIT ?`,
   ).bind(...bindings, limit).all()
 
   const activity = result.results.map((r) => ({
     ...r,
     metadata: r.metadata_json ? JSON.parse(r.metadata_json) : {},
   }))
+  const nextCursor = activity.length === limit ? encodeCursor(activity[activity.length - 1]) : null
 
-  return jsonResponse({ activity })
+  return jsonResponse({ activity, next_cursor: nextCursor })
 }
 
 /**
