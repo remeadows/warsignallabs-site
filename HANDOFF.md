@@ -1,10 +1,22 @@
 # HANDOFF.md — warsignallabs.net (root)
 
-**Last updated:** 2026-05-05 by Claude (Cowork)
+**Last updated:** 2026-05-05 by Claude (Cowork) — marketing-site content below.
+**Portal-only update:** 2026-07-23 (see boxed note immediately below; full detail in `portal-app/handoff.yaml`).
 **Previous update:** 2026-05-02 (archived inline below)
 **Scope:** entire `warsignallabs.net` property. For portal-only handoff, see `portal-app/handoff.yaml`.
 
 > **This file is the single source of truth for current-state.** Update at the end of every working session. Stale handoffs cause agent drift.
+
+---
+
+## Portal-only update — 2026-07-23
+
+> This session touched **portal only** — nothing below this box (marketing site, Cloudflare zone, Clerk migration narrative) was re-verified; it's unchanged from 2026-05-05. See `portal-app/handoff.yaml` for the authoritative, current portal state.
+
+- **Clerk Production Migration (Active Initiative #2 below): CLOSED.** Completed 2026-07-17 — both Russ (Google) and Chris (Microsoft) verified signed in. Superseded as the portal's active initiative by `PORTAL_OVERHAUL_PLAN.md`.
+- **Portal overhaul Phases 1-3: DONE.** v0.3.0 (Phase 1, worker modularization) → v0.4.0 (Phase 2, workspaces/members/permissions) → v0.5.0 (Phase 3, comments/activity/notifications) — all merged to `main` (PRs #26, #27+#28, #29+#30).
+- **Portal is NOT yet redeployed with Phase 3.** Migration `007_comments_notifications.sql` hasn't been applied to remote D1; Worker and Pages are still serving the Phase 2 (v0.4.0) build. `main` is ahead of production — deploy is a deliberate separate step, not done yet.
+- **Next up:** deploy Phase 3 when ready, then Phase 4 (Projects & tasks + Home redesign → v0.6.0), not started.
 
 ---
 
