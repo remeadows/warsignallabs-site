@@ -70,6 +70,12 @@ import {
   handleEditComment,
   handleDeleteComment,
 } from './routes/comments.js'
+import {
+  handleListProjects,
+  handleCreateProject,
+  handleUpdateProject,
+  handleDeleteProject,
+} from './routes/projects.js'
 
 function matchPath(pattern, pathname) {
   const patternParts = pattern.split('/')
@@ -227,6 +233,22 @@ export default {
         }
         if (params && method === 'DELETE') {
           return await handleDeleteComment(request, env, user, params)
+        }
+
+        params = matchPath('/api/workspaces/:slug/projects', pathname)
+        if (params && method === 'GET') {
+          return await handleListProjects(request, env, user, params)
+        }
+        if (params && method === 'POST') {
+          return await handleCreateProject(request, env, user, params)
+        }
+
+        params = matchPath('/api/projects/:id', pathname)
+        if (params && method === 'PATCH') {
+          return await handleUpdateProject(request, env, user, params)
+        }
+        if (params && method === 'DELETE') {
+          return await handleDeleteProject(request, env, user, params)
         }
 
         if (pathname === '/api/notifications' && method === 'GET') {
