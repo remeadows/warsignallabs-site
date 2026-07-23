@@ -29,7 +29,9 @@ session_2026_07_23_phase3_deploy: |
       "[deleted]" stub
     - acceptance check: Russ comments on a file → Chris (pref all) gets
       bell badge + inbox + email; pref mentions → bell+inbox only unless
-      @cdepalma'd, which adds the email
+      @cdepalma'd, which adds the email; the Activity tab shows Phase 2's
+      own recent events (now populated with workspace_id) plus the new
+      comment events, with no workspace.view noise
 
   NEXT: Phase 4 — Projects & tasks + Home redesign → v0.6.0 (see
   PORTAL_OVERHAUL_PLAN.md). Not started.
