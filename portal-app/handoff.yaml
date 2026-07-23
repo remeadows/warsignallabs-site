@@ -3,6 +3,50 @@
 # Update this file at the end of every working session.
 
 last_updated: 2026-07-23
+session_2026_07_23_phase3_css_fix: |
+  DISCOVERED AND FIXED IN PRODUCTION: Phase 3's entire frontend shipped
+  with zero CSS. Surfaced when Russ spotted a plain white box reading
+  "Bell" in the live topnav instead of a notification icon. Auditing
+  further found CommentThread, ActivityTab, and FileCommentPanel's
+  slide-over also referenced CSS classes that didn't exist anywhere in
+  the codebase — all four rendering as unstyled raw HTML in production.
+  Missed by 4 rounds of Codex/CodeRabbit review on PR #29 because those
+  tools review diffs/logic, not rendered output, and there's no visual
+  regression test in this suite.
+
+  Fixed on PR #34 (fix/phase3-missing-css, merged squash 724e47d):
+    - NotificationBell.jsx: replaced the literal "Bell" text with an
+      inline SVG bell icon; styled trigger, unread badge (with 99+ cap),
+      dropdown panel.
+    - CommentThread: styled comment cards, threaded replies, deleted
+      stub, edit mode, @mention highlighting, composer.
+    - ActivityTab: styled the event list + empty/loading states.
+    - FileCommentPanel: styled the slide-over panel + overlay.
+    - Added shared .link-btn/.link-btn--danger utility to base.css.
+    - All new CSS uses existing executive-theme variables only, no new
+      colors.
+  One round of review on PR #34: Codex caught that the notification
+  dropdown was anchored to the bell trigger (right:0), not the
+  viewport — on phone widths the bell sits well left of the screen
+  edge, so the panel overflowed off the left side and got clipped by
+  .portal-layout's overflow:hidden. Fixed with a fixed-position mobile
+  override (left/right: 0.5rem, below the topnav) at the existing
+  480px breakpoint.
+
+  Verification note: this environment has no Clerk credentials, so the
+  live authenticated app couldn't be click-tested directly. Verified
+  instead via a static harness — the actual compiled CSS bundle loaded
+  against hand-built markup matching each component's real DOM
+  (bell open/closed, comment thread with nested reply + deleted stub +
+  edit mode, activity feed, both empty states, slide-over, and the
+  mobile dropdown fix at 360px width) — before every commit.
+
+  DEPLOYED same session: Pages redeployed (bundle 6c2b61c5, serving
+  portal.warsignallabs.net), confirmed via `curl` that index.html
+  references the new asset hashes (index-0PTxSoVC.css /
+  index-CRqRuaYa.js). No Worker/D1 changes in this fix — Pages-only
+  deploy.
+
 session_2026_07_23_phase3_deploy: |
   PHASE 3 DEPLOYED — v0.5.0 live in production. Migration
   007_comments_notifications.sql applied to remote D1 (7 prior migrations
@@ -326,18 +370,21 @@ current_initiative:
   goal: |
     Phase 3 (comments/activity/notifications) is merged to main and DEPLOYED
     as v0.5.0 (migration 007 applied to remote D1, Worker + Pages redeployed
-    2026-07-23 — see session_2026_07_23_phase3_deploy above). Live-ceiling
-    tests (multi-role manual checks) still outstanding. Next planned work is
-    Phase 4 (Projects & tasks + Home redesign -> v0.6.0), not started.
+    2026-07-23 — see session_2026_07_23_phase3_deploy above). A same-day
+    follow-up (PR #34) fixed a production bug where the entire Phase 3
+    frontend had shipped with no CSS — see session_2026_07_23_phase3_css_fix
+    above; also deployed. Live-ceiling tests (multi-role manual checks)
+    still outstanding. Next planned work is Phase 4 (Projects & tasks +
+    Home redesign -> v0.6.0), not started.
   branch: none
 
 plan_status:
-  current_phase: "Phase 3 of PORTAL_OVERHAUL_PLAN.md — DONE (merged + deployed)"
+  current_phase: "Phase 3 of PORTAL_OVERHAUL_PLAN.md — DONE (merged + deployed, CSS bug fixed + deployed)"
   total_phases: 6  # per PORTAL_OVERHAUL_PLAN.md (0-5, 0-indexed) / see that file for the authoritative list
   phase_0_clerk_migration: CLOSED_2026_07_17  # both Russ (Google) and Chris (Microsoft) verified
   phase_1_foundation: CLOSED  # PR #26, v0.3.0
   phase_2_workspaces_members: CLOSED  # PR #27 + #28, v0.4.0
-  phase_3_comments_activity_notifications: DEPLOYED  # PR #29 + #30, v0.5.0 live 2026-07-23 — see session_2026_07_23_phase3_deploy above
+  phase_3_comments_activity_notifications: DEPLOYED  # PR #29 + #30, v0.5.0 live 2026-07-23; CSS fix PR #34 (missing styles across the whole Phase 3 UI) also merged + deployed same day — see session_2026_07_23_phase3_css_fix above
   next_up: "Run live-ceiling tests for Phase 3 (see
     session_2026_07_23_phase3_deploy), then start Phase 4 -- Projects &
     tasks + Home redesign. Not started yet."
