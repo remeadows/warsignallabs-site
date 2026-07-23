@@ -1,6 +1,8 @@
 # Phase 4 — Projects & Tasks, Home Redesign: Design
 
-**Status:** Approved by Russ 2026-07-23. Source of truth for scope/behavior is
+**Status:** Approved by Russ 2026-07-23; amended same day after design review
+(email-pref tier fix, actor-exclusion on task events, deep-link/response-shape
+pinning — see §2/§4 notes). Source of truth for scope/behavior is
 `portal-app/PORTAL_OVERHAUL_PLAN.md` §3.2 items 4 and 7, and the Phase 4 execution
 section (§4). This document captures the wiring-level decisions the plan states as
 outcomes but doesn't spell out mechanically, plus a handful of choices made during
@@ -72,7 +74,9 @@ Design decisions (deviations from / sharpenings of the original plan sketch):
   `projects.workspace_id` and `tasks.workspace_id`/`tasks.project_id` have no `ON
   DELETE` clause, matching every other same-shape FK in this schema. `tasks` and
   `projects` join the explicit-delete list in `handleDeleteWorkspace` (alongside
-  `files`, `folders`, `invitations`, `user_workspaces`, `comments`).
+  `files`, `folders`, `invitations`, `user_workspaces`, `comments`) — **`tasks`
+  must be deleted before `projects`** there, or the `tasks.project_id` FK rejects
+  the project delete.
 - **Both tables are entirely new** — no `ALTER TABLE` on existing tables in this
   migration, so none of ADR-0004's D1 rename/rebuild sharp edges apply here at all.
 
@@ -80,13 +84,13 @@ Design decisions (deviations from / sharpenings of the original plan sketch):
 
 ```
 # Projects
-GET    /api/workspaces/:slug/projects                 (member)   -- excludes deleted_at unless ?include_deleted=1 + admin
+GET    /api/workspaces/:slug/projects                 (member)   -- excludes deleted_at unless ?include_deleted=1 + GLOBAL admin
 POST   /api/workspaces/:slug/projects                 (wsWrite)  body: {name, description?}
 PATCH  /api/projects/:id                              (wsWrite)  body: {name?, description?, status?}
 DELETE /api/projects/:id                              (creator or wsAdmin — soft delete; 409 if open tasks exist unless ?force=1)
 
 # Tasks
-GET    /api/projects/:id/tasks                        (member)   -- excludes deleted_at unless ?include_deleted=1 + admin
+GET    /api/projects/:id/tasks                        (member)   -- excludes deleted_at unless ?include_deleted=1 + GLOBAL admin; each row includes comment_count
 POST   /api/projects/:id/tasks                        (wsWrite)  body: {title, description?, assignee_id?, due_date?}
 PATCH  /api/tasks/:id                                 (wsWrite)  body: {title?, description?, status?, assignee_id?, due_date?}
 DELETE /api/tasks/:id                                 (creator or wsAdmin — soft delete only)
@@ -95,6 +99,24 @@ DELETE /api/tasks/:id                                 (creator or wsAdmin — so
 GET    /api/me/tasks                                  (self)  -- assignee_id = caller, status != 'done', across every workspace the caller belongs to, ORDER BY due_date IS NULL, due_date ASC, LIMIT 10
 GET    /api/me/activity?limit=50&before=              (self)  -- audit_log across every workspace the caller belongs to, same pagination shape as the per-workspace Activity tab, excludes workspace.view
 ```
+
+Endpoint-contract details (pinned during design review):
+
+- **`?include_deleted=1` requires GLOBAL admin** (`user.role === 'admin'`), not
+  `wsAdmin` — matching the master plan's "global admin can always restore from
+  audit trail context" ceiling language.
+- **`GET /api/projects/:id/tasks` returns `comment_count` per task** (a `LEFT
+  JOIN`/aggregate against `comments` with `entity_type = 'task'`, excluding
+  soft-deleted comments) — the board card's comment badge needs it, and a
+  per-task N+1 from the frontend is the alternative.
+- **`GET /api/me/tasks` rows include `workspace_slug`, `workspace_name`, and
+  `project_id`** alongside the task columns — the widget displays the workspace
+  name and needs all three to build the drawer deep-link (§3).
+- **My Tasks includes tasks under `paused`/`archived` (non-deleted) projects.**
+  An open task assigned to you is still yours regardless of its project's status;
+  only `deleted_at` (on the task or, transitively via the force-cascade, from its
+  project) removes it. Stated explicitly so the query doesn't grow a project-status
+  join later without a decision.
 
 Ceilings, extending the Phase 2/3 pattern (`requireWorkspaceAccess`,
 `hasWorkspaceWriteAccess`, `hasWorkspaceAdminPermission`) — no new permission
@@ -149,8 +171,15 @@ Files/Members/Settings), two levels:
 **Home redesign** (`Home.jsx`):
 - **My Tasks** widget — new, above the workspace cards, visible to all users
   (brainstormed: not admin-gated). Each row: title, workspace name (tasks span
-  workspaces), due date or "No due date", deep-links into the task's drawer via the
-  same `?taskId=`-style pattern the notification bell already uses.
+  workspaces), due date or "No due date", deep-linking into the task's drawer.
+  **Deep-link shape (pinned):**
+  `/workspace/:slug?tab=projects&projectId=<id>&taskId=<id>` — extending the
+  existing `?fileId=&comments=1` deep-link convention that `WorkspaceDetail`
+  already consumes for notification links. `WorkspaceDetail` gains an effect that,
+  on seeing `projectId`/`taskId` params, activates the Projects tab, opens that
+  project, and opens the task drawer. This exact shape is also what
+  `notification_inbox.link` stores for `task.*` events — it gets baked into
+  stored rows, so it's pinned here rather than left to implementation.
 - **Workspace cards** — gain `last_activity_at` (relative time via the existing
   `formatTime` helper), computed with a correlated subquery in `handleListWorkspaces`
   (`MAX(created_at)` from `audit_log` where `action != 'workspace.view'`) — no new
@@ -164,18 +193,34 @@ Files/Members/Settings), two levels:
 
 ## 4. Notification event wiring
 
-New event types on `notifyWorkspaceEvent`: `task.assign`, `task.status`.
+New event types on `notifyWorkspaceEvent`: `task.assign`, `task.status`. Both use
+the `recipientOverride` path (Phase 3's comment.mention mechanism) — these are
+directed-at-one-person events, not workspace-wide broadcasts.
 
-- **`task.assign`** fires only when `assignee_id` changes to a non-null value (not
-  on every `PATCH`). Recipient is the new assignee only — unlike comment/member
-  events, this does not notify the whole workspace. Reassignment notifies the new
-  assignee; the previous assignee gets nothing (no "unassigned" event — not in the
-  acceptance criteria).
+- **`task.assign`** fires when `assignee_id` becomes a non-null value — on `POST`
+  creation with an assignee set, and on any `PATCH` that changes it to a new
+  non-null value (not on every `PATCH`). Recipient is the new assignee only.
+  Reassignment notifies the new assignee; the previous assignee gets nothing (no
+  "unassigned" event — not in the acceptance criteria).
 - **`task.status`** fires on any status transition. Recipient is the current
   assignee if one is set; if unassigned, no notification fires (no one to tell).
-- Both respect `email_pref` exactly like Phase 3's events (`all` emails everything,
-  `mentions` emails neither — task events aren't mentions, `none` emails nothing);
-  the inbox row always writes regardless of preference.
+- **Actor exclusion (design-review fix):** neither event notifies the recipient
+  when they are the actor. The most common interaction — the assignee moving
+  their own task between columns — must not ping their own bell, and
+  self-assignment likewise stays silent. Note the `recipientOverride` path in
+  `notifyWorkspaceEvent` deliberately has no actor-exclusion logic (a
+  self-mention is harmless), so this check happens at the task-route call sites:
+  skip the `notifyWorkspaceEvent` call entirely when the would-be recipient is
+  the actor.
+- **Email tier (design-review fix, supersedes the earlier draft of this spec):**
+  the master plan defines the middle `email_pref` tier as **"mentions &
+  assignments only"** — Phase 3 implemented it as mentions-only because
+  assignments didn't exist yet. Phase 4 completes it: `shouldEmailForPref` gains
+  `task.assign` alongside `comment.mention` in the `mentions` tier (with its unit
+  test updated), and the Settings radio label changes from "Mentions only" to
+  "Mentions & assignments". `task.status` remains `all`-tier-only — it's routine
+  activity, not a directed event. `none` still emails nothing; the inbox row
+  always writes regardless of preference.
 
 Acceptance example (from the plan): Chris assigns a task to Russ → Russ gets a
 `task.assign` notification (bell + inbox always; email per his `email_pref`) and
@@ -186,7 +231,9 @@ sees the task in his My Tasks widget. Chris then moves it to `done` → Russ get
 
 **Unit tests** (Vitest, mirroring `auth.test.js`'s existing style):
 `projectDeleteViolation`/`taskDeleteViolation` (creator vs. `wsAdmin` vs. neither),
-the open-tasks delete-block check as a pure function, and the My Tasks due-date
+the open-tasks delete-block check as a pure function, the updated
+`shouldEmailForPref` matrix (`mentions` × `task.assign` → true, `mentions` ×
+`task.status` → false, existing cases unchanged), and the My Tasks due-date
 sort (nulls-last comparator) if it warrants extraction as its own pure function.
 
 **Live ceiling tests** (post-deploy, same discipline as Phases 2/3): a
