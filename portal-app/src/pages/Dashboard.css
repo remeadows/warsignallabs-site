@@ -112,3 +112,64 @@
   justify-content: center;
   min-height: 300px;
 }
+
+/* ── My Tasks (Phase 4) ── */
+
+.my-tasks {
+  margin-bottom: 2rem;
+}
+
+.my-tasks__list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0.5rem;
+}
+
+.my-tasks__item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.55rem 0.2rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: background 0.12s ease;
+}
+
+.my-tasks__item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.my-tasks__item:last-child {
+  border-bottom: none;
+}
+
+.my-tasks__title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-tasks__workspace {
+  font-size: 0.7rem;
+  color: var(--accent);
+}
+
+.my-tasks__due {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.workspace-card__activity {
+  margin-top: 0.3rem;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+.activity-item__workspace {
+  font-size: 0.7rem;
+  color: var(--accent);
+}

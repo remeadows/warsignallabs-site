@@ -32,6 +32,16 @@ function actionLabel(action) {
     'file.download': 'downloaded a file',
     'file.delete': 'deleted a file',
     'workspace.view': 'viewed a workspace',
+    'project.create': 'created a project',
+    'project.update': 'updated a project',
+    'project.delete': 'deleted a project',
+    'task.create': 'created a task',
+    'task.update': 'edited a task',
+    'task.status': 'moved a task',
+    'task.delete': 'deleted a task',
+    'comment.create': 'commented',
+    'member.invite': 'invited a member',
+    'member.join': 'joined a workspace',
   }
   return map[action] || action
 }
@@ -43,6 +53,8 @@ export default function Home() {
 
   const [workspaces, setWorkspaces] = useState([])
   const [analytics, setAnalytics] = useState(null)
+  const [myTasks, setMyTasks] = useState([])
+  const [activity, setActivity] = useState([])
   const [loading, setLoading] = useState(true)
 
   const firstName = user?.firstName || user?.username || 'there'
@@ -50,11 +62,15 @@ export default function Home() {
   useEffect(() => {
     async function load() {
       try {
-        const [wsData, analyticsData] = await Promise.all([
+        const [wsData, tasksData, activityData, analyticsData] = await Promise.all([
           api.listWorkspaces(),
+          api.myTasks().catch(() => ({ tasks: [] })),
+          api.myActivity({ limit: '8' }).catch(() => ({ activity: [] })),
           isAdmin ? api.getAnalytics() : Promise.resolve(null),
         ])
         setWorkspaces(wsData.workspaces || [])
+        setMyTasks(tasksData.tasks || [])
+        setActivity(activityData.activity || [])
         if (analyticsData) setAnalytics(analyticsData)
       } catch (err) {
         console.error('Dashboard load error:', err)
@@ -96,6 +112,25 @@ export default function Home() {
         <h1>Welcome back, {firstName}</h1>
       </div>
 
+      {myTasks.length > 0 && (
+        <div className="my-tasks">
+          <span className="label">My Tasks</span>
+          <div className="my-tasks__list stagger-in">
+            {myTasks.map((t) => (
+              <Link
+                key={t.id}
+                className="my-tasks__item"
+                to={`/workspace/${t.workspace_slug}?tab=projects&projectId=${t.project_id}&taskId=${t.id}`}
+              >
+                <span className="my-tasks__title">{t.title}</span>
+                <span className="my-tasks__workspace mono">{t.workspace_name}</span>
+                <span className="my-tasks__due mono">{t.due_date || 'No due date'}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="dashboard__grid stagger-in">
         {workspaces.map(ws => {
           const stats = wsStats[ws.slug]
@@ -105,6 +140,9 @@ export default function Home() {
               <div className="workspace-card__meta">
                 {stats ? `${stats.file_count} files · ${formatBytes(stats.total_bytes)}` : '—'}
               </div>
+              {ws.last_activity_at && (
+                <div className="workspace-card__activity mono">updated {formatTime(ws.last_activity_at)}</div>
+              )}
             </Link>
           )
         })}
@@ -137,18 +175,17 @@ export default function Home() {
       <div className="dashboard__activity">
         <span className="label">Recent Activity</span>
         <div className="activity-list">
-          {analytics?.recentActivity && analytics.recentActivity.length > 0 ? (
-            analytics.recentActivity.map((entry, i) => (
-              <div key={i} className="activity-item">
-                <span className="activity-item__user mono">{entry.user_name || 'system'}</span>
+          {activity.length > 0 ? (
+            activity.map((entry) => (
+              <div key={entry.id} className="activity-item">
+                <span className="activity-item__user mono">{entry.actor_username || 'system'}</span>
                 <span className="activity-item__action">{actionLabel(entry.action)}</span>
+                <span className="activity-item__workspace mono">{entry.workspace_name}</span>
                 <span className="activity-item__time mono">{formatTime(entry.created_at)}</span>
               </div>
             ))
           ) : (
-            <div className="activity-empty">
-              No activity yet. Upload a file to get started.
-            </div>
+            <div className="activity-empty">No activity yet.</div>
           )}
         </div>
       </div>
