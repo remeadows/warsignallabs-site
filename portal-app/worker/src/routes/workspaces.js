@@ -12,7 +12,10 @@ export async function handleListWorkspaces(request, env, user) {
 
   if (user.role === 'admin') {
     const result = await env.DB.prepare(
-      'SELECT id, name, slug, color, created_at FROM workspaces ORDER BY name',
+      `SELECT id, name, slug, color, created_at,
+        (SELECT MAX(a.created_at) FROM audit_log a
+         WHERE a.workspace_id = workspaces.id AND a.action != 'workspace.view') AS last_activity_at
+       FROM workspaces ORDER BY name`,
     ).all()
     workspaces = result.results
   } else {
@@ -22,7 +25,9 @@ export async function handleListWorkspaces(request, env, user) {
     }
     const placeholders = user.workspaceSlugs.map(() => '?').join(', ')
     const result = await env.DB.prepare(
-      `SELECT id, name, slug, color, created_at
+      `SELECT id, name, slug, color, created_at,
+        (SELECT MAX(a.created_at) FROM audit_log a
+         WHERE a.workspace_id = workspaces.id AND a.action != 'workspace.view') AS last_activity_at
        FROM workspaces
        WHERE slug IN (${placeholders})
        ORDER BY name`,
@@ -240,12 +245,13 @@ export async function handleDeleteWorkspace(request, env, user, params) {
     try { await env.FILES.delete(f.r2_key) } catch { /* continue */ }
   }
 
-  // Delete D1 records: files, comments, invitations, user_workspaces, then
-  // workspace. Each of these FKs has no cascade (ADR-0004), so a workspace
-  // with any comment or invitation history would otherwise fail this delete
-  // with a foreign-key error.
+  // Delete D1 records: files, comments, tasks, projects, invitations, user_workspaces,
+  // then workspace. Each of these FKs has no cascade (ADR-0004, ADR-0005), so a
+  // workspace with any history would otherwise fail this delete with a foreign-key error.
   await env.DB.prepare('DELETE FROM files WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM comments WHERE workspace_id = ?').bind(workspace.id).run()
+  await env.DB.prepare('DELETE FROM tasks WHERE workspace_id = ?').bind(workspace.id).run()
+  await env.DB.prepare('DELETE FROM projects WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM invitations WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM user_workspaces WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM workspaces WHERE id = ?').bind(workspace.id).run()
