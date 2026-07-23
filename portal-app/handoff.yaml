@@ -2,7 +2,86 @@
 # Companion to memory.yaml (long-lived project context).
 # Update this file at the end of every working session.
 
-last_updated: 2026-07-19
+last_updated: 2026-07-23
+session_2026_07_21_to_23_phase3_collab: |
+  PHASE 3 BUILT, REVIEWED, MERGED — v0.5.0 live on main (PR #29, squash commit
+  49401f2). Branch feat/portal-phase3-collab (deleted post-merge). Plan:
+  docs/superpowers/plans/2026-07-21-portal-phase3-collab.md. Spec:
+  docs/superpowers/specs/2026-07-19-phase3-comments-activity-notifications-
+  design.md. 11 tasks, TDD where applicable (pure-function helpers unit
+  tested first), each task independently verified (tests/lint/build/
+  wrangler --dry-run) before commit.
+
+  SHIPPED:
+    - Migration 007_comments_notifications.sql: comments + notification_inbox
+      tables, users.email_pref, audit_log.workspace_id. Corrected from the
+      spec's stale 003_ filename (Phase 2 had already claimed 002-006).
+      ADR-0004 written (D1 schema changes require one per AGENTS.md; none of
+      Phase 1/2's migrations had one either, but that's not a reason to keep
+      skipping it).
+    - Comments: workspace + per-file threads, one-level-deep replies
+      (rejected, never re-parented), soft delete ("[deleted]" stub, replies
+      survive), author-only edit while not deleted, author/wsAdmin/global-
+      admin delete. @mention parsing scoped to that workspace's members only.
+    - Notifications: notifyWorkspaceEvent now writes an inbox row
+      unconditionally per recipient and gates only the email leg by
+      email_pref (all/mentions/none) — inbox delivery cannot be opted out of,
+      only the email leg is gated by preference. Topnav bell (60s poll, unread badge, dropdown,
+      mark-all-read).
+    - Activity feed: paginated audit_log scoped to a workspace via the new
+      workspace_id column, backfilled at 18 existing call sites across
+      files/folders/members/workspaces routes. Excludes workspace.view
+      (fires on every page load — would flood the feed).
+    - Frontend: CommentThread (Discussion tab + file-comment slide-over),
+      ActivityTab, email-preference radio on workspace Settings.
+
+  REVIEW CYCLE (PR #29) — 4 rounds, Codex + CodeRabbit, ~30 actionable
+  findings total, all resolved (27 threads, 25 fixed/addressed + 2 deferred
+  to a follow-up PR that merged before this PR did):
+    - Real bugs found and fixed: cross-workspace/mismatched-entity comments
+      (no validation that entity_id belonged to the workspace, or that a
+      reply's parent shared the same entity); stale workspace membership on
+      comment edit/delete (author/admin checks didn't recheck current
+      requireWorkspaceAccess, so a removed member could still act on old
+      comments); 3 comment audit events missing workspaceId (would never
+      have shown in the Activity feed); workspace deletion would have broken
+      the first time any workspace had comments or audit history (fixed via
+      comments explicit-delete + audit_log ON DELETE SET NULL); negative/
+      invalid `limit` params treated as "no limit" by SQLite on two
+      endpoints; bare `null` JSON body causing 500s instead of 400s; several
+      React stale-closure/race bugs in new components reused across
+      workspace navigation without remounting (ActivityTab, CommentThread,
+      WorkspaceSettingsTab, WorkspaceDetail's file-comment panel and tab
+      state) — fixed with the effect-cleanup-cancel pattern, not ad-hoc
+      flags. One pass introduced a genuinely new lint error (ref mutated
+      during render) while fixing a race — caught by CI, fixed properly
+      (ref updates moved into their own effect).
+    - False positive correctly pushed back on: CodeRabbit repeatedly flagged
+      `wsAdmin`/`hasWorkspaceAdminPermission` allowing client-role users with
+      per-workspace admin permission as a bug. Verified against actual
+      code (unmodified Phase 2 logic from PR #27, backend enforcement
+      matches exactly) before declining — a client CAN legitimately hold
+      workspace-admin permission, that's the whole point of Phase 2's
+      permission-tier model. CodeRabbit withdrew the finding after the
+      explanation and logged a standing "learning" note for this repo.
+    - Deferred to a follow-up (PR #30, merged into this branch before this
+      PR merged to main): both list endpoints' created_at-only pagination
+      cursor can skip same-second rows at a page boundary. Real but
+      low-probability at this app's actual write volume; fixed properly
+      with an opaque (created_at, id) compound seek cursor on both
+      endpoints + both frontend consumers, done by a separate session
+      working in parallel.
+
+  Deploy NOT yet done: migration 007 has not been applied to remote D1, and
+  neither the Worker nor Pages has been redeployed with Phase 3 code. main
+  is ahead of what's actually live in production.
+
+  NEXT: Phase 4 — Projects & tasks + Home redesign → v0.6.0 (see
+  PORTAL_OVERHAUL_PLAN.md). Not started. Before that: run the deploy
+  sequence (migrate, wrangler deploy, pages deploy) whenever Russ wants
+  Phase 3 live — deliberately held back as a separate step, not silently
+  done alongside the merge.
+
 session_2026_07_19_phase2_collab: |
   PHASE 2 BUILT + DEPLOYED — v0.4.0 live in production, PR pending merge.
   Branch feat/portal-phase2-collab (worktree .claude/worktrees/feat-portal-
@@ -212,26 +291,34 @@ last_session_summary: |
   mirror checklist. Custom domain, OAuth credentials, and keys remain
   per-instance. Russ is now executing the revised Phase 1.
 
+# current_initiative / plan_status reflect the ACTIVE initiative only.
+# The Clerk migration (below, archived) closed 2026-07-17; Phases 1-3 of
+# PORTAL_OVERHAUL_PLAN.md are now also done (v0.5.0, merged, not yet deployed).
 current_initiative:
-  name: Clerk Production Migration (portal-only)
+  name: none — between phases
   goal: |
-    Replace Clerk dev instance with a production instance using a custom
-    subdomain (clerk.warsignallabs.net). First-party cookies eliminate the
-    Safari/incognito/extension blank-screen failure mode. $0/month.
-  motivation_user: chris_depalma  # cdepalma@blueprintadvisory.net, usr-004
-  cost: 0
-  estimated_total_wall_time_minutes: 30
-  branch: feat/clerk-prod-migration  # to be created in phase 3
+    Phase 3 (comments/activity/notifications) merged to main as v0.5.0 but
+    NOT YET DEPLOYED (migration not applied to remote D1, Worker/Pages not
+    redeployed — deliberately held back as a separate step). Next planned
+    work is Phase 4 (Projects & tasks + Home redesign -> v0.6.0), not started.
+  branch: none
 
 plan_status:
-  current_phase: 6  # Phase 0 fully closed; Phase 1 (portal-app/PORTAL_OVERHAUL_PLAN.md) next
-  total_phases: 6
+  current_phase: "Phase 3 of PORTAL_OVERHAUL_PLAN.md — DONE (merged, undeployed)"
+  total_phases: 6  # per PORTAL_OVERHAUL_PLAN.md (0-5, 0-indexed) / see that file for the authoritative list
   phase_0_clerk_migration: CLOSED_2026_07_17  # both Russ (Google) and Chris (Microsoft) verified
-  next_up: "PORTAL_OVERHAUL_PLAN.md Phase 1 -- Worker modularization, D1 migration scaffold,
-    executive retheme, hygiene/tests. Not started yet."
+  phase_1_foundation: CLOSED  # PR #26, v0.3.0
+  phase_2_workspaces_members: CLOSED  # PR #27 + #28, v0.4.0
+  phase_3_comments_activity_notifications: MERGED_NOT_DEPLOYED  # PR #29 + #30, v0.5.0 — see session_2026_07_21_to_23_phase3_collab above
+  next_up: "Deploy Phase 3 (migrate + wrangler deploy + pages deploy) whenever
+    Russ is ready, then start Phase 4 -- Projects & tasks + Home redesign.
+    Not started yet."
   blocked_on: none
 
-phases:
+# ── Archive: Clerk Production Migration (CLOSED 2026-07-17) ──
+# Kept for the operational detail (Azure app registration, secret rotation
+# date, rollback steps) — not because it's still in flight.
+archive_clerk_migration_phases:
   - id: 1
     title: Russ adds Production INSTANCE to existing WSL Portal app + custom domain
     owner: russ
@@ -317,7 +404,7 @@ phases:
       - open PR + squash-merge
       - "russ later (optional, recommend ≥1 week post-cutover): delete dev INSTANCE from the WSL Portal application — keep the Application itself; deleting the dev instance alone preserves the production instance and simplifies the dashboard"
 
-investigation_findings:
+archive_clerk_migration_investigation_findings:
   symptom: |
     Chris reports blank blue screen at portal.warsignallabs.net. Body
     background (#0a1628 dark navy) renders but <div id="root"> has no React
@@ -373,7 +460,7 @@ investigation_findings:
     - corporate network at Blueprint Advisory blocking Clerk
     - stale orphaned Clerk session cookie from April login
 
-risk_register:
+archive_clerk_migration_risk_register:
   - risk: Clerk free tier may not include custom Clerk domain
     likelihood: low  # ~5%
     detection: russ sees "upgrade required" prompt during phase 1.3
@@ -396,7 +483,7 @@ risk_register:
     likelihood: would-be-bug
     mitigation: I will set proxied=false explicitly via Cloudflare MCP in phase 2
 
-rollback:
+archive_clerk_migration_rollback:
   trigger: auth broken for >5 min after phase 4 cutover
   prerequisite: russ keeps dev sk_test_ accessible during cutover
   steps:
@@ -409,7 +496,7 @@ rollback:
     overwritten with prod IDs. The email-fallback in requireAuth re-overwrites
     them on first dev-instance sign-in, so this self-heals.
 
-resumption_data:
+archive_clerk_migration_resumption_data:
   current_clerk:
     publishable_key: pk_test_c2hhcmluZy1nYXRvci02Ny5jbGVyay5hY2NvdW50cy5kZXYk
     frontend_api: https://sharing-gator-67.clerk.accounts.dev
