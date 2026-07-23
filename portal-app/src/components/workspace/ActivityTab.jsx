@@ -21,6 +21,13 @@ function describeAction(item) {
     'member.permission_change': 'changed a member\'s permission',
     'member.remove': 'removed a member',
     'workspace.update': 'updated workspace settings',
+    'project.create': 'created a project',
+    'project.update': 'updated a project',
+    'project.delete': 'deleted a project',
+    'task.create': 'created a task',
+    'task.update': 'edited a task',
+    'task.status': 'moved a task',
+    'task.delete': 'deleted a task',
   }
   return labels[item.action] || item.action
 }

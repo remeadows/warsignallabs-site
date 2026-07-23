@@ -5,6 +5,7 @@ import { usePortalAuth } from '../contexts/PortalAuth'
 import MembersTab from '../components/workspace/MembersTab'
 import WorkspaceSettingsTab from '../components/workspace/WorkspaceSettingsTab'
 import ActivityTab from '../components/workspace/ActivityTab'
+import ProjectsTab from '../components/workspace/ProjectsTab'
 import CommentThread from '../components/CommentThread'
 import FileCommentPanel from '../components/FileCommentPanel'
 import './WorkspaceDetail.css'
@@ -67,7 +68,7 @@ function parseApiError(err, fallback) {
 }
 
 // Tabs visible to every member; 'settings' is appended only for wsAdmin.
-const WORKSPACE_TABS = ['files', 'discussion', 'activity', 'members']
+const WORKSPACE_TABS = ['files', 'projects', 'discussion', 'activity', 'members']
 
 export default function WorkspaceDetail() {
   const { slug } = useParams()
@@ -441,6 +442,7 @@ export default function WorkspaceDetail() {
 
       <div className="workspace__tabs">
         <button className={`workspace__tab ${activeTab === 'files' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('files')}>Files</button>
+        <button className={`workspace__tab ${activeTab === 'projects' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('projects')}>Projects</button>
         <button className={`workspace__tab ${activeTab === 'discussion' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('discussion')}>Discussion</button>
         <button className={`workspace__tab ${activeTab === 'activity' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('activity')}>Activity</button>
         <button className={`workspace__tab ${activeTab === 'members' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('members')}>Members</button>
@@ -449,6 +451,7 @@ export default function WorkspaceDetail() {
         )}
       </div>
 
+      {activeTab === 'projects' && <ProjectsTab slug={slug} />}
       {activeTab === 'discussion' && <CommentThread workspaceSlug={slug} entityType="workspace" entityId={workspace.id} />}
       {activeTab === 'activity' && <ActivityTab slug={slug} />}
       {activeTab === 'members' && <MembersTab slug={slug} />}
