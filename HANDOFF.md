@@ -15,7 +15,7 @@
 
 - **Clerk Production Migration (Active Initiative #2 below): CLOSED.** Completed 2026-07-17 — both Russ (Google) and Chris (Microsoft) verified signed in. Superseded as the portal's active initiative by `PORTAL_OVERHAUL_PLAN.md`.
 - **Portal overhaul Phases 1-3: DONE and DEPLOYED.** v0.3.0 (Phase 1, worker modularization) → v0.4.0 (Phase 2, workspaces/members/permissions) → v0.5.0 (Phase 3, comments/activity/notifications) — all merged to `main` (PRs #26, #27+#28, #29+#30) and live in production as of 2026-07-23 (migration `007_comments_notifications.sql` applied to remote D1; Worker + Pages redeployed; health check and unauthenticated-redirect both verified).
-- **Also merged 2026-07-23:** PR #31 (handoff docs) and PR #32 (Dependabot alert #32 fix — transitive `sharp` vuln via wrangler→miniflare, pinned via npm `overrides`).
+- **Also merged 2026-07-23:** PR #31 (handoff docs), PR #32 (Dependabot alert #32 fix — transitive `sharp` vuln via wrangler→miniflare, pinned via npm `overrides`), PR #33 (handoff docs recording the deploy), and PR #34 (fixed a production bug where the entire Phase 3 frontend — comments, activity feed, notification bell, file-comment panel — had shipped with **zero CSS**, rendering as unstyled raw HTML; also fixed a mobile-viewport overflow bug in the notification dropdown that Codex review caught). PR #34 has been redeployed to Pages.
 - **Next up:** run the Phase 3 live-ceiling tests (multi-role manual checks, see `portal-app/handoff.yaml`), then Phase 4 (Projects & tasks + Home redesign → v0.6.0), not started.
 
 ---
