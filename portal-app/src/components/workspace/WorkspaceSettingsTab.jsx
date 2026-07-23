@@ -81,7 +81,7 @@ export default function WorkspaceSettingsTab({ slug, workspace, onSaved }) {
       <div className="settings-tab__radios">
         {[
           { value: 'all', label: 'All activity' },
-          { value: 'mentions', label: 'Mentions only' },
+          { value: 'mentions', label: 'Mentions & assignments' },
           { value: 'none', label: 'None' },
         ].map((opt) => (
           <label key={opt.value} className="settings-tab__radio">

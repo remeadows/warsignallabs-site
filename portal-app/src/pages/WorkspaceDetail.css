@@ -745,3 +745,60 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Task Drawer (Phase 4) ── */
+
+.task-drawer__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin-bottom: 1.2rem;
+}
+
+.task-drawer__fields input[type="text"],
+.task-drawer__fields input[type="date"],
+.task-drawer__fields textarea,
+.task-drawer__fields select {
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.task-drawer__fields input:focus,
+.task-drawer__fields textarea:focus,
+.task-drawer__fields select:focus {
+  border-color: var(--accent);
+}
+
+.task-drawer__actions {
+  display: flex;
+  gap: 0.6rem;
+  align-self: flex-end;
+  margin-top: 0.4rem;
+}
+
+.task-drawer__description {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.task-drawer__row {
+  display: flex;
+  gap: 0.8rem;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.task-drawer__comments {
+  border-top: 1px solid var(--border);
+  padding-top: 0.8rem;
+}
