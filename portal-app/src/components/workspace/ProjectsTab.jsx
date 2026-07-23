@@ -31,6 +31,9 @@ export default function ProjectsTab({ slug }) {
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [editing, setEditing] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
 
   const loadProjects = useCallback(async () => {
     const data = await api.listProjects(slug)
@@ -145,6 +148,26 @@ export default function ProjectsTab({ slug }) {
     }
   }
 
+  const startEditProject = () => {
+    setEditName(selected.name)
+    setEditDescription(selected.description || '')
+    setEditing(true)
+  }
+
+  const saveProjectEdit = async () => {
+    if (!editName.trim()) return
+    try {
+      const name = editName.trim()
+      const description = editDescription.trim() || null
+      await api.updateProject(selected.id, { name, description })
+      setSelected({ ...selected, name, description })
+      setProjects(await loadProjects())
+      setEditing(false)
+    } catch (err) {
+      setError(err.data?.error || 'Could not update project.')
+    }
+  }
+
   const deleteProject = async () => {
     if (!selected) return
     if (!confirm(`Delete project "${selected.name}"?`)) return
@@ -155,9 +178,13 @@ export default function ProjectsTab({ slug }) {
     } catch (err) {
       if (err.status === 409) {
         if (confirm(`${err.data?.error || 'Project has open tasks.'}\n\nDelete them too?`)) {
-          await api.deleteProject(selected.id, true)
-          setSelected(null)
-          setProjects(await loadProjects())
+          try {
+            await api.deleteProject(selected.id, true)
+            setSelected(null)
+            setProjects(await loadProjects())
+          } catch (err2) {
+            setError(err2.data?.error || 'Could not delete project.')
+          }
         }
       } else {
         setError(err.data?.error || 'Could not delete project.')
@@ -237,11 +264,36 @@ export default function ProjectsTab({ slug }) {
             className={`btn btn--secondary btn--sm ${view === 'list' ? 'project-page__view--active' : ''}`}
             onClick={() => setView('list')}
           >List</button>
+          {canWrite && (
+            <button className="btn btn--secondary btn--sm" onClick={startEditProject}>Edit</button>
+          )}
           {(isAdmin || d1User?.workspacePermissions?.[slug] === 'admin' || selected.created_by === d1User?.userId) && (
             <button className="btn btn--danger btn--sm" onClick={deleteProject}>Delete</button>
           )}
         </div>
       </div>
+      {selected.description && <p className="project-page__description">{selected.description}</p>}
+
+      {editing && (
+        <div className="project-page__edit">
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+          />
+          <textarea
+            rows={2}
+            value={editDescription}
+            onChange={(e) => setEditDescription(e.target.value)}
+          />
+          <div className="project-page__edit-actions">
+            <button className="btn btn--secondary btn--sm" onClick={() => setEditing(false)}>Cancel</button>
+            <button className="btn btn--primary btn--sm" onClick={saveProjectEdit} disabled={!editName.trim()}>
+              Save
+            </button>
+          </div>
+        </div>
+      )}
 
       {canWrite && (
         <div className="projects-tab__new">
@@ -296,7 +348,9 @@ export default function ProjectsTab({ slug }) {
             <tr><th>Title</th><th>Assignee</th><th>Due</th><th>Status</th></tr>
           </thead>
           <tbody>
-            {tasks.map((t) => (
+            {[...tasks]
+              .sort((a, b) => BOARD_COLUMNS.indexOf(a.status) - BOARD_COLUMNS.indexOf(b.status) || a.sort_order - b.sort_order)
+              .map((t) => (
               <tr key={t.id} className="folder-row" onClick={() => setDrawerTask(t)}>
                 <td>{t.title}</td>
                 <td className="mono">{t.assignee_username || '—'}</td>

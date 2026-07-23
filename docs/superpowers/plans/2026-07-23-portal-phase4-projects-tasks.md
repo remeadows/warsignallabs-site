@@ -2007,12 +2007,12 @@ The `dashboard__activity` block moves OUTSIDE the `isAdmin && analytics` conditi
 - [ ] **Step 4: CSS-coverage check (PR #34 lesson — do not skip).** Every class the new components reference must resolve to a rule:
 
 ```bash
-cd src && for cls in projects-tab projects-tab__loading projects-tab__empty projects-tab__new projects-tab__grid project-card project-card__name project-card__meta project-page__header project-page__actions project-page__view--active task-board task-board__column task-board__column-title task-card task-card__title task-card__meta task-card__status task-drawer__fields task-drawer__actions task-drawer__description task-drawer__row task-drawer__comments my-tasks my-tasks__list my-tasks__item my-tasks__title my-tasks__workspace my-tasks__due workspace-card__activity activity-item__workspace; do
+cd src && for cls in projects-tab projects-tab__loading projects-tab__empty projects-tab__new projects-tab__grid project-card project-card__name project-card__meta project-page__header project-page__actions project-page__view--active task-board task-board__column task-board__column-title task-card task-card__title task-card__meta task-card__status task-drawer__fields task-drawer__actions task-drawer__description task-drawer__row task-drawer__comments my-tasks my-tasks__list my-tasks__item my-tasks__title my-tasks__workspace my-tasks__due workspace-card__activity activity-item__workspace task-card__assignee task-card__due task-card__comments task-drawer__fields--readonly project-page__description project-page__edit project-page__edit-actions; do
   grep -rql "\.${cls}[^a-zA-Z0-9_-]" --include="*.css" . || echo "MISSING: $cls"
 done; cd ..
 ```
 
-Expected: NO `MISSING:` lines. (`task-card__assignee`/`task-card__due`/`task-card__comments` inherit `.task-card__meta`'s layout and mono font — fine unstyled individually, but if any renders oddly, add rules rather than shipping.)
+Expected: NO `MISSING:` lines.
 
 - [ ] **Step 5: Full verify + commit.**
 

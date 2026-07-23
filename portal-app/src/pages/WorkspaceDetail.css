@@ -685,6 +685,42 @@
   color: var(--accent);
 }
 
+.project-page__description {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin: -0.4rem 0 0;
+  white-space: pre-wrap;
+}
+
+.project-page__edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.project-page__edit input,
+.project-page__edit textarea {
+  padding: 0.5rem 0.8rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.project-page__edit input:focus,
+.project-page__edit textarea:focus {
+  border-color: var(--accent);
+}
+
+.project-page__edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
 .task-board {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -735,6 +771,10 @@
   color: var(--text-muted);
 }
 
+.task-card__assignee { color: var(--accent); }
+.task-card__due { color: var(--text-muted); }
+.task-card__comments { color: var(--text-muted); }
+
 .task-card__status {
   margin-top: 0.4rem;
   width: 100%;
@@ -754,6 +794,10 @@
   gap: 0.5rem;
   align-items: flex-start;
   margin-bottom: 1.2rem;
+}
+
+.task-drawer__fields--readonly {
+  gap: 0.7rem;
 }
 
 .task-drawer__fields input[type="text"],
