@@ -359,4 +359,14 @@
   .topnav__username {
     display: none;
   }
+
+  .notification-bell__dropdown {
+    position: fixed;
+    top: var(--topnav-height);
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    max-width: none;
+    max-height: calc(100vh - var(--topnav-height) - 1rem);
+  }
 }
