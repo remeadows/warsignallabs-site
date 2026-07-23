@@ -213,6 +213,31 @@ a:hover {
   background: var(--bg-hover);
 }
 
+/* ── Inline link-style buttons ── */
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.link-btn--danger {
+  color: var(--error);
+}
+
+.link-btn--danger:hover {
+  color: var(--error);
+}
+
 /* ── Buttons: disabled state ── */
 
 .btn:disabled {
