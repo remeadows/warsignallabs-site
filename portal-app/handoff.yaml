@@ -25,8 +25,8 @@ session_2026_07_21_to_23_phase3_collab: |
       admin delete. @mention parsing scoped to that workspace's members only.
     - Notifications: notifyWorkspaceEvent now writes an inbox row
       unconditionally per recipient and gates only the email leg by
-      email_pref (all/mentions/none) — inbox is opt-out, email is
-      opt-in-by-preference. Topnav bell (60s poll, unread badge, dropdown,
+      email_pref (all/mentions/none) — inbox delivery cannot be opted out of,
+      only the email leg is gated by preference. Topnav bell (60s poll, unread badge, dropdown,
       mark-all-read).
     - Activity feed: paginated audit_log scoped to a workspace via the new
       workspace_id column, backfilled at 18 existing call sites across
