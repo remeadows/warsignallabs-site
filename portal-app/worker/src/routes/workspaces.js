@@ -241,13 +241,17 @@ export async function handleDeleteWorkspace(request, env, user, params) {
   }
 
   // Delete D1 records: files, comments, invitations, user_workspaces, then
-  // workspace. Each of these FKs has no cascade (ADR-0004), so a workspace
-  // with any comment or invitation history would otherwise fail this delete
-  // with a foreign-key error.
+  // detach notifications, then delete the workspace. Each of these FKs has no
+  // cascade (ADR-0004), so a workspace with any comment, invitation, or email
+  // history would otherwise fail this delete with a foreign-key error.
   await env.DB.prepare('DELETE FROM files WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM comments WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM invitations WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM user_workspaces WHERE workspace_id = ?').bind(workspace.id).run()
+  // notifications (the Phase 1 email send log) is detached, not deleted — the
+  // send history must survive workspace deletion, same reasoning as
+  // audit_log.workspace_id ON DELETE SET NULL (ADR-0004).
+  await env.DB.prepare('UPDATE notifications SET workspace_id = NULL WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM workspaces WHERE id = ?').bind(workspace.id).run()
 
   await logAudit(env, user.userId, 'workspace.delete', {
