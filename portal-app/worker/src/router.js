@@ -76,6 +76,12 @@ import {
   handleUpdateProject,
   handleDeleteProject,
 } from './routes/projects.js'
+import {
+  handleListTasks,
+  handleCreateTask,
+  handleUpdateTask,
+  handleDeleteTask,
+} from './routes/tasks.js'
 
 function matchPath(pattern, pathname) {
   const patternParts = pattern.split('/')
@@ -249,6 +255,22 @@ export default {
         }
         if (params && method === 'DELETE') {
           return await handleDeleteProject(request, env, user, params)
+        }
+
+        params = matchPath('/api/projects/:id/tasks', pathname)
+        if (params && method === 'GET') {
+          return await handleListTasks(request, env, user, params)
+        }
+        if (params && method === 'POST') {
+          return await handleCreateTask(request, env, user, params, ctx)
+        }
+
+        params = matchPath('/api/tasks/:id', pathname)
+        if (params && method === 'PATCH') {
+          return await handleUpdateTask(request, env, user, params, ctx)
+        }
+        if (params && method === 'DELETE') {
+          return await handleDeleteTask(request, env, user, params)
         }
 
         if (pathname === '/api/notifications' && method === 'GET') {
