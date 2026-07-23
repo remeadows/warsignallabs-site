@@ -5,6 +5,7 @@ import { version } from '../../package.json'
 import { useApiClient } from '../api/client'
 import { PortalAuthProvider } from '../contexts/PortalAuth'
 import NewWorkspaceModal from '../components/NewWorkspaceModal'
+import NotificationBell from '../components/NotificationBell'
 import './PortalLayout.css'
 
 const PORTAL_NAME = import.meta.env.VITE_PORTAL_NAME || 'WARSIGNALLABS PORTAL'
@@ -91,6 +92,7 @@ export default function PortalLayout() {
             <span className="topnav__version mono">v{version}</span>
           </div>
           <div className="topnav__user">
+            <NotificationBell />
             <span className="topnav__username mono">{user?.username || user?.firstName || 'User'}</span>
             <UserButton afterSignOutUrl="/login" />
           </div>

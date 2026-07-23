@@ -2,6 +2,8 @@
 // Fire-and-forget email notifications via Resend, using ctx.waitUntil() so
 // the primary API response is never blocked.
 
+import { shouldEmailForPref } from './auth.js'
+
 /**
  * Send an email via Resend API. Fire-and-forget — never blocks the primary action.
  * Logs to the notifications table for auditing.
@@ -66,28 +68,41 @@ export async function sendEmail(env, { to, subject, html, text, eventType, works
 
 /**
  * Resolve notification recipients for a workspace event.
- * Returns { admins: [{email, userId}], workspaceMembers: [{email, userId}] }
+ * Returns { admins: [{email, userId, emailPref}], workspaceMembers: [{email, userId, emailPref}] }
  */
 export async function resolveRecipients(env, workspaceId) {
   // All active admins
   const admins = await env.DB.prepare(
-    "SELECT id, email FROM users WHERE role = 'admin' AND status = 'active' AND email IS NOT NULL",
+    "SELECT id, email, email_pref FROM users WHERE role = 'admin' AND status = 'active' AND email IS NOT NULL",
   ).all()
 
   // Workspace members (clients with workspace assignment)
   let members = { results: [] }
   if (workspaceId) {
     members = await env.DB.prepare(
-      `SELECT u.id, u.email FROM users u
+      `SELECT u.id, u.email, u.email_pref FROM users u
        INNER JOIN user_workspaces uw ON uw.user_id = u.id
        WHERE uw.workspace_id = ? AND u.status = 'active' AND u.email IS NOT NULL`,
     ).bind(workspaceId).all()
   }
 
   return {
-    admins: admins.results.map((u) => ({ email: u.email, userId: u.id })),
-    workspaceMembers: members.results.map((u) => ({ email: u.email, userId: u.id })),
+    admins: admins.results.map((u) => ({ email: u.email, userId: u.id, emailPref: u.email_pref })),
+    workspaceMembers: members.results.map((u) => ({ email: u.email, userId: u.id, emailPref: u.email_pref })),
   }
+}
+
+/**
+ * Resolve the specific users @mentioned in a comment (Phase 3 spec §4 — a
+ * narrower, separate path from resolveRecipients' "everyone in the workspace").
+ */
+export async function resolveMentionRecipients(env, userIds) {
+  if (!userIds || userIds.length === 0) return []
+  const placeholders = userIds.map(() => '?').join(', ')
+  const result = await env.DB.prepare(
+    `SELECT id, email, email_pref FROM users WHERE id IN (${placeholders}) AND status = 'active' AND email IS NOT NULL`,
+  ).bind(...userIds).all()
+  return result.results.map((u) => ({ email: u.email, userId: u.id, emailPref: u.email_pref }))
 }
 
 /**
@@ -127,39 +142,56 @@ export function buildEmailHtml(title, bodyLines) {
  * Client actors are excluded from self-notification.
  * Uses ctx.waitUntil() for non-blocking delivery.
  */
-export function notifyWorkspaceEvent(env, ctx, { eventType, workspaceId, workspaceName, title, bodyLines, actorEmail, metadata }) {
+export function notifyWorkspaceEvent(env, ctx, { eventType, workspaceId, workspaceName, title, bodyLines, actorEmail, metadata, link, recipientOverride }) {
   const task = (async () => {
     try {
-      const { admins, workspaceMembers } = await resolveRecipients(env, workspaceId)
+      let allRecipients
+      if (recipientOverride) {
+        // comment.mention path: exact recipient set, no admin/actor-exclusion
+        // logic — a mention is always meant for the mentioned person, admin
+        // or not, even if they're also the actor (self-mentions are rare and
+        // harmless to notify on).
+        allRecipients = new Map(recipientOverride.map((r) => [r.email.toLowerCase(), r]))
+      } else {
+        const { admins, workspaceMembers } = await resolveRecipients(env, workspaceId)
 
-      // Build admin email set — admins always receive (never excluded)
-      const adminEmails = new Set(admins.map((a) => a.email.toLowerCase()))
+        // Build admin email set — admins always receive (never excluded)
+        const adminEmails = new Set(admins.map((a) => a.email.toLowerCase()))
 
-      // Deduplicate: admins always included, non-admin actors excluded
-      const allRecipients = new Map()
-      for (const r of [...admins, ...workspaceMembers]) {
-        if (!r.email) continue
-        const emailLower = r.email.toLowerCase()
-        const isActor = emailLower === (actorEmail || '').toLowerCase()
-        const isAdmin = adminEmails.has(emailLower)
-        // Admins always get notified; non-admins skip if they're the actor
-        if (isAdmin || !isActor) {
-          allRecipients.set(emailLower, r)
+        // Deduplicate: admins always included, non-admin actors excluded
+        allRecipients = new Map()
+        for (const r of [...admins, ...workspaceMembers]) {
+          if (!r.email) continue
+          const emailLower = r.email.toLowerCase()
+          const isActor = emailLower === (actorEmail || '').toLowerCase()
+          const isAdmin = adminEmails.has(emailLower)
+          // Admins always get notified; non-admins skip if they're the actor
+          if (isAdmin || !isActor) {
+            allRecipients.set(emailLower, r)
+          }
         }
       }
 
       if (allRecipients.size === 0) return
 
       const subject = `[WSL Portal] ${title}`
-      const html = buildEmailHtml(title, bodyLines)
+      const emailHtml = buildEmailHtml(title, bodyLines)
       const text = bodyLines.join('\n')
 
-      // Send individual emails for per-recipient logging
       for (const [email, recipient] of allRecipients) {
+        // Inbox row — unconditional. The bell reflects everything relevant
+        // regardless of email settings; email is opt-out, the inbox isn't.
+        await env.DB.prepare(
+          `INSERT INTO notification_inbox (id, user_id, event_type, title, body, link, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
+        ).bind(crypto.randomUUID(), recipient.userId, eventType, title, text, link || null).run()
+
+        if (!shouldEmailForPref(recipient.emailPref || 'all', eventType)) continue
+
         await sendEmail(env, {
           to: email,
           subject,
-          html,
+          html: emailHtml,
           text,
           eventType,
           workspaceId,

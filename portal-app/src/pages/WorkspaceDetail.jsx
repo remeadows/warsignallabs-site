@@ -1,9 +1,12 @@
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useApiClient } from '../api/client'
 import { usePortalAuth } from '../contexts/PortalAuth'
 import MembersTab from '../components/workspace/MembersTab'
 import WorkspaceSettingsTab from '../components/workspace/WorkspaceSettingsTab'
+import ActivityTab from '../components/workspace/ActivityTab'
+import CommentThread from '../components/CommentThread'
+import FileCommentPanel from '../components/FileCommentPanel'
 import './WorkspaceDetail.css'
 
 function formatBytes(bytes) {
@@ -63,15 +66,75 @@ function parseApiError(err, fallback) {
   return err.data?.error || err.message || fallback
 }
 
+// Tabs visible to every member; 'settings' is appended only for wsAdmin.
+const WORKSPACE_TABS = ['files', 'discussion', 'activity', 'members']
+
 export default function WorkspaceDetail() {
   const { slug } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { role, isAdmin, d1User } = usePortalAuth()
   const api = useApiClient()
 
   const canDelete = isAdmin
   const wsAdmin = isAdmin || d1User?.workspacePermissions?.[slug] === 'admin'
 
-  const [activeTab, setActiveTab] = useState('files')
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'files')
+  const [commentingFile, setCommentingFile] = useState(null)
+
+  // Keep activeTab in sync with ?tab= after mount too — a notification link
+  // to a tab on an already-mounted workspace page (same route, new search
+  // params) doesn't remount the component, so the mount-time useState
+  // initializer alone would miss it. Also normalizes missing/invalid/
+  // unauthorized values to 'files' — otherwise switching workspaces via a
+  // plain (tab-less) sidebar link left whatever tab was active before,
+  // including 'settings' in a workspace where the user isn't wsAdmin.
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    const allowed = wsAdmin ? [...WORKSPACE_TABS, 'settings'] : WORKSPACE_TABS
+    const next = tab && allowed.includes(tab) ? tab : 'files'
+    if (next !== activeTab) setActiveTab(next)
+  }, [searchParams, wsAdmin]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Switching tabs by click also writes the URL, so the selection is
+  // shareable/bookmarkable/refresh-safe — not just readable on first load.
+  const changeTab = (tab) => {
+    setActiveTab(tab)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.set('tab', tab)
+      return next
+    })
+  }
+
+  // Consumes the fileId/comments=1 params a file-comment notification link
+  // carries (see comments.js's `link` construction) — these are server-
+  // authored, always pointing at a file in this workspace, so a plain
+  // fetch-by-id is enough without resolving it through the folder tree.
+  // Strips the params once consumed so re-rendering doesn't refetch/reopen.
+  useEffect(() => {
+    const fileId = searchParams.get('fileId')
+    if (!fileId || searchParams.get('comments') !== '1') return
+    let cancelled = false
+    api.getFileVersions(fileId)
+      .then((data) => {
+        if (cancelled) return
+        setCommentingFile({ slug, file: { id: fileId, filename: data.filename } })
+        setActiveTab('files')
+        setSearchParams((prev) => {
+          const next = new URLSearchParams(prev)
+          next.set('tab', 'files')
+          next.delete('fileId')
+          next.delete('comments')
+          return next
+        }, { replace: true })
+      })
+      .catch(() => {
+        // Stale/invalid link (file deleted, no access) — fail silently,
+        // same as any other dead notification link.
+      })
+    return () => { cancelled = true }
+  }, [searchParams, slug, api, setSearchParams])
+
   const [workspace, setWorkspace] = useState(null)
   const [folders, setFolders] = useState([])
   const [files, setFiles] = useState([])
@@ -377,13 +440,17 @@ export default function WorkspaceDetail() {
       </div>
 
       <div className="workspace__tabs">
-        <button className={`workspace__tab ${activeTab === 'files' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('files')}>Files</button>
-        <button className={`workspace__tab ${activeTab === 'members' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('members')}>Members</button>
+        <button className={`workspace__tab ${activeTab === 'files' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('files')}>Files</button>
+        <button className={`workspace__tab ${activeTab === 'discussion' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('discussion')}>Discussion</button>
+        <button className={`workspace__tab ${activeTab === 'activity' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('activity')}>Activity</button>
+        <button className={`workspace__tab ${activeTab === 'members' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('members')}>Members</button>
         {wsAdmin && (
-          <button className={`workspace__tab ${activeTab === 'settings' ? 'workspace__tab--active' : ''}`} onClick={() => setActiveTab('settings')}>Settings</button>
+          <button className={`workspace__tab ${activeTab === 'settings' ? 'workspace__tab--active' : ''}`} onClick={() => changeTab('settings')}>Settings</button>
         )}
       </div>
 
+      {activeTab === 'discussion' && <CommentThread workspaceSlug={slug} entityType="workspace" entityId={workspace.id} />}
+      {activeTab === 'activity' && <ActivityTab slug={slug} />}
       {activeTab === 'members' && <MembersTab slug={slug} />}
       {activeTab === 'settings' && wsAdmin && (
         <WorkspaceSettingsTab slug={slug} workspace={workspace} onSaved={() => fetchWorkspace()} />
@@ -531,6 +598,9 @@ export default function WorkspaceDetail() {
                       <td className="mono">{file.uploaded_by_name || '—'}</td>
                       <td>{formatDate(file.created_at)}</td>
                       <td className="file-actions">
+                        <button className="btn btn--secondary btn--sm" onClick={() => setCommentingFile({ slug, file })}>
+                          Comments
+                        </button>
                         <button className="btn btn--secondary btn--sm" onClick={() => handleDownload(file)}>
                           Download
                         </button>
@@ -687,6 +757,10 @@ export default function WorkspaceDetail() {
             </div>
           </div>
         </div>
+      )}
+
+      {commentingFile?.slug === slug && (
+        <FileCommentPanel workspaceSlug={slug} file={commentingFile.file} onClose={() => setCommentingFile(null)} />
       )}
     </div>
   )

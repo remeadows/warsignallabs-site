@@ -347,3 +347,49 @@ export function memberChangeViolation(targetRole, remainingAdminCount) {
   }
   return null
 }
+
+// Extracts @username tokens from a comment body, keeping only tokens that
+// match a member of the workspace the comment belongs to. Silent no-op for
+// non-members — never an error, no cross-workspace leakage (Phase 3 spec §2).
+export function parseMentions(body, memberUsernames) {
+  const memberSet = new Set(memberUsernames)
+  // Lookbehind requires whitespace or start-of-string before '@' so an email
+  // address like foo@cdepalma.com is never mistaken for a mention.
+  const matches = body.match(/(?<=^|\s)@([a-zA-Z0-9_-]+)/g) || []
+  const found = []
+  const seen = new Set()
+  for (const m of matches) {
+    const username = m.slice(1)
+    if (memberSet.has(username) && !seen.has(username)) {
+      seen.add(username)
+      found.push(username)
+    }
+  }
+  return found
+}
+
+// Whether a notification email should be sent to a recipient with the given
+// email_pref, for the given event type (Phase 3 spec §4). Never gates the
+// inbox row — only the email leg.
+export function shouldEmailForPref(emailPref, eventType) {
+  if (emailPref === 'none') return false
+  if (emailPref === 'mentions') return eventType === 'comment.mention'
+  return true // 'all'
+}
+
+// Edit ceiling (Phase 3 spec §2): author only, and only while the comment is
+// not (soft-)deleted. Not even wsAdmin may alter someone else's words.
+export function isCommentEditableBy(user, comment) {
+  if (comment.deleted_at) return false
+  return comment.author_id === (user.dbUserId || user.userId)
+}
+
+// Delete ceiling (Phase 3 spec §2): author, wsAdmin, or global admin. Always
+// soft delete at the call site — this only decides who may do it.
+export function commentDeleteViolation(user, comment, workspaceSlug) {
+  const isAuthor = comment.author_id === (user.dbUserId || user.userId)
+  if (isAuthor || hasWorkspaceAdminPermission(user, workspaceSlug)) {
+    return null
+  }
+  return 'Only the comment author or a workspace admin may delete this comment'
+}

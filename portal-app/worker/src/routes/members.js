@@ -66,6 +66,7 @@ export async function handleUpdateMemberPermission(request, env, user, params) {
   if (violation) {
     await logAudit(env, user.userId, 'member.permission_change.denied', {
       resourceType: 'member', resourceId: target.id,
+      workspaceId: workspace.id,
       workspaceSlug: params.slug, attempted: permission, reason: violation,
       ipAddress: getClientIp(request),
     })
@@ -77,6 +78,7 @@ export async function handleUpdateMemberPermission(request, env, user, params) {
 
   await logAudit(env, user.userId, 'member.permission_change', {
     resourceType: 'member', resourceId: target.id,
+    workspaceId: workspace.id,
     workspaceSlug: params.slug, from: target.permission, to: permission,
     ipAddress: getClientIp(request),
   })
@@ -105,6 +107,7 @@ export async function handleRemoveMember(request, env, user, params) {
   if (violation) {
     await logAudit(env, user.userId, 'member.remove.denied', {
       resourceType: 'member', resourceId: target.id,
+      workspaceId: workspace.id,
       workspaceSlug: params.slug, reason: violation,
       ipAddress: getClientIp(request),
     })
@@ -115,6 +118,7 @@ export async function handleRemoveMember(request, env, user, params) {
 
   await logAudit(env, user.userId, 'member.remove', {
     resourceType: 'member', resourceId: target.id,
+    workspaceId: workspace.id,
     workspaceSlug: params.slug, username: target.username,
     ipAddress: getClientIp(request),
   })
@@ -221,6 +225,7 @@ export async function handleCreateInvitation(request, env, user, params, ctx) {
 
   await logAudit(env, user.userId, 'member.invite', {
     resourceType: 'invitation', resourceId: invId,
+    workspaceId: workspace.id,
     workspaceSlug: params.slug, email, permission,
     ipAddress: getClientIp(request),
   })
@@ -292,6 +297,7 @@ export async function handleRevokeInvitation(request, env, user, params) {
 
   await logAudit(env, user.userId, 'invitation.revoke', {
     resourceType: 'invitation', resourceId: invitation.id,
+    workspaceId: invitation.workspace_id,
     workspaceSlug: invitation.workspace_slug, email: invitation.email,
     ipAddress: getClientIp(request),
   })

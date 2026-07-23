@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { requireRole, requireWorkspaceAccess, hasWorkspaceWriteAccess, hasWorkspaceAdminPermission, memberChangeViolation } from './auth.js'
+import { requireRole, requireWorkspaceAccess, hasWorkspaceWriteAccess, hasWorkspaceAdminPermission, memberChangeViolation, parseMentions, shouldEmailForPref, isCommentEditableBy, commentDeleteViolation } from './auth.js'
 
 function makeUser(overrides = {}) {
   return {
@@ -142,5 +142,76 @@ describe('memberChangeViolation (remove/downgrade ceilings)', () => {
   it('allows a normal change', () => {
     expect(memberChangeViolation('client', 1)).toBeNull()
     expect(memberChangeViolation('owner', 2)).toBeNull()
+  })
+})
+
+describe('parseMentions', () => {
+  const members = ['rmeadows', 'cdepalma', 'armeadows']
+
+  it('extracts a single mention matching a member', () => {
+    expect(parseMentions('hey @cdepalma check this', members)).toEqual(['cdepalma'])
+  })
+  it('ignores a mention of a non-member', () => {
+    expect(parseMentions('hey @randomguy check this', members)).toEqual([])
+  })
+  it('extracts multiple distinct mentions, deduplicated', () => {
+    expect(parseMentions('@rmeadows and @cdepalma, also @rmeadows again', members)).toEqual(['rmeadows', 'cdepalma'])
+  })
+  it('does not match a mention embedded mid-word', () => {
+    expect(parseMentions('email me at foo@cdepalma.com', members)).toEqual([])
+  })
+  it('returns empty for no mentions', () => {
+    expect(parseMentions('just a plain comment', members)).toEqual([])
+  })
+})
+
+describe('shouldEmailForPref', () => {
+  it('all: every event type emails', () => {
+    expect(shouldEmailForPref('all', 'comment.create')).toBe(true)
+    expect(shouldEmailForPref('all', 'comment.mention')).toBe(true)
+    expect(shouldEmailForPref('all', 'file.upload')).toBe(true)
+  })
+  it('none: nothing emails', () => {
+    expect(shouldEmailForPref('none', 'comment.mention')).toBe(false)
+    expect(shouldEmailForPref('none', 'file.upload')).toBe(false)
+  })
+  it('mentions: only comment.mention emails', () => {
+    expect(shouldEmailForPref('mentions', 'comment.mention')).toBe(true)
+    expect(shouldEmailForPref('mentions', 'comment.create')).toBe(false)
+    expect(shouldEmailForPref('mentions', 'file.upload')).toBe(false)
+  })
+})
+
+describe('isCommentEditableBy', () => {
+  it('true for the author on a non-deleted comment', () => {
+    const user = makeUser({ dbUserId: 'usr-1' })
+    expect(isCommentEditableBy(user, { author_id: 'usr-1', deleted_at: null })).toBe(true)
+  })
+  it('false for a non-author', () => {
+    const user = makeUser({ dbUserId: 'usr-1' })
+    expect(isCommentEditableBy(user, { author_id: 'usr-2', deleted_at: null })).toBe(false)
+  })
+  it('false for the author once the comment is deleted', () => {
+    const user = makeUser({ dbUserId: 'usr-1' })
+    expect(isCommentEditableBy(user, { author_id: 'usr-1', deleted_at: '2026-07-21 10:00:00' })).toBe(false)
+  })
+})
+
+describe('commentDeleteViolation', () => {
+  it('allows the author', () => {
+    const user = makeUser({ dbUserId: 'usr-1', role: 'client' })
+    expect(commentDeleteViolation(user, { author_id: 'usr-1' }, 'ws')).toBeNull()
+  })
+  it('allows a wsAdmin deleting someone else\'s comment', () => {
+    const user = makeUser({ dbUserId: 'usr-2', role: 'client', workspacePermissions: { ws: 'admin' } })
+    expect(commentDeleteViolation(user, { author_id: 'usr-1' }, 'ws')).toBeNull()
+  })
+  it('allows a global admin regardless of permission entry', () => {
+    const user = makeUser({ dbUserId: 'usr-2', role: 'admin', workspacePermissions: {} })
+    expect(commentDeleteViolation(user, { author_id: 'usr-1' }, 'ws')).toBeNull()
+  })
+  it('blocks a non-author, non-wsAdmin', () => {
+    const user = makeUser({ dbUserId: 'usr-2', role: 'client', workspacePermissions: {} })
+    expect(commentDeleteViolation(user, { author_id: 'usr-1' }, 'ws')).toMatch(/author|admin/i)
   })
 })

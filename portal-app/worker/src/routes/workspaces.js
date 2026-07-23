@@ -2,6 +2,7 @@
 import { jsonResponse, errorResponse } from '../cors.js'
 import { requireRole, requireWorkspaceAccess, hasWorkspaceAdminPermission } from '../auth.js'
 import { logAudit, getClientIp } from '../audit.js'
+import { encodeCursor, decodeCursor, seekCondition } from '../pagination.js'
 
 /**
  * GET /api/workspaces — returns workspaces filtered by user access
@@ -65,6 +66,7 @@ export async function handleGetWorkspace(request, env, user, params) {
   await logAudit(env, user.userId, 'workspace.view', {
     resourceType: 'workspace',
     resourceId: workspace.id,
+    workspaceId: workspace.id,
     workspaceSlug: params.slug,
     ipAddress: getClientIp(request),
   })
@@ -82,6 +84,50 @@ export async function handleGetWorkspace(request, env, user, params) {
       userPermission,
     },
   })
+}
+
+/**
+ * GET /api/workspaces/:slug/activity — paginated audit_log scoped to this
+ * workspace. Excludes workspace.view (Global Constraints: populated in the
+ * column for consistency, but noisy in a human-facing feed — filtered here,
+ * not at write time, so the exclusion is visible and easy to revisit).
+ */
+export async function handleGetActivity(request, env, user, params) {
+  requireWorkspaceAccess(user, params.slug)
+  const workspace = await env.DB.prepare('SELECT id FROM workspaces WHERE slug = ?')
+    .bind(params.slug).first()
+  if (!workspace) return errorResponse('Workspace not found', 404)
+
+  const url = new URL(request.url)
+  const rawLimit = parseInt(url.searchParams.get('limit'), 10)
+  const limit = Number.isInteger(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 200) : 50
+  const before = url.searchParams.get('before')
+
+  const conditions = ['a.workspace_id = ?', "a.action != 'workspace.view'"]
+  const bindings = [workspace.id]
+  if (before) {
+    const cursor = decodeCursor(before)
+    if (!cursor) return errorResponse('Invalid before cursor', 400)
+    const { clause, params: cursorParams } = seekCondition(cursor, 'a.')
+    conditions.push(clause)
+    bindings.push(...cursorParams)
+  }
+
+  const result = await env.DB.prepare(
+    `SELECT a.id, a.action, a.resource_type, a.resource_id, a.metadata_json, a.created_at,
+            u.username AS actor_username
+     FROM audit_log a LEFT JOIN users u ON u.id = a.user_id OR u.clerk_id = a.user_id
+     WHERE ${conditions.join(' AND ')}
+     ORDER BY a.created_at DESC, a.id DESC LIMIT ?`,
+  ).bind(...bindings, limit).all()
+
+  const activity = result.results.map((r) => ({
+    ...r,
+    metadata: r.metadata_json ? JSON.parse(r.metadata_json) : {},
+  }))
+  const nextCursor = activity.length === limit ? encodeCursor(activity[activity.length - 1]) : null
+
+  return jsonResponse({ activity, next_cursor: nextCursor })
 }
 
 /**
@@ -169,6 +215,7 @@ export async function handleUpdateWorkspace(request, env, user, params) {
 
   await logAudit(env, user.userId, 'workspace.update', {
     resourceType: 'workspace', resourceId: workspace.id,
+    workspaceId: workspace.id,
     slug: params.slug, changes: Object.keys(body),
     ipAddress: getClientIp(request),
   })
@@ -193,11 +240,12 @@ export async function handleDeleteWorkspace(request, env, user, params) {
     try { await env.FILES.delete(f.r2_key) } catch { /* continue */ }
   }
 
-  // Delete D1 records: files, invitations, user_workspaces, then workspace.
-  // Invitations must go before the workspace itself — its FK has no cascade,
-  // so a workspace with any invitation history (pending, accepted, or
-  // revoked) would otherwise fail this delete with a foreign-key error.
+  // Delete D1 records: files, comments, invitations, user_workspaces, then
+  // workspace. Each of these FKs has no cascade (ADR-0004), so a workspace
+  // with any comment or invitation history would otherwise fail this delete
+  // with a foreign-key error.
   await env.DB.prepare('DELETE FROM files WHERE workspace_id = ?').bind(workspace.id).run()
+  await env.DB.prepare('DELETE FROM comments WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM invitations WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM user_workspaces WHERE workspace_id = ?').bind(workspace.id).run()
   await env.DB.prepare('DELETE FROM workspaces WHERE id = ?').bind(workspace.id).run()

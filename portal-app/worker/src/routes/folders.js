@@ -136,6 +136,7 @@ export async function handleCreateFolder(request, env, user, params, ctx) {
   await logAudit(env, user.userId, 'folder.create', {
     resourceType: 'folder',
     resourceId: folderId,
+    workspaceId: workspace.id,
     folderName,
     parentFolderId,
     workspaceSlug: params.slug,
@@ -201,6 +202,7 @@ export async function handleRenameFolder(request, env, user, params) {
   await logAudit(env, user.userId, 'folder.rename', {
     resourceType: 'folder',
     resourceId: folder.id,
+    workspaceId: folder.workspace_id,
     oldName: folder.name,
     newName,
     workspaceSlug: folder.workspace_slug,
@@ -242,6 +244,7 @@ export async function handleDeleteFolder(request, env, user, params, ctx) {
   await logAudit(env, user.userId, 'folder.delete', {
     resourceType: 'folder',
     resourceId: folder.id,
+    workspaceId: folder.workspace_id,
     folderName: folder.name,
     workspaceSlug: folder.workspace_slug,
     ipAddress: getClientIp(request),
@@ -329,6 +332,7 @@ export async function handleMoveFolder(request, env, user, params, ctx) {
   await logAudit(env, user.userId, 'folder.move', {
     resourceType: 'folder',
     resourceId: folder.id,
+    workspaceId: folder.workspace_id,
     folderName: folder.name,
     fromParentId: folder.parent_folder_id,
     toParentId: newParentId,
