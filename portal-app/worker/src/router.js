@@ -11,6 +11,8 @@ import {
   handleListNotifications,
   handleMarkNotificationsRead,
   handleUpdatePreferences,
+  handleMyTasks,
+  handleMyActivity,
 } from './routes/me.js'
 import {
   handleListWorkspaces,
@@ -282,6 +284,14 @@ export default {
 
         if (pathname === '/api/me/preferences' && method === 'PATCH') {
           return await handleUpdatePreferences(request, env, user)
+        }
+
+        if (pathname === '/api/me/tasks' && method === 'GET') {
+          return await handleMyTasks(request, env, user)
+        }
+
+        if (pathname === '/api/me/activity' && method === 'GET') {
+          return await handleMyActivity(request, env, user)
         }
 
         if (pathname === '/api/users' && method === 'GET') {
