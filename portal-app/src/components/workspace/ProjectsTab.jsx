@@ -47,6 +47,7 @@ export default function ProjectsTab({ slug }) {
 
   const openProject = async (project, focusTaskId = null) => {
     setSelected(project)
+    setEditing(false)
     setTasksLoading(true)
     try {
       const t = await loadTasks(project.id)
@@ -71,6 +72,7 @@ export default function ProjectsTab({ slug }) {
     setSelected(null)
     setTasks([])
     setDrawerTask(null)
+    setEditing(false)
     loadProjects()
       .then((p) => { if (!cancelled) setProjects(p) })
       .catch(() => { if (!cancelled) setError('Could not load projects.') })
@@ -242,7 +244,7 @@ export default function ProjectsTab({ slug }) {
     <div className="projects-tab">
       {error && <div className="workspace__alert workspace__alert--error">{error}</div>}
       <div className="project-page__header">
-        <button className="link-btn" onClick={() => { setSelected(null); setDrawerTask(null) }}>← Projects</button>
+        <button className="link-btn" onClick={() => { setSelected(null); setDrawerTask(null); setEditing(false) }}>← Projects</button>
         <h3>{selected.name}</h3>
         {canWrite ? (
           <select
