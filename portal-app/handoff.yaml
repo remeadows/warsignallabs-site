@@ -3,6 +3,39 @@
 # Update this file at the end of every working session.
 
 last_updated: 2026-07-23
+session_2026_07_23_phase3_deploy: |
+  PHASE 3 DEPLOYED — v0.5.0 live in production. Migration
+  007_comments_notifications.sql applied to remote D1 (7 prior migrations
+  already up to date, idempotent run via `npm run migrate`). Worker
+  redeployed (wsl-portal-api, version 8aac368f-8e5f-4b85-8c40-e9830c3c25e5).
+  Pages redeployed (bundle b9fd7fac, serving portal.warsignallabs.net).
+  Post-deploy checks: `/api/health` reports d1/r2/clerkApi all true;
+  portal.warsignallabs.net loads and correctly redirects unauthenticated
+  visitors to Clerk sign-in.
+
+  Also merged same session: PR #31 (this handoff doc's Phase 3 write-up,
+  squash a362a71) and PR #32 (Dependabot alert #32 — transitive `sharp`
+  vulnerability via wrangler→miniflare, fixed with an npm `overrides` pin to
+  ^0.35.3, squash 36307af). Both merged before the deploy above, so the
+  deployed Worker/Pages already include the sharp-pinned lockfile (dev-only
+  dependency, no runtime effect either way).
+
+  STILL OUTSTANDING — live-ceiling tests (plan Task 11 Step 5, needs real
+  multi-role accounts, not run yet):
+    - client-role member cannot edit/delete another member's comment (403)
+    - read-only member cannot post a comment (403)
+    - mentioning a non-member username is a silent no-op
+    - deleting a comment with replies leaves the replies under a
+      "[deleted]" stub
+    - acceptance check: Russ comments on a file → Chris (pref all) gets
+      bell badge + inbox + email; pref mentions → bell+inbox only unless
+      @cdepalma'd, which adds the email; the Activity tab shows Phase 2's
+      own recent events (now populated with workspace_id) plus the new
+      comment events, with no workspace.view noise
+
+  NEXT: Phase 4 — Projects & tasks + Home redesign → v0.6.0 (see
+  PORTAL_OVERHAUL_PLAN.md). Not started.
+
 session_2026_07_21_to_23_phase3_collab: |
   PHASE 3 BUILT, REVIEWED, MERGED — v0.5.0 live on main (PR #29, squash commit
   49401f2). Branch feat/portal-phase3-collab (deleted post-merge). Plan:
@@ -72,15 +105,9 @@ session_2026_07_21_to_23_phase3_collab: |
       endpoints + both frontend consumers, done by a separate session
       working in parallel.
 
-  Deploy NOT yet done: migration 007 has not been applied to remote D1, and
-  neither the Worker nor Pages has been redeployed with Phase 3 code. main
-  is ahead of what's actually live in production.
-
-  NEXT: Phase 4 — Projects & tasks + Home redesign → v0.6.0 (see
-  PORTAL_OVERHAUL_PLAN.md). Not started. Before that: run the deploy
-  sequence (migrate, wrangler deploy, pages deploy) whenever Russ wants
-  Phase 3 live — deliberately held back as a separate step, not silently
-  done alongside the merge.
+  Deploy done later the same day — see session_2026_07_23_phase3_deploy
+  above (this entry is kept as written at the time for the review-cycle
+  detail; it's no longer current on deploy status).
 
 session_2026_07_19_phase2_collab: |
   PHASE 2 BUILT + DEPLOYED — v0.4.0 live in production, PR pending merge.
@@ -293,26 +320,27 @@ last_session_summary: |
 
 # current_initiative / plan_status reflect the ACTIVE initiative only.
 # The Clerk migration (below, archived) closed 2026-07-17; Phases 1-3 of
-# PORTAL_OVERHAUL_PLAN.md are now also done (v0.5.0, merged, not yet deployed).
+# PORTAL_OVERHAUL_PLAN.md are now also done (v0.5.0, merged AND deployed).
 current_initiative:
   name: none — between phases
   goal: |
-    Phase 3 (comments/activity/notifications) merged to main as v0.5.0 but
-    NOT YET DEPLOYED (migration not applied to remote D1, Worker/Pages not
-    redeployed — deliberately held back as a separate step). Next planned
-    work is Phase 4 (Projects & tasks + Home redesign -> v0.6.0), not started.
+    Phase 3 (comments/activity/notifications) is merged to main and DEPLOYED
+    as v0.5.0 (migration 007 applied to remote D1, Worker + Pages redeployed
+    2026-07-23 — see session_2026_07_23_phase3_deploy above). Live-ceiling
+    tests (multi-role manual checks) still outstanding. Next planned work is
+    Phase 4 (Projects & tasks + Home redesign -> v0.6.0), not started.
   branch: none
 
 plan_status:
-  current_phase: "Phase 3 of PORTAL_OVERHAUL_PLAN.md — DONE (merged, undeployed)"
+  current_phase: "Phase 3 of PORTAL_OVERHAUL_PLAN.md — DONE (merged + deployed)"
   total_phases: 6  # per PORTAL_OVERHAUL_PLAN.md (0-5, 0-indexed) / see that file for the authoritative list
   phase_0_clerk_migration: CLOSED_2026_07_17  # both Russ (Google) and Chris (Microsoft) verified
   phase_1_foundation: CLOSED  # PR #26, v0.3.0
   phase_2_workspaces_members: CLOSED  # PR #27 + #28, v0.4.0
-  phase_3_comments_activity_notifications: MERGED_NOT_DEPLOYED  # PR #29 + #30, v0.5.0 — see session_2026_07_21_to_23_phase3_collab above
-  next_up: "Deploy Phase 3 (migrate + wrangler deploy + pages deploy) whenever
-    Russ is ready, then start Phase 4 -- Projects & tasks + Home redesign.
-    Not started yet."
+  phase_3_comments_activity_notifications: DEPLOYED  # PR #29 + #30, v0.5.0 live 2026-07-23 — see session_2026_07_23_phase3_deploy above
+  next_up: "Run live-ceiling tests for Phase 3 (see
+    session_2026_07_23_phase3_deploy), then start Phase 4 -- Projects &
+    tasks + Home redesign. Not started yet."
   blocked_on: none
 
 # ── Archive: Clerk Production Migration (CLOSED 2026-07-17) ──
