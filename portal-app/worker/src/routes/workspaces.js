@@ -12,7 +12,10 @@ export async function handleListWorkspaces(request, env, user) {
 
   if (user.role === 'admin') {
     const result = await env.DB.prepare(
-      'SELECT id, name, slug, color, created_at FROM workspaces ORDER BY name',
+      `SELECT id, name, slug, color, created_at,
+        (SELECT MAX(a.created_at) FROM audit_log a
+         WHERE a.workspace_id = workspaces.id AND a.action != 'workspace.view') AS last_activity_at
+       FROM workspaces ORDER BY name`,
     ).all()
     workspaces = result.results
   } else {
@@ -22,7 +25,9 @@ export async function handleListWorkspaces(request, env, user) {
     }
     const placeholders = user.workspaceSlugs.map(() => '?').join(', ')
     const result = await env.DB.prepare(
-      `SELECT id, name, slug, color, created_at
+      `SELECT id, name, slug, color, created_at,
+        (SELECT MAX(a.created_at) FROM audit_log a
+         WHERE a.workspace_id = workspaces.id AND a.action != 'workspace.view') AS last_activity_at
        FROM workspaces
        WHERE slug IN (${placeholders})
        ORDER BY name`,
@@ -268,13 +273,15 @@ export async function handleDeleteWorkspace(request, env, user, params) {
     }
   }
 
-  // Delete D1 records: file_versions, files, folders, comments, invitations,
-  // user_workspaces, then detach notifications, then delete the workspace. Each
-  // of these FKs has no cascade (ADR-0004), so a workspace with any content or
-  // email history would otherwise fail this delete with a foreign-key error.
-  // notifications (the Phase 1 email send log) is detached, not deleted — the
-  // send history must survive workspace deletion, same reasoning as
-  // audit_log.workspace_id ON DELETE SET NULL (ADR-0004).
+  // Delete D1 records: file_versions, files, folders, comments, tasks,
+  // projects, invitations, user_workspaces, then detach notifications, then
+  // delete the workspace. Each of these FKs has no cascade (ADR-0004,
+  // ADR-0005), so a workspace with any content or email history would
+  // otherwise fail this delete with a foreign-key error. tasks BEFORE
+  // projects is load-bearing (tasks.project_id FK, ADR-0005). notifications
+  // (the Phase 1 email send log) is detached, not deleted — the send history
+  // must survive workspace deletion, same reasoning as audit_log.workspace_id
+  // ON DELETE SET NULL (ADR-0004).
   // One atomic batch: if any statement fails (e.g. an unhandled child-table
   // FK), nothing commits — sequential .run() calls would leave the send log
   // permanently detached from a workspace that still exists. Statement order
@@ -290,6 +297,8 @@ export async function handleDeleteWorkspace(request, env, user, params) {
     env.DB.prepare('UPDATE folders SET parent_folder_id = NULL WHERE workspace_id = ?').bind(workspace.id),
     env.DB.prepare('DELETE FROM folders WHERE workspace_id = ?').bind(workspace.id),
     env.DB.prepare('DELETE FROM comments WHERE workspace_id = ?').bind(workspace.id),
+    env.DB.prepare('DELETE FROM tasks WHERE workspace_id = ?').bind(workspace.id),
+    env.DB.prepare('DELETE FROM projects WHERE workspace_id = ?').bind(workspace.id),
     env.DB.prepare('DELETE FROM invitations WHERE workspace_id = ?').bind(workspace.id),
     env.DB.prepare('DELETE FROM user_workspaces WHERE workspace_id = ?').bind(workspace.id),
     env.DB.prepare('UPDATE notifications SET workspace_id = NULL WHERE workspace_id = ?').bind(workspace.id),

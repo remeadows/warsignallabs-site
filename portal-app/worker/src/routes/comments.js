@@ -45,26 +45,34 @@ export async function handleCreateComment(request, env, user, params, ctx) {
   try { reqBody = await request.json() } catch { return errorResponse('Invalid JSON', 400) }
   const { entity_type: entityType, entity_id: entityId, parent_comment_id: parentId, body } = reqBody
 
-  // 'task' stays out of the request-validation allowlist until Phase 4 ships
-  // tasks — the DB CHECK constraint permits it (schema pre-provisioned per
-  // ADR-0004) but there's no tasks table to validate entity_id against yet.
-  if (!['workspace', 'file'].includes(entityType)) {
-    return errorResponse('entity_type must be one of: workspace, file', 400)
+  if (!['workspace', 'file', 'task'].includes(entityType)) {
+    return errorResponse('entity_type must be one of: workspace, file, task', 400)
   }
   if (!entityId) return errorResponse('entity_id is required', 400)
   if (!body || !body.trim()) return errorResponse('body is required', 400)
 
   // Verify the target actually belongs to this workspace before attaching a
   // comment to it — otherwise a crafted entity_id can associate a comment
-  // with another workspace's file, or a file that doesn't exist at all.
+  // with another workspace's file/task, or one that doesn't exist at all.
+  let taskProjectId = null
   if (entityType === 'workspace') {
     if (entityId !== workspace.id) {
       return errorResponse('entity_id must be this workspace\'s id for entity_type "workspace"', 400)
     }
-  } else {
+  } else if (entityType === 'file') {
     const file = await env.DB.prepare('SELECT id FROM files WHERE id = ? AND workspace_id = ?')
       .bind(entityId, workspace.id).first()
     if (!file) return errorResponse('File not found in this workspace', 404)
+  } else {
+    // Parent project must also be live — a done task surviving a force-
+    // cascaded project delete is otherwise still commentable via the API.
+    const task = await env.DB.prepare(
+      `SELECT t.id, t.project_id FROM tasks t
+       INNER JOIN projects p ON p.id = t.project_id
+       WHERE t.id = ? AND t.workspace_id = ? AND t.deleted_at IS NULL AND p.deleted_at IS NULL`,
+    ).bind(entityId, workspace.id).first()
+    if (!task) return errorResponse('Task not found in this workspace', 404)
+    taskProjectId = task.project_id
   }
 
   if (parentId) {
@@ -98,7 +106,9 @@ export async function handleCreateComment(request, env, user, params, ctx) {
 
   const link = entityType === 'file'
     ? `/workspace/${params.slug}?tab=files&fileId=${entityId}&comments=1`
-    : `/workspace/${params.slug}?tab=discussion`
+    : entityType === 'task'
+      ? `/workspace/${params.slug}?tab=projects&projectId=${taskProjectId}&taskId=${entityId}`
+      : `/workspace/${params.slug}?tab=discussion`
 
   // General broadcast — same recipient resolution as every other workspace
   // event; email leg is filtered to email_pref='all' inside notifyWorkspaceEvent.

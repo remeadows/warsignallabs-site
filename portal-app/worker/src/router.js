@@ -11,6 +11,8 @@ import {
   handleListNotifications,
   handleMarkNotificationsRead,
   handleUpdatePreferences,
+  handleMyTasks,
+  handleMyActivity,
 } from './routes/me.js'
 import {
   handleListWorkspaces,
@@ -70,6 +72,18 @@ import {
   handleEditComment,
   handleDeleteComment,
 } from './routes/comments.js'
+import {
+  handleListProjects,
+  handleCreateProject,
+  handleUpdateProject,
+  handleDeleteProject,
+} from './routes/projects.js'
+import {
+  handleListTasks,
+  handleCreateTask,
+  handleUpdateTask,
+  handleDeleteTask,
+} from './routes/tasks.js'
 
 function matchPath(pattern, pathname) {
   const patternParts = pattern.split('/')
@@ -229,6 +243,38 @@ export default {
           return await handleDeleteComment(request, env, user, params)
         }
 
+        params = matchPath('/api/workspaces/:slug/projects', pathname)
+        if (params && method === 'GET') {
+          return await handleListProjects(request, env, user, params)
+        }
+        if (params && method === 'POST') {
+          return await handleCreateProject(request, env, user, params)
+        }
+
+        params = matchPath('/api/projects/:id', pathname)
+        if (params && method === 'PATCH') {
+          return await handleUpdateProject(request, env, user, params)
+        }
+        if (params && method === 'DELETE') {
+          return await handleDeleteProject(request, env, user, params)
+        }
+
+        params = matchPath('/api/projects/:id/tasks', pathname)
+        if (params && method === 'GET') {
+          return await handleListTasks(request, env, user, params)
+        }
+        if (params && method === 'POST') {
+          return await handleCreateTask(request, env, user, params, ctx)
+        }
+
+        params = matchPath('/api/tasks/:id', pathname)
+        if (params && method === 'PATCH') {
+          return await handleUpdateTask(request, env, user, params, ctx)
+        }
+        if (params && method === 'DELETE') {
+          return await handleDeleteTask(request, env, user, params)
+        }
+
         if (pathname === '/api/notifications' && method === 'GET') {
           return await handleListNotifications(request, env, user)
         }
@@ -238,6 +284,14 @@ export default {
 
         if (pathname === '/api/me/preferences' && method === 'PATCH') {
           return await handleUpdatePreferences(request, env, user)
+        }
+
+        if (pathname === '/api/me/tasks' && method === 'GET') {
+          return await handleMyTasks(request, env, user)
+        }
+
+        if (pathname === '/api/me/activity' && method === 'GET') {
+          return await handleMyActivity(request, env, user)
         }
 
         if (pathname === '/api/users' && method === 'GET') {

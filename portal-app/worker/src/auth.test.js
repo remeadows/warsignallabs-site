@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { requireRole, requireWorkspaceAccess, hasWorkspaceWriteAccess, hasWorkspaceAdminPermission, memberChangeViolation, parseMentions, shouldEmailForPref, isCommentEditableBy, commentDeleteViolation } from './auth.js'
+import { requireRole, requireWorkspaceAccess, hasWorkspaceWriteAccess, hasWorkspaceAdminPermission, memberChangeViolation, parseMentions, shouldEmailForPref, isCommentEditableBy, commentDeleteViolation, projectDeleteViolation, taskDeleteViolation, projectDeleteBlocked } from './auth.js'
 
 function makeUser(overrides = {}) {
   return {
@@ -180,6 +180,15 @@ describe('shouldEmailForPref', () => {
     expect(shouldEmailForPref('mentions', 'comment.create')).toBe(false)
     expect(shouldEmailForPref('mentions', 'file.upload')).toBe(false)
   })
+  it('mentions tier includes task.assign but not task.status (spec §4, "mentions & assignments only")', () => {
+    expect(shouldEmailForPref('mentions', 'task.assign')).toBe(true)
+    expect(shouldEmailForPref('mentions', 'task.status')).toBe(false)
+  })
+  it('all/none tiers treat task events like any other', () => {
+    expect(shouldEmailForPref('all', 'task.assign')).toBe(true)
+    expect(shouldEmailForPref('all', 'task.status')).toBe(true)
+    expect(shouldEmailForPref('none', 'task.assign')).toBe(false)
+  })
 })
 
 describe('isCommentEditableBy', () => {
@@ -213,5 +222,56 @@ describe('commentDeleteViolation', () => {
   it('blocks a non-author, non-wsAdmin', () => {
     const user = makeUser({ dbUserId: 'usr-2', role: 'client', workspacePermissions: {} })
     expect(commentDeleteViolation(user, { author_id: 'usr-1' }, 'ws')).toMatch(/author|admin/i)
+  })
+})
+
+describe('projectDeleteViolation', () => {
+  const project = { created_by: 'usr-999' }
+
+  it('allows the creator', () => {
+    expect(projectDeleteViolation(makeUser(), project, 'acme')).toBeNull()
+  })
+  it('allows wsAdmin who is not the creator', () => {
+    const u = makeUser({ dbUserId: 'usr-002', workspacePermissions: { acme: 'admin' } })
+    expect(projectDeleteViolation(u, project, 'acme')).toBeNull()
+  })
+  it('allows a global admin', () => {
+    const u = makeUser({ dbUserId: 'usr-002', role: 'admin' })
+    expect(projectDeleteViolation(u, project, 'acme')).toBeNull()
+  })
+  it('blocks a write-permission non-creator', () => {
+    const u = makeUser({ dbUserId: 'usr-002', workspacePermissions: { acme: 'write' } })
+    expect(projectDeleteViolation(u, project, 'acme')).toMatch(/creator or a workspace admin/)
+  })
+})
+
+describe('taskDeleteViolation', () => {
+  const task = { created_by: 'usr-999' }
+
+  it('allows the creator', () => {
+    expect(taskDeleteViolation(makeUser(), task, 'acme')).toBeNull()
+  })
+  it('blocks a non-creator without admin permission', () => {
+    const u = makeUser({ dbUserId: 'usr-002', workspacePermissions: { acme: 'write' } })
+    expect(taskDeleteViolation(u, task, 'acme')).toMatch(/creator or a workspace admin/)
+  })
+  it('allows wsAdmin', () => {
+    const u = makeUser({ dbUserId: 'usr-002', workspacePermissions: { acme: 'admin' } })
+    expect(taskDeleteViolation(u, task, 'acme')).toBeNull()
+  })
+})
+
+describe('projectDeleteBlocked', () => {
+  it('blocks when open tasks exist and force is not set', () => {
+    expect(projectDeleteBlocked(3, false)).toMatch(/3 open task/)
+  })
+  it('allows when open tasks exist but force is set', () => {
+    expect(projectDeleteBlocked(3, true)).toBeNull()
+  })
+  it('allows when no open tasks', () => {
+    expect(projectDeleteBlocked(0, false)).toBeNull()
+  })
+  it('singularizes the message for one task', () => {
+    expect(projectDeleteBlocked(1, false)).toMatch(/1 open task —/)
   })
 })

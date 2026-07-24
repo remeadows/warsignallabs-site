@@ -102,3 +102,74 @@ export async function handleUpdatePreferences(request, env, user) {
 
   return jsonResponse({ message: 'Preferences updated', email_pref: emailPref })
 }
+
+/** GET /api/me/tasks — self. Open tasks assigned to me across my workspaces,
+ * due-soonest first (nulls last), max 10. Includes tasks under paused/archived
+ * (non-deleted) projects by design (spec §2). */
+export async function handleMyTasks(request, env, user) {
+  const userId = user.dbUserId || user.userId
+  const conditions = ['t.assignee_id = ?', "t.status != 'done'", 't.deleted_at IS NULL']
+  const bindings = [userId]
+
+  if (user.role !== 'admin') {
+    if (user.workspaceSlugs.length === 0) return jsonResponse({ tasks: [] })
+    const placeholders = user.workspaceSlugs.map(() => '?').join(', ')
+    conditions.push(`w.slug IN (${placeholders})`)
+    bindings.push(...user.workspaceSlugs)
+  }
+
+  // projects join: paused/archived projects' tasks stay included (spec §2 —
+  // no status filter), but tasks under a soft-DELETED project must not
+  // surface here; their deep links point into a project that no longer lists.
+  const result = await env.DB.prepare(
+    `SELECT t.id, t.title, t.status, t.due_date, t.project_id,
+            w.slug AS workspace_slug, w.name AS workspace_name
+     FROM tasks t
+     INNER JOIN projects p ON p.id = t.project_id AND p.deleted_at IS NULL
+     INNER JOIN workspaces w ON w.id = t.workspace_id
+     WHERE ${conditions.join(' AND ')}
+     ORDER BY t.due_date IS NULL, t.due_date ASC, t.created_at ASC
+     LIMIT 10`,
+  ).bind(...bindings).all()
+
+  return jsonResponse({ tasks: result.results })
+}
+
+/** GET /api/me/activity?limit=&before= — self. audit_log across every
+ * workspace the caller belongs to (admins: all), workspace.view excluded,
+ * same seek pagination as the per-workspace Activity endpoint. */
+export async function handleMyActivity(request, env, user) {
+  const url = new URL(request.url)
+  const rawLimit = parseInt(url.searchParams.get('limit'), 10)
+  const limit = Number.isInteger(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 200) : 50
+  const before = url.searchParams.get('before')
+
+  const conditions = ['a.workspace_id IS NOT NULL', "a.action != 'workspace.view'"]
+  const bindings = []
+  if (user.role !== 'admin') {
+    conditions.push('a.workspace_id IN (SELECT workspace_id FROM user_workspaces WHERE user_id = ?)')
+    bindings.push(user.dbUserId || user.userId)
+  }
+  if (before) {
+    const cursor = decodeCursor(before)
+    if (!cursor) return errorResponse('Invalid before cursor', 400)
+    const { clause, params: cursorParams } = seekCondition(cursor, 'a.')
+    conditions.push(clause)
+    bindings.push(...cursorParams)
+  }
+
+  const result = await env.DB.prepare(
+    `SELECT a.id, a.action, a.resource_type, a.resource_id, a.created_at,
+            u.username AS actor_username, w.slug AS workspace_slug, w.name AS workspace_name
+     FROM audit_log a
+     LEFT JOIN users u ON u.id = a.user_id OR u.clerk_id = a.user_id
+     INNER JOIN workspaces w ON w.id = a.workspace_id
+     WHERE ${conditions.join(' AND ')}
+     ORDER BY a.created_at DESC, a.id DESC LIMIT ?`,
+  ).bind(...bindings, limit).all()
+
+  const activity = result.results
+  const nextCursor = activity.length === limit ? encodeCursor(activity[activity.length - 1]) : null
+
+  return jsonResponse({ activity, next_cursor: nextCursor })
+}

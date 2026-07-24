@@ -196,6 +196,26 @@ export function useApiClient() {
     updatePreferences: (emailPref) =>
       apiFetch('/api/me/preferences', getToken, { method: 'PATCH', body: JSON.stringify({ email_pref: emailPref }) }),
 
+    // Projects & tasks (Phase 4)
+    listProjects: (slug) => apiFetch(`/api/workspaces/${slug}/projects`, getToken),
+    createProject: (slug, data) =>
+      apiFetch(`/api/workspaces/${slug}/projects`, getToken, { method: 'POST', body: JSON.stringify(data) }),
+    updateProject: (id, data) =>
+      apiFetch(`/api/projects/${id}`, getToken, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteProject: (id, force) =>
+      apiFetch(`/api/projects/${id}${force ? '?force=1' : ''}`, getToken, { method: 'DELETE' }),
+    listTasks: (projectId) => apiFetch(`/api/projects/${projectId}/tasks`, getToken),
+    createTask: (projectId, data) =>
+      apiFetch(`/api/projects/${projectId}/tasks`, getToken, { method: 'POST', body: JSON.stringify(data) }),
+    updateTask: (id, data) =>
+      apiFetch(`/api/tasks/${id}`, getToken, { method: 'PATCH', body: JSON.stringify(data) }),
+    deleteTask: (id) => apiFetch(`/api/tasks/${id}`, getToken, { method: 'DELETE' }),
+
+    // Home widgets (Phase 4)
+    myTasks: () => apiFetch('/api/me/tasks', getToken),
+    myActivity: (params = {}) =>
+      apiFetch(`/api/me/activity?${new URLSearchParams(params)}`, getToken),
+
     // Audit log (admin)
     getAuditLog: (params = {}) =>
       apiFetch(`/api/audit-log?${new URLSearchParams(params)}`, getToken),

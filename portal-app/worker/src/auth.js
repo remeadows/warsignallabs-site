@@ -369,11 +369,13 @@ export function parseMentions(body, memberUsernames) {
 }
 
 // Whether a notification email should be sent to a recipient with the given
-// email_pref, for the given event type (Phase 3 spec §4). Never gates the
-// inbox row — only the email leg.
+// email_pref, for the given event type (Phase 3 spec §4; Phase 4 spec §4 adds
+// task.assign — the master plan's middle tier is "mentions & ASSIGNMENTS only").
+// task.status stays 'all'-tier-only: routine activity, not a directed event.
+// Never gates the inbox row — only the email leg.
 export function shouldEmailForPref(emailPref, eventType) {
   if (emailPref === 'none') return false
-  if (emailPref === 'mentions') return eventType === 'comment.mention'
+  if (emailPref === 'mentions') return eventType === 'comment.mention' || eventType === 'task.assign'
   return true // 'all'
 }
 
@@ -392,4 +394,29 @@ export function commentDeleteViolation(user, comment, workspaceSlug) {
     return null
   }
   return 'Only the comment author or a workspace admin may delete this comment'
+}
+
+// Delete ceilings for projects/tasks (Phase 4 spec §2): creator, wsAdmin, or
+// global admin. Same shape as commentDeleteViolation — always soft delete at
+// the call site; these only decide who may do it.
+export function projectDeleteViolation(user, project, workspaceSlug) {
+  const isCreator = project.created_by === (user.dbUserId || user.userId)
+  if (isCreator || hasWorkspaceAdminPermission(user, workspaceSlug)) return null
+  return 'Only the project creator or a workspace admin may delete this project'
+}
+
+export function taskDeleteViolation(user, task, workspaceSlug) {
+  const isCreator = task.created_by === (user.dbUserId || user.userId)
+  if (isCreator || hasWorkspaceAdminPermission(user, workspaceSlug)) return null
+  return 'Only the task creator or a workspace admin may delete this task'
+}
+
+// Open-task guard for project deletion (Phase 4 spec §2): a project with
+// todo/in_progress tasks blocks (409 at the call site) unless force is set,
+// in which case the call site also soft-deletes those tasks.
+export function projectDeleteBlocked(openTaskCount, force) {
+  if (openTaskCount > 0 && !force) {
+    return `Project has ${openTaskCount} open task${openTaskCount === 1 ? '' : 's'} — pass force=1 to delete them too`
+  }
+  return null
 }
