@@ -49,13 +49,24 @@ function d1(db) {
 }
 
 describe('handleDeleteWorkspace', () => {
-  let db, env
+  let db, env, deletedR2Keys, r2DeleteCalls
   const admin = { userId: 'clerk_admin', dbUserId: 'usr-admin', role: 'admin' }
   const request = new Request('https://api.test/api/workspaces/acme', { method: 'DELETE' })
 
   beforeEach(() => {
     db = createTestDb()
-    env = { DB: d1(db), FILES: { delete: async () => {} } }
+    deletedR2Keys = []
+    r2DeleteCalls = []
+    // R2's binding accepts a single key or an array of up to 1000 keys.
+    env = {
+      DB: d1(db),
+      FILES: {
+        delete: async (keyOrKeys) => {
+          r2DeleteCalls.push(keyOrKeys)
+          deletedR2Keys.push(...(Array.isArray(keyOrKeys) ? keyOrKeys : [keyOrKeys]))
+        },
+      },
+    }
     db.prepare(
       "INSERT INTO users (id, username, email, role) VALUES ('usr-admin', 'russ', 'russ@test.dev', 'admin')",
     ).run()
@@ -89,6 +100,95 @@ describe('handleDeleteWorkspace', () => {
     const ntf = db.prepare("SELECT workspace_id FROM notifications WHERE id = 'ntf-1'").get()
     expect(ntf).toBeDefined()
     expect(ntf.workspace_id).toBeNull()
+  })
+
+  it('deletes a workspace containing folders, including nested folders', async () => {
+    // folders.workspace_id FK has no ON DELETE clause, and folders self-reference
+    // via parent_folder_id — insert parent before child so a naive single DELETE
+    // hits the parent row first while the child still references it.
+    db.prepare(
+      "INSERT INTO folders (id, workspace_id, name) VALUES ('fld-parent', 'ws-1', 'Reports')",
+    ).run()
+    db.prepare(
+      `INSERT INTO folders (id, workspace_id, parent_folder_id, name)
+       VALUES ('fld-child', 'ws-1', 'fld-parent', 'Q2')`,
+    ).run()
+
+    const res = await handleDeleteWorkspace(request, env, admin, { slug: 'acme' })
+
+    expect(res.status).toBe(200)
+    expect(db.prepare("SELECT id FROM workspaces WHERE id = 'ws-1'").get()).toBeUndefined()
+    // Folders are workspace content, not audit history — hard-deleted.
+    expect(db.prepare("SELECT id FROM folders WHERE workspace_id = 'ws-1'").all()).toHaveLength(0)
+  })
+
+  it('deletes a workspace whose files have archived versions', async () => {
+    // handleReplaceFile archives the prior version to file_versions
+    // (file_id FK, no ON DELETE) — deleting `files` first would FK-fail.
+    db.prepare(
+      `INSERT INTO files (id, workspace_id, category, filename, r2_key, size_bytes, content_type, uploaded_by, version)
+       VALUES ('file-1', 'ws-1', 'documents', 'report.pdf', 'ws-1/documents/file-1_v2_report.pdf', 200, 'application/pdf', 'usr-admin', 2)`,
+    ).run()
+    db.prepare(
+      `INSERT INTO file_versions (id, file_id, version_number, r2_key, size_bytes, content_type, uploaded_by)
+       VALUES ('fv-1', 'file-1', 1, 'ws-1/documents/file-1_report.pdf', 100, 'application/pdf', 'usr-admin')`,
+    ).run()
+
+    const res = await handleDeleteWorkspace(request, env, admin, { slug: 'acme' })
+
+    expect(res.status).toBe(200)
+    expect(db.prepare("SELECT id FROM workspaces WHERE id = 'ws-1'").get()).toBeUndefined()
+    // Version history is workspace content, not audit history — hard-deleted.
+    expect(db.prepare("SELECT id FROM file_versions WHERE id = 'fv-1'").get()).toBeUndefined()
+    expect(db.prepare("SELECT id FROM files WHERE id = 'file-1'").get()).toBeUndefined()
+  })
+
+  it('deletes archived version objects from R2, not just current file objects', async () => {
+    // handleReplaceFile keeps the old R2 object ("preserved in file_versions for
+    // rollback") — on workspace hard-delete those archived objects must go too,
+    // or they leak in R2 forever with no DB row pointing at them.
+    db.prepare(
+      `INSERT INTO files (id, workspace_id, category, filename, r2_key, size_bytes, content_type, uploaded_by, version)
+       VALUES ('file-1', 'ws-1', 'documents', 'report.pdf', 'ws-1/documents/file-1_v2_report.pdf', 200, 'application/pdf', 'usr-admin', 2)`,
+    ).run()
+    db.prepare(
+      `INSERT INTO file_versions (id, file_id, version_number, r2_key, size_bytes, content_type, uploaded_by)
+       VALUES ('fv-1', 'file-1', 1, 'ws-1/documents/file-1_report.pdf', 100, 'application/pdf', 'usr-admin')`,
+    ).run()
+
+    const res = await handleDeleteWorkspace(request, env, admin, { slug: 'acme' })
+
+    expect(res.status).toBe(200)
+    expect(deletedR2Keys).toContain('ws-1/documents/file-1_v2_report.pdf')
+    expect(deletedR2Keys).toContain('ws-1/documents/file-1_report.pdf')
+    // Bulk-delete: one binding call (one subrequest) for the whole batch, not
+    // one per key — a large workspace would otherwise exhaust the Worker's
+    // subrequest allowance mid-loop.
+    expect(r2DeleteCalls).toHaveLength(1)
+    expect(Array.isArray(r2DeleteCalls[0])).toBe(true)
+  })
+
+  it('aborts with 500 and keeps all DB rows when R2 deletion fails', async () => {
+    // If an R2 object can't be deleted (transient error), the DB rows are the
+    // only record those keys exist — deleting them anyway would strand the
+    // objects in R2 undiscoverably. The handler must fail before touching D1
+    // so the admin can simply retry.
+    db.prepare(
+      `INSERT INTO files (id, workspace_id, category, filename, r2_key, size_bytes, content_type, uploaded_by, version)
+       VALUES ('file-1', 'ws-1', 'documents', 'report.pdf', 'ws-1/documents/file-1_v2_report.pdf', 200, 'application/pdf', 'usr-admin', 2)`,
+    ).run()
+    db.prepare(
+      `INSERT INTO file_versions (id, file_id, version_number, r2_key, size_bytes, content_type, uploaded_by)
+       VALUES ('fv-1', 'file-1', 1, 'ws-1/documents/file-1_report.pdf', 100, 'application/pdf', 'usr-admin')`,
+    ).run()
+    env.FILES.delete = async () => { throw new Error('R2 unavailable') }
+
+    const res = await handleDeleteWorkspace(request, env, admin, { slug: 'acme' })
+
+    expect(res.status).toBe(500)
+    expect(db.prepare("SELECT id FROM workspaces WHERE id = 'ws-1'").get()).toBeDefined()
+    expect(db.prepare("SELECT id FROM files WHERE id = 'file-1'").get()).toBeDefined()
+    expect(db.prepare("SELECT id FROM file_versions WHERE id = 'fv-1'").get()).toBeDefined()
   })
 
   it('rolls back every mutation when the workspace delete itself fails', async () => {
