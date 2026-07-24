@@ -1,0 +1,11 @@
+-- 009_workspace_deletion_lock.sql — workspace-deletion lock, closing the
+-- upload/replace-vs-delete race that can orphan an R2 object with no
+-- surviving D1 file row (CodeRabbit finding on PR #37; documented as a known
+-- limitation inline at the R2 SELECT in workspaces.js pre-this-migration).
+-- See DECISIONS/0006 for the full design.
+--
+-- Nullable timestamp, not a boolean: NULL means "not being deleted"; a value
+-- is the moment handleDeleteWorkspace claimed the lock. Additive ADD COLUMN
+-- — no rebuild, mirrors the comments.deleted_at soft-marker convention
+-- already in this schema (007_comments_notifications.sql).
+ALTER TABLE workspaces ADD COLUMN deleting_at TEXT;
