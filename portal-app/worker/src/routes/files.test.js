@@ -127,7 +127,7 @@ describe('handleUploadFile', () => {
     // handleDeleteWorkspace claims the lock while this upload's R2 write is
     // in flight" by flipping deleting_at as a side effect of put() itself —
     // deterministic, and exercising exactly the window the fast-path check
-    // cannot close (ADR-0005). The guarded INSERT is what must catch this.
+    // cannot close (ADR-0006). The guarded INSERT is what must catch this.
     const baseBucket = makeFilesBucket()
     env.FILES = {
       put: async (key, stream, opts) => {
