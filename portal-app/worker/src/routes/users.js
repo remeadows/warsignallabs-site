@@ -82,7 +82,7 @@ export async function handleCreateUser(request, env, user, ctx) {
     eventType: 'user.create',
     workspaceId: null,
     workspaceName: null,
-    title: `New User Created: ${escapeHtml(username)}`,
+    title: `New User Created: ${username}`,
     bodyLines: [
       `<strong>Username:</strong> ${escapeHtml(username)}`,
       `<strong>Email:</strong> ${escapeHtml(email)}`,

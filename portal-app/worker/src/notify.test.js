@@ -16,10 +16,17 @@ describe('escapeHtml', () => {
 })
 
 describe('buildEmailHtml', () => {
-  it('does not render an unescaped title as markup', () => {
-    const out = buildEmailHtml(`Invite: ${escapeHtml('<img src=x onerror=alert(1)>')}`, [])
+  it('escapes a raw title so it cannot render as markup', () => {
+    const out = buildEmailHtml('Invite: <img src=x onerror=alert(1)>', [])
     expect(out).not.toContain('<img')
     expect(out).toContain('&lt;img src=x onerror=alert(1)&gt;')
+  })
+
+  it('does not double-escape a title containing entities-worthy characters', () => {
+    const out = buildEmailHtml("New comment in Tom's R&D", [])
+    expect(out).toContain('Tom&#39;s R&amp;D')
+    expect(out).not.toContain('&amp;#39;')
+    expect(out).not.toContain('&amp;amp;')
   })
 
   it('does not render an unescaped body line as markup', () => {

@@ -199,7 +199,7 @@ export async function handleUploadFile(request, env, user, params, ctx) {
     eventType: 'file.upload',
     workspaceId: workspace.id,
     workspaceName: wsInfo?.name || params.slug,
-    title: `File Uploaded: ${escapeHtml(sanitized)}`,
+    title: `File Uploaded: ${sanitized}`,
     bodyLines: [
       `<strong>File:</strong> ${escapeHtml(sanitized)}`,
       `<strong>Workspace:</strong> ${escapeHtml(wsInfo?.name || params.slug)}`,
@@ -329,7 +329,7 @@ export async function handleReplaceFile(request, env, user, params, ctx) {
     eventType: 'file.replace',
     workspaceId: file.workspace_id,
     workspaceName: file.workspace_name || file.workspace_slug,
-    title: `File Updated: ${escapeHtml(sanitized)} (v${newVersion})`,
+    title: `File Updated: ${sanitized} (v${newVersion})`,
     bodyLines: [
       `<strong>File:</strong> ${escapeHtml(sanitized)}`,
       `<strong>Workspace:</strong> ${escapeHtml(file.workspace_name || file.workspace_slug)}`,
@@ -470,7 +470,7 @@ export async function handleDeleteFile(request, env, user, params, ctx) {
     eventType: 'file.delete',
     workspaceId: file.workspace_id,
     workspaceName: wsInfo?.name || file.workspace_id,
-    title: `File Deleted: ${escapeHtml(file.filename)}`,
+    title: `File Deleted: ${file.filename}`,
     bodyLines: [
       `<strong>File:</strong> ${escapeHtml(file.filename)}`,
       `<strong>Workspace:</strong> ${escapeHtml(wsInfo?.name || file.workspace_id)}`,
@@ -528,7 +528,7 @@ export async function handleDownloadFile(request, env, user, params, ctx) {
     eventType: 'file.download',
     workspaceId: wsInfo?.id || null,
     workspaceName: wsInfo?.name || file.workspace_slug,
-    title: `File Downloaded: ${escapeHtml(file.filename)}`,
+    title: `File Downloaded: ${file.filename}`,
     bodyLines: [
       `<strong>File:</strong> ${escapeHtml(file.filename)}`,
       `<strong>Workspace:</strong> ${escapeHtml(wsInfo?.name || file.workspace_slug)}`,
@@ -599,7 +599,7 @@ export async function handleMoveFile(request, env, user, params, ctx) {
     eventType: 'file.move',
     workspaceId: file.workspace_id,
     workspaceName: file.workspace_name,
-    title: `File Moved: ${escapeHtml(file.filename)}`,
+    title: `File Moved: ${file.filename}`,
     bodyLines: [
       `<strong>File:</strong> ${escapeHtml(file.filename)}`,
       `<strong>Workspace:</strong> ${escapeHtml(file.workspace_name)}`,

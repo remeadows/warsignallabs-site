@@ -116,9 +116,17 @@ export function escapeHtml(str) {
 
 /**
  * Build a branded HTML email body.
+ *
+ * Contract: `title` is RAW text — it is escaped here, at the HTML sink,
+ * because the same string also flows to plain-text sinks (email subject,
+ * notification_inbox rendered by React) where pre-escaping shows literal
+ * entities. `bodyLines` are HTML fragments — callers escape any
+ * user-controlled interpolations themselves since lines intentionally
+ * carry markup like <strong>.
  */
 export function buildEmailHtml(title, bodyLines) {
   const lines = bodyLines.map((l) => `<p style="margin:4px 0;color:#333;">${l}</p>`).join('')
+  const safeTitle = escapeHtml(title)
   return `
 <!DOCTYPE html>
 <html>
@@ -128,7 +136,7 @@ export function buildEmailHtml(title, bodyLines) {
     <h2 style="margin:0;color:#0a0a0a;">WarSignalLabs Portal</h2>
     <span style="font-size:0.75rem;color:#888;">v0.1.0</span>
   </div>
-  <h3 style="color:#0a0a0a;margin-bottom:8px;">${title}</h3>
+  <h3 style="color:#0a0a0a;margin-bottom:8px;">${safeTitle}</h3>
   ${lines}
   <hr style="border:none;border-top:1px solid #eee;margin:24px 0 12px;">
   <p style="font-size:0.75rem;color:#999;">This is an automated notification from portal.warsignallabs.net</p>
@@ -141,6 +149,12 @@ export function buildEmailHtml(title, bodyLines) {
  * Admins always receive notifications (full visibility).
  * Client actors are excluded from self-notification.
  * Uses ctx.waitUntil() for non-blocking delivery.
+ *
+ * `title` must be RAW text (no escapeHtml at the call site) — it flows to
+ * plain-text sinks (email subject, notification_inbox rendered as React
+ * text) where entities would show literally; buildEmailHtml escapes it for
+ * the one HTML sink. `bodyLines` are HTML fragments — callers escape
+ * user-controlled interpolations themselves.
  */
 export function notifyWorkspaceEvent(env, ctx, { eventType, workspaceId, workspaceName, title, bodyLines, actorEmail, metadata, link, recipientOverride }) {
   const task = (async () => {
@@ -234,7 +248,7 @@ export function checkStorageThreshold(env, ctx, { workspaceId, workspaceName, wo
           eventType: 'workspace.threshold',
           workspaceId,
           workspaceName: workspaceName || workspaceSlug,
-          title: `Storage Alert: ${escapeHtml(workspaceName || workspaceSlug)} at ${pct}%`,
+          title: `Storage Alert: ${workspaceName || workspaceSlug} at ${pct}%`,
           bodyLines: [
             `<strong>Workspace:</strong> ${escapeHtml(workspaceName || workspaceSlug)}`,
             `<strong>Storage Used:</strong> ${usedMb.toFixed(1)} MB of ${quotaMb} MB (${pct}%)`,

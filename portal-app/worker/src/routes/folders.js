@@ -148,7 +148,7 @@ export async function handleCreateFolder(request, env, user, params, ctx) {
     eventType: 'folder.create',
     workspaceId: workspace.id,
     workspaceName: workspace.name,
-    title: `Folder Created: ${escapeHtml(folderName)}`,
+    title: `Folder Created: ${folderName}`,
     bodyLines: [
       `<strong>Folder:</strong> ${escapeHtml(folderName)}`,
       `<strong>Workspace:</strong> ${escapeHtml(workspace.name)}`,
@@ -255,7 +255,7 @@ export async function handleDeleteFolder(request, env, user, params, ctx) {
     eventType: 'folder.delete',
     workspaceId: folder.workspace_id,
     workspaceName: folder.workspace_name,
-    title: `Folder Deleted: ${escapeHtml(folder.name)}`,
+    title: `Folder Deleted: ${folder.name}`,
     bodyLines: [
       `<strong>Folder:</strong> ${escapeHtml(folder.name)}`,
       `<strong>Workspace:</strong> ${escapeHtml(folder.workspace_name)}`,
@@ -344,7 +344,7 @@ export async function handleMoveFolder(request, env, user, params, ctx) {
     eventType: 'folder.move',
     workspaceId: folder.workspace_id,
     workspaceName: folder.workspace_name,
-    title: `Folder Moved: ${escapeHtml(folder.name)}`,
+    title: `Folder Moved: ${folder.name}`,
     bodyLines: [
       `<strong>Folder:</strong> ${escapeHtml(folder.name)}`,
       `<strong>Workspace:</strong> ${escapeHtml(folder.workspace_name)}`,
