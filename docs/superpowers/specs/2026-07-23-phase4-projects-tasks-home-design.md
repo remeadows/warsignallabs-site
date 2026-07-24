@@ -117,6 +117,13 @@ Endpoint-contract details (pinned during design review):
   only `deleted_at` (on the task or, transitively via the force-cascade, from its
   project) removes it. Stated explicitly so the query doesn't grow a project-status
   join later without a decision.
+- **The parent-project soft-delete predicate applies to every task consumer**
+  (post-review amendment, 2026-07-23): task PATCH/DELETE context, task-comment
+  creation, and My Tasks all require `projects.deleted_at IS NULL` in addition
+  to the task's own `deleted_at IS NULL`. A `done` task can survive a
+  force-cascaded project delete; without this predicate it could be reopened,
+  commented on, or surfaced in My Tasks with a deep link into a project that
+  no longer lists.
 
 Ceilings, extending the Phase 2/3 pattern (`requireWorkspaceAccess`,
 `hasWorkspaceWriteAccess`, `hasWorkspaceAdminPermission`) — no new permission
@@ -128,7 +135,10 @@ concepts introduced:
 - **Delete**: creator or `hasWorkspaceAdminPermission`, via new
   `projectDeleteViolation`/`taskDeleteViolation` helpers in `auth.js`, mirroring
   `commentDeleteViolation`'s exact shape (return a violation string or `null`).
-  Always soft delete — the API never issues a hard `DELETE FROM projects`/`tasks`.
+  Always soft delete — the resource-level API never issues a hard `DELETE FROM
+  projects`/`tasks`. (Workspace teardown is the deliberate exception: §1's
+  explicit-delete list hard-deletes child rows during `handleDeleteWorkspace`,
+  tasks before projects, matching files/comments/invitations precedent.)
 - **`/api/me/tasks`** and **`/api/me/activity`** have no workspace-scope parameter —
   implicitly scoped to `user.workspaceSlugs` (global admins see across every
   workspace, same as `handleListWorkspaces` today).

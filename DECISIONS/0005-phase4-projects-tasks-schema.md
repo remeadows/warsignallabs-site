@@ -40,9 +40,12 @@ records the decisions the migration encodes.
    `ON DELETE` clause. `projects` and `tasks` join the explicit-delete list in
    `handleDeleteWorkspace` rather than introducing FK-cascade as a one-off
    exception. `tasks.project_id` also has no `ON DELETE` clause — a project is
-   never hard-deleted via the API (see the design spec's delete-cascade rule, which
-   handles this at the application layer instead), so no FK behavior is exercised
-   there in practice.
+   never hard-deleted via the resource-level API (see the design spec's
+   delete-cascade rule, which handles this at the application layer instead).
+   The one place FK behavior IS exercised is workspace teardown:
+   `handleDeleteWorkspace` hard-deletes child rows, and must delete `tasks`
+   before `projects` or the `tasks.project_id` constraint rejects the project
+   delete — that ordering is load-bearing, not stylistic.
 
 5. **`projects.status` and `tasks.status` are constrained at the DB level**
    (`CHECK (status IN (...))` on both), continuing ADR-0004's rule of constraining

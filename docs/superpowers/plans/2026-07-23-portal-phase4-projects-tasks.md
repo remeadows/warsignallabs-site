@@ -17,7 +17,7 @@
 - **Ceilings (verbatim from spec §2):**
   - Read (projects, tasks): any workspace member (`requireWorkspaceAccess`).
   - Create/edit (projects, tasks): `hasWorkspaceWriteAccess` — a `read`-permission member gets 403 on POST/PATCH.
-  - Delete: creator or `hasWorkspaceAdminPermission`, via `projectDeleteViolation`/`taskDeleteViolation` (return violation string or `null`, exactly like `commentDeleteViolation`). Always soft delete — never a hard `DELETE FROM projects`/`tasks` through the API.
+  - Delete: creator or `hasWorkspaceAdminPermission`, via `projectDeleteViolation`/`taskDeleteViolation` (return violation string or `null`, exactly like `commentDeleteViolation`). Always soft delete — never a hard `DELETE FROM projects`/`tasks` through the **resource-level endpoints**. (The one deliberate exception: workspace teardown in `handleDeleteWorkspace` hard-deletes child rows in FK-safe order, matching how it already treats files/comments/invitations — see Task 7 and ADR-0005.)
   - `?include_deleted=1` requires **GLOBAL admin** (`user.role === 'admin'`), not `wsAdmin`.
   - Project delete: "open tasks" = `status IN ('todo','in_progress') AND deleted_at IS NULL`. Open tasks present + no `?force=1` → **409** with the count. With `?force=1` → soft-delete project AND its open tasks (two sequential UPDATEs). All-done or empty projects delete freely.
 - **`sort_order` is write-once:** set at task creation to `(max in that project+status)+1`; NO Phase 4 code path ever updates it. No move-up/down UI. Reordering is Phase 5 drag-drop scope.

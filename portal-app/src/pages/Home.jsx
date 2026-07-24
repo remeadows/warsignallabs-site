@@ -62,11 +62,13 @@ export default function Home() {
   useEffect(() => {
     async function load() {
       try {
+        // Each source degrades independently — one transient failure must
+        // not blank the widgets whose own fetches succeeded.
         const [wsData, tasksData, activityData, analyticsData] = await Promise.all([
-          api.listWorkspaces(),
+          api.listWorkspaces().catch(() => ({ workspaces: [] })),
           api.myTasks().catch(() => ({ tasks: [] })),
           api.myActivity({ limit: '8' }).catch(() => ({ activity: [] })),
-          isAdmin ? api.getAnalytics() : Promise.resolve(null),
+          isAdmin ? api.getAnalytics().catch(() => null) : Promise.resolve(null),
         ])
         setWorkspaces(wsData.workspaces || [])
         setMyTasks(tasksData.tasks || [])

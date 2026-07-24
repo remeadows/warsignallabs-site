@@ -40,6 +40,13 @@ export default function TaskDrawer({ workspaceSlug, task, canWrite, onClose, onC
     return () => { cancelled = true }
   }, [api, workspaceSlug])
 
+  // Escape closes the drawer — dialog semantics (a11y).
+  useEffect(() => {
+    const onKeyDown = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
   const save = async () => {
     if (!title.trim()) return
     setSaving(true)
@@ -74,7 +81,7 @@ export default function TaskDrawer({ workspaceSlug, task, canWrite, onClose, onC
 
   return (
     <div className="slide-over-overlay" onClick={onClose}>
-      <div className="slide-over" onClick={(e) => e.stopPropagation()}>
+      <div className="slide-over" role="dialog" aria-modal="true" aria-label={`Task: ${task.title}`} onClick={(e) => e.stopPropagation()}>
         <div className="slide-over__header">
           <h3>{task.title}</h3>
           <button className="modal__close" onClick={onClose}>&times;</button>

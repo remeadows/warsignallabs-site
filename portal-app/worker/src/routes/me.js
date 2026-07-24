@@ -118,10 +118,15 @@ export async function handleMyTasks(request, env, user) {
     bindings.push(...user.workspaceSlugs)
   }
 
+  // projects join: paused/archived projects' tasks stay included (spec §2 —
+  // no status filter), but tasks under a soft-DELETED project must not
+  // surface here; their deep links point into a project that no longer lists.
   const result = await env.DB.prepare(
     `SELECT t.id, t.title, t.status, t.due_date, t.project_id,
             w.slug AS workspace_slug, w.name AS workspace_name
-     FROM tasks t INNER JOIN workspaces w ON w.id = t.workspace_id
+     FROM tasks t
+     INNER JOIN projects p ON p.id = t.project_id AND p.deleted_at IS NULL
+     INNER JOIN workspaces w ON w.id = t.workspace_id
      WHERE ${conditions.join(' AND ')}
      ORDER BY t.due_date IS NULL, t.due_date ASC, t.created_at ASC
      LIMIT 10`,

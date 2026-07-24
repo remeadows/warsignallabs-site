@@ -134,17 +134,20 @@ export async function handleDeleteProject(request, env, user, params) {
   const blocked = projectDeleteBlocked(open?.count || 0, force)
   if (blocked) return errorResponse(blocked, 409)
 
-  // With force: soft-delete the open tasks too. Two sequential UPDATEs —
-  // matches handleDeleteWorkspace's multi-statement pattern (no D1 multi-
-  // statement transactions via the binding). Done tasks stay untouched.
+  // With force: soft-delete the open tasks too. Batched so the pair applies
+  // atomically (D1 batch = implicit transaction) — a failure can't leave the
+  // project deleted with its open tasks still live, or vice versa. Done
+  // tasks stay untouched.
+  const statements = []
   if (force && open?.count > 0) {
-    await env.DB.prepare(
+    statements.push(env.DB.prepare(
       `UPDATE tasks SET deleted_at = datetime('now')
        WHERE project_id = ? AND status IN ('todo','in_progress') AND deleted_at IS NULL`,
-    ).bind(project.id).run()
+    ).bind(project.id))
   }
-  await env.DB.prepare(`UPDATE projects SET deleted_at = datetime('now') WHERE id = ?`)
-    .bind(project.id).run()
+  statements.push(env.DB.prepare(`UPDATE projects SET deleted_at = datetime('now') WHERE id = ?`)
+    .bind(project.id))
+  await env.DB.batch(statements)
 
   await logAudit(env, user.userId, 'project.delete', {
     resourceType: 'project', resourceId: project.id,

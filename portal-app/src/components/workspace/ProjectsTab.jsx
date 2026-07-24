@@ -337,7 +337,14 @@ export default function ProjectsTab({ slug }) {
                 {STATUS_LABELS[col.status]} <span className="mono">{col.tasks.length}</span>
               </div>
               {col.tasks.map((t) => (
-                <div key={t.id} className="task-card" onClick={() => setDrawerTask(t)}>
+                <div
+                  key={t.id}
+                  className="task-card"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setDrawerTask(t)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDrawerTask(t) } }}
+                >
                   <div className="task-card__title">{t.title}</div>
                   <div className="task-card__meta">
                     {t.assignee_username && <span className="task-card__assignee mono">{t.assignee_username}</span>}
@@ -368,7 +375,13 @@ export default function ProjectsTab({ slug }) {
             {[...tasks]
               .sort((a, b) => BOARD_COLUMNS.indexOf(a.status) - BOARD_COLUMNS.indexOf(b.status) || a.sort_order - b.sort_order)
               .map((t) => (
-              <tr key={t.id} className="folder-row" onClick={() => setDrawerTask(t)}>
+              <tr
+                key={t.id}
+                className="folder-row"
+                tabIndex={0}
+                onClick={() => setDrawerTask(t)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDrawerTask(t) } }}
+              >
                 <td>{t.title}</td>
                 <td className="mono">{t.assignee_username || '—'}</td>
                 <td className="mono">{formatDue(t.due_date) || '—'}</td>

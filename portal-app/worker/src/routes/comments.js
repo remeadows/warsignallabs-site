@@ -64,8 +64,12 @@ export async function handleCreateComment(request, env, user, params, ctx) {
       .bind(entityId, workspace.id).first()
     if (!file) return errorResponse('File not found in this workspace', 404)
   } else {
+    // Parent project must also be live — a done task surviving a force-
+    // cascaded project delete is otherwise still commentable via the API.
     const task = await env.DB.prepare(
-      'SELECT id, project_id FROM tasks WHERE id = ? AND workspace_id = ? AND deleted_at IS NULL',
+      `SELECT t.id, t.project_id FROM tasks t
+       INNER JOIN projects p ON p.id = t.project_id
+       WHERE t.id = ? AND t.workspace_id = ? AND t.deleted_at IS NULL AND p.deleted_at IS NULL`,
     ).bind(entityId, workspace.id).first()
     if (!task) return errorResponse('Task not found in this workspace', 404)
     taskProjectId = task.project_id
