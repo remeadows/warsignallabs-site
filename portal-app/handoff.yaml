@@ -4,23 +4,25 @@
 
 last_updated: 2026-07-23
 session_2026_07_23_workspace_delete_fk_gaps: |
-  IN FLIGHT — two stacked PRs fixing pre-existing FK gaps in
-  handleDeleteWorkspace (worker/src/routes/workspaces.js), neither
-  merged nor deployed:
+  Two PRs fixing pre-existing FK gaps in handleDeleteWorkspace
+  (worker/src/routes/workspaces.js). NOT DEPLOYED — deploy is a
+  separate deliberate step.
 
-  PR #36 (fix/workspace-delete-notifications-fk, based on main):
-  deleting any workspace with email send-log history failed with a D1
-  FK error — the Phase 1 `notifications` table references
-  workspaces(id) with no ON DELETE and was never cleaned up. Detaches
-  rows (workspace_id = NULL; send log is audit history, survives
-  deletion) per ADR-0004 amendment. Introduces the suite's first
-  real-FK regression harness: workspaces.test.js runs the actual
-  migration files in an in-memory node:sqlite with FK enforcement on.
+  PR #36 (fix/workspace-delete-notifications-fk) — MERGED to main
+  (squash c5e28db): deleting any workspace with email send-log history
+  failed with a D1 FK error — the Phase 1 `notifications` table
+  references workspaces(id) with no ON DELETE and was never cleaned
+  up. Detaches rows (workspace_id = NULL; send log is audit history,
+  survives deletion) per ADR-0004 amendment. Introduces the suite's
+  first real-FK regression harness (workspaces.test.js runs the actual
+  migration files in an in-memory node:sqlite with FK enforcement on)
+  and, after review round 1, makes all the delete-path D1 mutations
+  one atomic env.DB.batch().
 
-  PR #37 (fix/workspace-delete-folders-versions-fk, STACKED ON #36's
-  branch — merge #36 first; GitHub auto-retargets #37 to main): two
-  more gaps of the same class, hard-deletes this time (workspace
-  content, not audit history):
+  PR #37 (fix/workspace-delete-folders-versions-fk) — open off main
+  (originally stacked on #36's branch; rebuilt onto main after #36's
+  squash-merge): two more gaps of the same class, hard-deletes this
+  time (workspace content, not audit history):
     - `folders` was never deleted (despite ADR-0004 Decision (3)
       claiming it was on the explicit-delete list — ADR amended to
       record the discrepancy). Tree is detached (parent_folder_id =
@@ -34,12 +36,13 @@ session_2026_07_23_workspace_delete_fk_gaps: |
       aborts 500 BEFORE any D1 deletes (previously errors were
       swallowed per-key) so keys stay discoverable and the delete is
       retryable — this was a Codex P1 on #37.
-  Delete order: file_versions -> files -> folders (detach, delete) ->
-  comments -> invitations -> user_workspaces -> detach notifications
-  -> workspaces. Verified: 55/55 tests (TDD, each new test watched
-  failing on the real FK error first), lint at baseline, build clean,
-  wrangler dry-run clean. Deploy is a separate deliberate step — do
-  not bundle with merge.
+  All statements joined #36's atomic batch, FK-safe order:
+  file_versions -> files -> folders (detach, delete) -> comments ->
+  invitations -> user_workspaces -> detach notifications ->
+  workspaces (order matters inside the batch — SQLite checks immediate
+  FKs per statement even in a transaction). Verified: 56/56 tests
+  (TDD, each new test watched failing on the real FK error first),
+  lint at baseline, build clean, wrangler dry-run clean.
 
 session_2026_07_23_phase3_css_fix: |
   DISCOVERED AND FIXED IN PRODUCTION: Phase 3's entire frontend shipped
@@ -423,8 +426,8 @@ plan_status:
   phase_1_foundation: CLOSED  # PR #26, v0.3.0
   phase_2_workspaces_members: CLOSED  # PR #27 + #28, v0.4.0
   phase_3_comments_activity_notifications: DEPLOYED  # PR #29 + #30, v0.5.0 live 2026-07-23; CSS fix PR #34 (missing styles across the whole Phase 3 UI) also merged + deployed same day — see session_2026_07_23_phase3_css_fix above
-  next_up: "Merge PR #36 then stacked PR #37 (workspace-delete FK gaps —
-    see session_2026_07_23_workspace_delete_fk_gaps), deploy them as a
+  next_up: "Merge PR #37 (workspace-delete FK gaps, #36 already merged —
+    see session_2026_07_23_workspace_delete_fk_gaps), deploy both as a
     deliberate separate step. Run live-ceiling tests for Phase 3 (see
     session_2026_07_23_phase3_deploy), then start Phase 4 -- Projects &
     tasks + Home redesign. Not started yet."
