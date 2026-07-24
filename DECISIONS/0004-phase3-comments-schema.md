@@ -73,6 +73,36 @@ Covered by a regression test (`worker/src/routes/workspaces.test.js`) that runs
 the real migrations in an in-memory SQLite with FK enforcement on — the bug class
 here (missing child-table cleanup) is invisible to mocked-DB tests.
 
+## Amendment — 2026-07-23: `folders` and `file_versions` on workspace delete
+
+Two more instances of the same bug class as the `notifications` amendment above,
+plus a **documentation discrepancy in this ADR**: Decision (3) listed `folders`
+as part of the explicit-delete list `handleDeleteWorkspace` covers, but the code
+never actually deleted folders — the ADR described intent, not the shipped
+handler. `file_versions` (populated by `handleReplaceFile` archiving prior
+versions, `file_id FK → files`) was on neither the list nor in the code. Either
+one made `DELETE FROM workspaces` (or `DELETE FROM files`) fail with a D1 FK
+constraint error for any workspace containing a folder or a re-uploaded file.
+
+**Decision:** both are workspace *content*, not audit history — hard-delete,
+unlike `notifications`/`audit_log`. `handleDeleteWorkspace` now:
+
+- deletes `file_versions` rows (via `file_id IN (SELECT id FROM files …)`)
+  **before** `files`, and `files` before `folders` (`files.folder_id → folders`);
+- detaches the folder tree (`UPDATE folders SET parent_folder_id = NULL`) before
+  `DELETE FROM folders` — folders self-reference with no `ON DELETE`, and SQLite
+  checks immediate FKs per-row, so a single DELETE over nested folders is
+  order-dependent without the detach;
+- deletes the **archived R2 objects** (`file_versions.r2_key`) alongside the
+  current `files.r2_key` objects — `handleReplaceFile` deliberately keeps old R2
+  objects for rollback, so without this they'd leak in R2 with no DB row
+  pointing at them.
+
+Same regression-test harness as above: three new tests in
+`worker/src/routes/workspaces.test.js` (nested folders, archived versions,
+archived-R2-key cleanup), each watched failing with `FOREIGN KEY constraint
+failed` against the real migrations before the fix.
+
 ## References
 
 - `portal-app/worker/migrations/007_comments_notifications.sql`

@@ -3,6 +3,44 @@
 # Update this file at the end of every working session.
 
 last_updated: 2026-07-23
+session_2026_07_23_workspace_delete_fk_gaps: |
+  IN FLIGHT — two stacked PRs fixing pre-existing FK gaps in
+  handleDeleteWorkspace (worker/src/routes/workspaces.js), neither
+  merged nor deployed:
+
+  PR #36 (fix/workspace-delete-notifications-fk, based on main):
+  deleting any workspace with email send-log history failed with a D1
+  FK error — the Phase 1 `notifications` table references
+  workspaces(id) with no ON DELETE and was never cleaned up. Detaches
+  rows (workspace_id = NULL; send log is audit history, survives
+  deletion) per ADR-0004 amendment. Introduces the suite's first
+  real-FK regression harness: workspaces.test.js runs the actual
+  migration files in an in-memory node:sqlite with FK enforcement on.
+
+  PR #37 (fix/workspace-delete-folders-versions-fk, STACKED ON #36's
+  branch — merge #36 first; GitHub auto-retargets #37 to main): two
+  more gaps of the same class, hard-deletes this time (workspace
+  content, not audit history):
+    - `folders` was never deleted (despite ADR-0004 Decision (3)
+      claiming it was on the explicit-delete list — ADR amended to
+      record the discrepancy). Tree is detached (parent_folder_id =
+      NULL) before DELETE because folders self-reference and SQLite
+      checks immediate FKs per-row.
+    - `file_versions` was never deleted, so DELETE FROM files failed
+      for any workspace with a re-uploaded file. Deleted before files.
+    - R2 cleanup now covers archived version objects
+      (file_versions.r2_key), not just current files.r2_key, via
+      chunked 1000-key bulk deletes; on R2 failure the handler now
+      aborts 500 BEFORE any D1 deletes (previously errors were
+      swallowed per-key) so keys stay discoverable and the delete is
+      retryable — this was a Codex P1 on #37.
+  Delete order: file_versions -> files -> folders (detach, delete) ->
+  comments -> invitations -> user_workspaces -> detach notifications
+  -> workspaces. Verified: 55/55 tests (TDD, each new test watched
+  failing on the real FK error first), lint at baseline, build clean,
+  wrangler dry-run clean. Deploy is a separate deliberate step — do
+  not bundle with merge.
+
 session_2026_07_23_phase3_css_fix: |
   DISCOVERED AND FIXED IN PRODUCTION: Phase 3's entire frontend shipped
   with zero CSS. Surfaced when Russ spotted a plain white box reading
@@ -385,7 +423,9 @@ plan_status:
   phase_1_foundation: CLOSED  # PR #26, v0.3.0
   phase_2_workspaces_members: CLOSED  # PR #27 + #28, v0.4.0
   phase_3_comments_activity_notifications: DEPLOYED  # PR #29 + #30, v0.5.0 live 2026-07-23; CSS fix PR #34 (missing styles across the whole Phase 3 UI) also merged + deployed same day — see session_2026_07_23_phase3_css_fix above
-  next_up: "Run live-ceiling tests for Phase 3 (see
+  next_up: "Merge PR #36 then stacked PR #37 (workspace-delete FK gaps —
+    see session_2026_07_23_workspace_delete_fk_gaps), deploy them as a
+    deliberate separate step. Run live-ceiling tests for Phase 3 (see
     session_2026_07_23_phase3_deploy), then start Phase 4 -- Projects &
     tasks + Home redesign. Not started yet."
   blocked_on: none
