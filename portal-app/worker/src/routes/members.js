@@ -230,7 +230,7 @@ export async function handleCreateInvitation(request, env, user, params, ctx) {
     ipAddress: getClientIp(request),
   })
 
-  const html = buildEmailHtml(`You've been invited to ${escapeHtml(workspace.name)}`, [
+  const html = buildEmailHtml(`You've been invited to ${workspace.name}`, [
     `<strong>Workspace:</strong> ${escapeHtml(workspace.name)}`,
     `<strong>Access level:</strong> ${escapeHtml(permission)}`,
     `<strong>Invited by:</strong> ${escapeHtml(user.email || 'the workspace admin')}`,

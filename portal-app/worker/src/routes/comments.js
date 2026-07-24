@@ -116,7 +116,7 @@ export async function handleCreateComment(request, env, user, params, ctx) {
     eventType: 'comment.create',
     workspaceId: workspace.id,
     workspaceName: workspace.name,
-    title: `New comment in ${escapeHtml(workspace.name)}`,
+    title: `New comment in ${workspace.name}`,
     bodyLines: [
       `<strong>${escapeHtml(user.email || user.username || 'Someone')}</strong> commented:`,
       escapeHtml(body.trim()),
@@ -143,7 +143,7 @@ export async function handleCreateComment(request, env, user, params, ctx) {
         eventType: 'comment.mention',
         workspaceId: workspace.id,
         workspaceName: workspace.name,
-        title: `You were mentioned in ${escapeHtml(workspace.name)}`,
+        title: `You were mentioned in ${workspace.name}`,
         bodyLines: [
           `<strong>${escapeHtml(user.email || user.username || 'Someone')}</strong> mentioned you:`,
           escapeHtml(body.trim()),
