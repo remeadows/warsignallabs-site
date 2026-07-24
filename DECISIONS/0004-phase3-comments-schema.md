@@ -50,6 +50,29 @@ sqlite3 /tmp/check.db ".schema audit_log" | grep "ON DELETE SET NULL"
 sqlite3 /tmp/check.db ".indexes audit_log" | grep idx_audit_log_workspace_activity
 ```
 
+## Amendment — 2026-07-23: `notifications` (email send log) on workspace delete
+
+Phase 4 review surfaced a pre-existing gap in the Decision (3) inventory: the
+Phase 1 **`notifications`** table (the Resend email send log, `000_baseline.sql`)
+also carries a `workspace_id` FK with no `ON DELETE` clause, and `sendEmail()`
+writes a workspace-scoped row on every workspace email — but `handleDeleteWorkspace`
+neither deleted nor detached those rows. Deleting any workspace that had ever
+generated a notification email failed with a D1 FK constraint error. (This dates
+to Phase 1/2, before the explicit-delete list existed.)
+
+**Decision:** treat `notifications` like `audit_log`, not like `comments`/`files`.
+It is a delivery audit trail — the record that an email was sent must survive
+workspace deletion. Since its `workspace_id` column is already nullable and the
+FK has no `ON DELETE` clause, no schema change is needed: `handleDeleteWorkspace`
+now runs `UPDATE notifications SET workspace_id = NULL WHERE workspace_id = ?`
+alongside the explicit deletes (detach-in-app rather than a rename-and-rebuild
+migration to add `ON DELETE SET NULL`, avoiding the D1 rebuild sharp edges noted
+in (2) for zero behavioral difference given all deletes go through this handler).
+
+Covered by a regression test (`worker/src/routes/workspaces.test.js`) that runs
+the real migrations in an in-memory SQLite with FK enforcement on — the bug class
+here (missing child-table cleanup) is invisible to mocked-DB tests.
+
 ## References
 
 - `portal-app/worker/migrations/007_comments_notifications.sql`

@@ -245,16 +245,27 @@ export async function handleDeleteWorkspace(request, env, user, params) {
     try { await env.FILES.delete(f.r2_key) } catch { /* continue */ }
   }
 
-  // Delete D1 records: files, comments, tasks, projects, invitations, user_workspaces,
-  // then workspace. Each of these FKs has no cascade (ADR-0004, ADR-0005), so a
-  // workspace with any history would otherwise fail this delete with a foreign-key error.
-  await env.DB.prepare('DELETE FROM files WHERE workspace_id = ?').bind(workspace.id).run()
-  await env.DB.prepare('DELETE FROM comments WHERE workspace_id = ?').bind(workspace.id).run()
-  await env.DB.prepare('DELETE FROM tasks WHERE workspace_id = ?').bind(workspace.id).run()
-  await env.DB.prepare('DELETE FROM projects WHERE workspace_id = ?').bind(workspace.id).run()
-  await env.DB.prepare('DELETE FROM invitations WHERE workspace_id = ?').bind(workspace.id).run()
-  await env.DB.prepare('DELETE FROM user_workspaces WHERE workspace_id = ?').bind(workspace.id).run()
-  await env.DB.prepare('DELETE FROM workspaces WHERE id = ?').bind(workspace.id).run()
+  // Delete D1 records: files, comments, tasks, projects, invitations,
+  // user_workspaces, then detach notifications, then delete the workspace.
+  // Each of these FKs has no cascade (ADR-0004, ADR-0005), so a workspace
+  // with any history would otherwise fail this delete with a foreign-key
+  // error. Ordering is load-bearing: tasks BEFORE projects (tasks.project_id
+  // FK, ADR-0005). notifications (the Phase 1 email send log) is detached,
+  // not deleted — the send history must survive workspace deletion, same
+  // reasoning as audit_log.workspace_id ON DELETE SET NULL (ADR-0004).
+  // One atomic batch: if any statement fails (e.g. an unhandled child-table
+  // FK), nothing commits — sequential .run() calls would leave the send log
+  // permanently detached from a workspace that still exists.
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM files WHERE workspace_id = ?').bind(workspace.id),
+    env.DB.prepare('DELETE FROM comments WHERE workspace_id = ?').bind(workspace.id),
+    env.DB.prepare('DELETE FROM tasks WHERE workspace_id = ?').bind(workspace.id),
+    env.DB.prepare('DELETE FROM projects WHERE workspace_id = ?').bind(workspace.id),
+    env.DB.prepare('DELETE FROM invitations WHERE workspace_id = ?').bind(workspace.id),
+    env.DB.prepare('DELETE FROM user_workspaces WHERE workspace_id = ?').bind(workspace.id),
+    env.DB.prepare('UPDATE notifications SET workspace_id = NULL WHERE workspace_id = ?').bind(workspace.id),
+    env.DB.prepare('DELETE FROM workspaces WHERE id = ?').bind(workspace.id),
+  ])
 
   await logAudit(env, user.userId, 'workspace.delete', {
     resourceType: 'workspace', resourceId: workspace.id,
