@@ -74,6 +74,27 @@ describe('handleDeleteWorkspace', () => {
        VALUES ('ntf-1', 'file.uploaded', 'ws-1', 'client@test.dev', 'New file', 'A file was uploaded')`,
     ).run()
 
+  it('claims the deletion lock atomically: only the first of two concurrent claims succeeds', () => {
+    // Direct DB-level test of the guard itself, not the handler — this is
+    // what actually proves the double-delete race is closed. Two async
+    // handler calls in a single-threaded test process can't produce genuine
+    // concurrent statement execution, so simulating that would only test
+    // our test double, not the real guarantee. The guarantee holds because
+    // SQLite serializes statement execution: whichever of two callers'
+    // conditional UPDATEs runs second sees the first one's committed write
+    // and its WHERE clause no longer matches, regardless of what either
+    // caller read beforehand (ADR-0005).
+    const claim = () => db.prepare(
+      "UPDATE workspaces SET deleting_at = datetime('now') WHERE id = 'ws-1' AND deleting_at IS NULL",
+    ).run()
+
+    const first = claim()
+    const second = claim()
+
+    expect(first.changes).toBe(1)
+    expect(second.changes).toBe(0)
+  })
+
   it('deletes a workspace that has email-notification history, preserving the send log detached', async () => {
     // Phase 1's sendEmail() writes a workspace-scoped row to `notifications`
     // (the Resend send log) — its workspace_id FK has no ON DELETE clause.
@@ -91,7 +112,7 @@ describe('handleDeleteWorkspace', () => {
     expect(ntf.workspace_id).toBeNull()
   })
 
-  it('rolls back every mutation when the workspace delete itself fails', async () => {
+  it('rolls back every mutation when the workspace delete itself fails, including the deletion lock', async () => {
     insertNotification()
     // A test-only FK the handler doesn't know about, standing in for any
     // child-table gap (folders and file_versions were real ones): the final
@@ -104,9 +125,49 @@ describe('handleDeleteWorkspace', () => {
 
     await expect(handleDeleteWorkspace(request, env, admin, { slug: 'acme' })).rejects.toThrow()
 
-    const ws = db.prepare("SELECT id FROM workspaces WHERE id = 'ws-1'").get()
+    const ws = db.prepare("SELECT id, deleting_at FROM workspaces WHERE id = 'ws-1'").get()
     expect(ws).toBeDefined()
+    // The lock write commits outside the failed batch (ADR-0005) — it must
+    // be explicitly cleared on failure, or the workspace stays locked out of
+    // future uploads forever with no path to recovery.
+    expect(ws.deleting_at).toBeNull()
     const ntf = db.prepare("SELECT workspace_id FROM notifications WHERE id = 'ntf-1'").get()
     expect(ntf.workspace_id).toBe('ws-1')
+  })
+
+  it('aborts before the D1 batch and clears the lock when an R2 delete fails, instead of orphaning the object', async () => {
+    db.prepare(
+      `INSERT INTO files (id, workspace_id, category, filename, r2_key, size_bytes, content_type, uploaded_by, created_at)
+       VALUES ('file-1', 'ws-1', 'documents', 'notes.txt', 'ws-1/documents/file-1_notes.txt', 11, 'text/plain', 'usr-admin', datetime('now'))`,
+    ).run()
+    env.FILES = { delete: async () => { throw new Error('R2 unavailable') } }
+
+    await expect(handleDeleteWorkspace(request, env, admin, { slug: 'acme' })).rejects.toThrow()
+
+    // The D1 batch never ran — the file row (and the real R2 object it
+    // still points at) survives for a retried deletion, rather than the row
+    // being removed while the R2 delete that was supposed to precede it
+    // failed (ADR-0005, Decision 4).
+    const file = db.prepare("SELECT id FROM files WHERE id = 'file-1'").get()
+    expect(file).toBeDefined()
+    const ws = db.prepare("SELECT deleting_at FROM workspaces WHERE id = 'ws-1'").get()
+    expect(ws.deleting_at).toBeNull()
+  })
+
+  it('rejects a second delete attempt on a workspace already mid-deletion (fast path)', async () => {
+    db.prepare("UPDATE workspaces SET deleting_at = datetime('now') WHERE id = 'ws-1'").run()
+
+    let caught
+    try {
+      await handleDeleteWorkspace(request, env, admin, { slug: 'acme' })
+    } catch (err) {
+      caught = err
+    }
+
+    expect(caught).toBeInstanceOf(Response)
+    expect(caught.status).toBe(409)
+    const ws = db.prepare("SELECT id, deleting_at FROM workspaces WHERE id = 'ws-1'").get()
+    expect(ws).toBeDefined()
+    expect(ws.deleting_at).not.toBeNull()
   })
 })

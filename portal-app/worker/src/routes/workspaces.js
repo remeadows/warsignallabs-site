@@ -224,40 +224,92 @@ export async function handleUpdateWorkspace(request, env, user, params) {
 }
 
 /**
+ * Fast-path guard against a write racing an in-flight workspace deletion.
+ * This reads a previously-fetched `workspace`/`file` row, so it rejects the
+ * common case (a workspace already known to be locked) cheaply and early —
+ * it is NOT the correctness guarantee for the actual race, since the object
+ * it checks can go stale between this call and a later write. The atomic
+ * guarded writes in handleDeleteWorkspace/handleUploadFile/handleReplaceFile
+ * are what close the race itself (ADR-0005).
+ */
+export function assertWorkspaceNotDeleting(workspace) {
+  if (workspace?.deleting_at) {
+    throw errorResponse('Workspace is being deleted', 409)
+  }
+}
+
+/**
  * DELETE /api/workspaces/:slug — admin only, deletes workspace + files + assignments
  */
 export async function handleDeleteWorkspace(request, env, user, params) {
   requireRole(user, 'admin')
 
-  const workspace = await env.DB.prepare('SELECT id, name, slug FROM workspaces WHERE slug = ?')
+  const workspace = await env.DB.prepare('SELECT id, name, slug, deleting_at FROM workspaces WHERE slug = ?')
     .bind(params.slug).first()
   if (!workspace) return errorResponse('Workspace not found', 404)
+  assertWorkspaceNotDeleting(workspace)
 
-  // Delete files from R2
-  const files = await env.DB.prepare('SELECT r2_key FROM files WHERE workspace_id = ?')
-    .bind(workspace.id).all()
-  for (const f of files.results) {
-    try { await env.FILES.delete(f.r2_key) } catch { /* continue */ }
+  // Claim the deletion lock atomically: the WHERE clause re-checks
+  // deleting_at at write time, not at the time `workspace` above was read.
+  // Two concurrent deletes can both pass the fast-path check above (both
+  // read deleting_at = NULL before either writes) — this conditional UPDATE
+  // is what actually closes the race, since SQLite serializes statement
+  // execution and only one caller's UPDATE can still match a row where
+  // deleting_at IS NULL (ADR-0005).
+  const lockResult = await env.DB.prepare(
+    "UPDATE workspaces SET deleting_at = datetime('now') WHERE id = ? AND deleting_at IS NULL",
+  ).bind(workspace.id).run()
+  if (lockResult.meta.changes === 0) {
+    return errorResponse('Workspace is being deleted', 409)
   }
 
-  // Delete D1 records: files, comments, invitations, user_workspaces, then
-  // detach notifications, then delete the workspace. Each of these FKs has no
-  // cascade (ADR-0004), so a workspace with any comment, invitation, or email
-  // history would otherwise fail this delete with a foreign-key error.
-  // notifications (the Phase 1 email send log) is detached, not deleted — the
-  // send history must survive workspace deletion, same reasoning as
-  // audit_log.workspace_id ON DELETE SET NULL (ADR-0004).
-  // One atomic batch: if any statement fails (e.g. an unhandled child-table
-  // FK), nothing commits — sequential .run() calls would leave the send log
-  // permanently detached from a workspace that still exists.
-  await env.DB.batch([
-    env.DB.prepare('DELETE FROM files WHERE workspace_id = ?').bind(workspace.id),
-    env.DB.prepare('DELETE FROM comments WHERE workspace_id = ?').bind(workspace.id),
-    env.DB.prepare('DELETE FROM invitations WHERE workspace_id = ?').bind(workspace.id),
-    env.DB.prepare('DELETE FROM user_workspaces WHERE workspace_id = ?').bind(workspace.id),
-    env.DB.prepare('UPDATE notifications SET workspace_id = NULL WHERE workspace_id = ?').bind(workspace.id),
-    env.DB.prepare('DELETE FROM workspaces WHERE id = ?').bind(workspace.id),
-  ])
+  try {
+    // Delete files from R2. Aggregate failures instead of swallowing them —
+    // if any R2 object can't be deleted, the D1 batch below must not run, or
+    // the only record of that R2 key would be removed while the object
+    // itself still exists, orphaning it the same way the upload/replace race
+    // does (ADR-0005).
+    const files = await env.DB.prepare('SELECT r2_key FROM files WHERE workspace_id = ?')
+      .bind(workspace.id).all()
+    const r2Failures = []
+    for (const f of files.results) {
+      try {
+        await env.FILES.delete(f.r2_key)
+      } catch (err) {
+        r2Failures.push({ r2_key: f.r2_key, error: err.message })
+      }
+    }
+    if (r2Failures.length > 0) {
+      throw new Error(`Failed to delete ${r2Failures.length} R2 object(s): ${r2Failures.map((f) => f.r2_key).join(', ')}`)
+    }
+
+    // Delete D1 records: files, comments, invitations, user_workspaces, then
+    // detach notifications, then delete the workspace. Each of these FKs has no
+    // cascade (ADR-0004), so a workspace with any comment, invitation, or email
+    // history would otherwise fail this delete with a foreign-key error.
+    // notifications (the Phase 1 email send log) is detached, not deleted — the
+    // send history must survive workspace deletion, same reasoning as
+    // audit_log.workspace_id ON DELETE SET NULL (ADR-0004).
+    // One atomic batch: if any statement fails (e.g. an unhandled child-table
+    // FK), nothing commits — sequential .run() calls would leave the send log
+    // permanently detached from a workspace that still exists.
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM files WHERE workspace_id = ?').bind(workspace.id),
+      env.DB.prepare('DELETE FROM comments WHERE workspace_id = ?').bind(workspace.id),
+      env.DB.prepare('DELETE FROM invitations WHERE workspace_id = ?').bind(workspace.id),
+      env.DB.prepare('DELETE FROM user_workspaces WHERE workspace_id = ?').bind(workspace.id),
+      env.DB.prepare('UPDATE notifications SET workspace_id = NULL WHERE workspace_id = ?').bind(workspace.id),
+      env.DB.prepare('DELETE FROM workspaces WHERE id = ?').bind(workspace.id),
+    ])
+  } catch (err) {
+    // The lock write above already committed outside this try block — a
+    // failed R2 loop (including the aggregated-failure throw above) or a
+    // failed batch must not leave the workspace permanently locked out of
+    // future uploads (ADR-0005).
+    await env.DB.prepare('UPDATE workspaces SET deleting_at = NULL WHERE id = ?')
+      .bind(workspace.id).run()
+    throw err
+  }
 
   await logAudit(env, user.userId, 'workspace.delete', {
     resourceType: 'workspace', resourceId: workspace.id,
