@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useApiClient } from '../../api/client'
 import { usePortalAuth } from '../../contexts/PortalAuth'
@@ -45,27 +45,38 @@ export default function ProjectsTab({ slug }) {
     return data.tasks
   }, [api])
 
+  // Monotonic selection sequence: every selection-changing action bumps it,
+  // and any in-flight task load captures the value at request time. A slower
+  // response for a project the user has since navigated away from compares
+  // stale and is dropped — otherwise project A's tasks (or its deep-linked
+  // drawer) can render under project B. Same stale-response discipline as
+  // Phase 3's CommentThread/ActivityTab, adapted to imperative selection.
+  const selectionSeq = useRef(0)
+
   const openProject = async (project, focusTaskId = null) => {
+    const seq = ++selectionSeq.current
     setSelected(project)
     setEditing(false)
     setTasksLoading(true)
     try {
       const t = await loadTasks(project.id)
+      if (selectionSeq.current !== seq) return
       setTasks(t)
       if (focusTaskId) {
         const target = t.find((x) => x.id === focusTaskId)
         if (target) setDrawerTask(target)
       }
     } catch {
-      setError('Could not load tasks.')
+      if (selectionSeq.current === seq) setError('Could not load tasks.')
     } finally {
-      setTasksLoading(false)
+      if (selectionSeq.current === seq) setTasksLoading(false)
     }
   }
 
   // Workspace switch: full reset (reused without remounting — Phase 3 lesson).
   useEffect(() => {
     let cancelled = false
+    selectionSeq.current++   // invalidate any in-flight task load
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
     setError(null)
@@ -102,7 +113,11 @@ export default function ProjectsTab({ slug }) {
 
   const refreshTasks = async () => {
     if (!selected) return
-    try { setTasks(await loadTasks(selected.id)) } catch { /* keep stale list */ }
+    const seq = selectionSeq.current
+    try {
+      const t = await loadTasks(selected.id)
+      if (selectionSeq.current === seq) setTasks(t)
+    } catch { /* keep stale list */ }
   }
 
   const createProject = async () => {
@@ -244,7 +259,7 @@ export default function ProjectsTab({ slug }) {
     <div className="projects-tab">
       {error && <div className="workspace__alert workspace__alert--error">{error}</div>}
       <div className="project-page__header">
-        <button className="link-btn" onClick={() => { setSelected(null); setDrawerTask(null); setEditing(false) }}>← Projects</button>
+        <button className="link-btn" onClick={() => { selectionSeq.current++; setSelected(null); setDrawerTask(null); setEditing(false) }}>← Projects</button>
         <h3>{selected.name}</h3>
         {canWrite ? (
           <select

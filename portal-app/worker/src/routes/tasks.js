@@ -21,11 +21,19 @@ async function getProjectContext(env, projectId) {
 }
 
 async function getTaskWithContext(env, taskId) {
+  // project_deleted_at: a task whose project was soft-deleted must reject
+  // mutations too. Project force-delete only soft-deletes OPEN tasks, so a
+  // done task can survive under a deleted project — without this check it
+  // could be PATCHed back to todo, resurfacing in /api/me/tasks with a deep
+  // link into a project that no longer lists.
   return env.DB.prepare(
     `SELECT t.id, t.project_id, t.workspace_id, t.title, t.status, t.assignee_id,
             t.due_date, t.created_by, t.deleted_at,
+            p.deleted_at AS project_deleted_at,
             w.slug AS workspace_slug, w.name AS workspace_name
-     FROM tasks t INNER JOIN workspaces w ON w.id = t.workspace_id
+     FROM tasks t
+     INNER JOIN projects p ON p.id = t.project_id
+     INNER JOIN workspaces w ON w.id = t.workspace_id
      WHERE t.id = ?`,
   ).bind(taskId).first()
 }
@@ -155,7 +163,7 @@ export async function handleCreateTask(request, env, user, params, ctx) {
 /** PATCH /api/tasks/:id — wsWrite. Body: {title?, description?, status?, assignee_id?, due_date?} */
 export async function handleUpdateTask(request, env, user, params, ctx) {
   const task = await getTaskWithContext(env, params.id)
-  if (!task || task.deleted_at) return errorResponse('Task not found', 404)
+  if (!task || task.deleted_at || task.project_deleted_at) return errorResponse('Task not found', 404)
   if (!hasWorkspaceWriteAccess(user, task.workspace_slug)) {
     throw errorResponse('Forbidden: write permission required', 403)
   }
@@ -198,12 +206,16 @@ export async function handleUpdateTask(request, env, user, params, ctx) {
   bindings.push(task.id)
   await env.DB.prepare(`UPDATE tasks SET ${updates.join(', ')} WHERE id = ?`).bind(...bindings).run()
 
+  // A PATCH can rename and assign/transition in one request — audit rows and
+  // notifications must name the task as it exists AFTER the update.
+  const effectiveTitle = body.title !== undefined ? body.title.trim() : task.title
+
   // Audit: status transitions get their own action so the Activity feed can
   // label them distinctly ("moved X to done" vs "edited a task").
   await logAudit(env, user.userId, statusChanged ? 'task.status' : 'task.update', {
     resourceType: 'task', resourceId: task.id,
     workspaceId: task.workspace_id, workspaceSlug: task.workspace_slug,
-    projectId: task.project_id, title: task.title,
+    projectId: task.project_id, title: effectiveTitle,
     ...(statusChanged ? { from: task.status, to: body.status } : { changes: Object.keys(body) }),
     ipAddress: getClientIp(request),
   })
@@ -218,10 +230,10 @@ export async function handleUpdateTask(request, env, user, params, ctx) {
       slug: task.workspace_slug,
       projectId: task.project_id,
       taskId: task.id,
-      title: `You were assigned "${escapeHtml(task.title)}" in ${escapeHtml(task.workspace_name)}`,
+      title: `You were assigned "${escapeHtml(effectiveTitle)}" in ${escapeHtml(task.workspace_name)}`,
       bodyLines: [
         `<strong>${escapeHtml(user.email || 'Someone')}</strong> assigned you a task:`,
-        escapeHtml(task.title),
+        escapeHtml(effectiveTitle),
       ],
     })
   }
@@ -238,10 +250,10 @@ export async function handleUpdateTask(request, env, user, params, ctx) {
       slug: task.workspace_slug,
       projectId: task.project_id,
       taskId: task.id,
-      title: `"${escapeHtml(task.title)}" moved to ${STATUS_LABELS[body.status]} in ${escapeHtml(task.workspace_name)}`,
+      title: `"${escapeHtml(effectiveTitle)}" moved to ${STATUS_LABELS[body.status]} in ${escapeHtml(task.workspace_name)}`,
       bodyLines: [
         `<strong>${escapeHtml(user.email || 'Someone')}</strong> moved a task to <strong>${STATUS_LABELS[body.status]}</strong>:`,
-        escapeHtml(task.title),
+        escapeHtml(effectiveTitle),
       ],
     })
   }
@@ -252,7 +264,7 @@ export async function handleUpdateTask(request, env, user, params, ctx) {
 /** DELETE /api/tasks/:id — creator or wsAdmin. Soft delete only. */
 export async function handleDeleteTask(request, env, user, params) {
   const task = await getTaskWithContext(env, params.id)
-  if (!task || task.deleted_at) return errorResponse('Task not found', 404)
+  if (!task || task.deleted_at || task.project_deleted_at) return errorResponse('Task not found', 404)
   requireWorkspaceAccess(user, task.workspace_slug)
 
   const violation = taskDeleteViolation(user, task, task.workspace_slug)
