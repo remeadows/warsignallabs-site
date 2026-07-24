@@ -3,6 +3,7 @@ import { jsonResponse, errorResponse, CORS_HEADERS, SECURITY_HEADERS } from '../
 import { requireWorkspaceAccess, hasWorkspaceWriteAccess, hasWorkspaceAdminPermission } from '../auth.js'
 import { logAudit, getClientIp } from '../audit.js'
 import { notifyWorkspaceEvent, checkStorageThreshold, escapeHtml } from '../notify.js'
+import { assertWorkspaceNotDeleting } from './workspaces.js'
 
 /**
  * Allowed MIME types for upload.
@@ -111,7 +112,7 @@ export async function handleUploadFile(request, env, user, params, ctx) {
   requireWorkspaceAccess(user, params.slug)
 
   const workspace = await env.DB.prepare(
-    'SELECT id FROM workspaces WHERE slug = ?',
+    'SELECT id, deleting_at FROM workspaces WHERE slug = ?',
   )
     .bind(params.slug)
     .first()
@@ -119,6 +120,7 @@ export async function handleUploadFile(request, env, user, params, ctx) {
   if (!workspace) {
     return errorResponse('Workspace not found', 404)
   }
+  assertWorkspaceNotDeleting(workspace)
 
   let formData
   try {
@@ -173,13 +175,27 @@ export async function handleUploadFile(request, env, user, params, ctx) {
   // Use dbUserId for the foreign key, fall back to clerk ID
   const uploadedBy = user.dbUserId || user.userId
 
-  // Record in D1
-  await env.DB.prepare(
+  // Record in D1 — atomically guarded: the R2 put above takes real time, and
+  // the fast-path assertWorkspaceNotDeleting check above read a snapshot
+  // from before that put, so it cannot by itself catch a concurrent
+  // handleDeleteWorkspace that claims the lock during the upload. This
+  // INSERT is a no-op if that happened, since SQLite evaluates the WHERE
+  // EXISTS clause and the write in one atomic statement (ADR-0005).
+  const insertResult = await env.DB.prepare(
     `INSERT INTO files (id, workspace_id, category, filename, r2_key, size_bytes, content_type, uploaded_by, folder_id, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+     SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now')
+     WHERE EXISTS (SELECT 1 FROM workspaces WHERE id = ? AND deleting_at IS NULL)`,
   )
-    .bind(fileId, workspace.id, category, sanitized, r2Key, file.size, file.type, uploadedBy, folderId)
+    .bind(fileId, workspace.id, category, sanitized, r2Key, file.size, file.type, uploadedBy, folderId, workspace.id)
     .run()
+
+  if (insertResult.meta.changes === 0) {
+    // Lost the race: the workspace was locked between the fast-path check
+    // and this write. Roll back the R2 object just written so it isn't left
+    // with no D1 reference — the exact orphan this design prevents.
+    try { await env.FILES.delete(r2Key) } catch { /* best effort */ }
+    return errorResponse('Workspace is being deleted', 409)
+  }
 
   await logAudit(env, user.userId, 'file.upload', {
     resourceType: 'file',
@@ -249,7 +265,8 @@ export async function handleReplaceFile(request, env, user, params, ctx) {
   // Fetch existing file + workspace info
   const file = await env.DB.prepare(
     `SELECT f.id, f.filename, f.r2_key, f.size_bytes, f.content_type, f.category,
-            f.workspace_id, f.version, f.uploaded_by, w.slug AS workspace_slug, w.name AS workspace_name
+            f.workspace_id, f.version, f.uploaded_by, w.slug AS workspace_slug, w.name AS workspace_name,
+            w.deleting_at
      FROM files f
      INNER JOIN workspaces w ON w.id = f.workspace_id
      WHERE f.id = ?`,
@@ -261,6 +278,7 @@ export async function handleReplaceFile(request, env, user, params, ctx) {
   if (!hasWorkspaceWriteAccess(user, file.workspace_slug)) {
     throw errorResponse('Forbidden: you need write permission on this workspace to replace files', 403)
   }
+  assertWorkspaceNotDeleting(file)
 
   let formData
   try { formData = await request.formData() } catch { return errorResponse('Invalid multipart form data', 400) }
@@ -280,15 +298,22 @@ export async function handleReplaceFile(request, env, user, params, ctx) {
 
   const newVersion = (file.version || 1) + 1
 
-  // 1. Archive current version to file_versions
+  // 1. Archive current version to file_versions — atomically guarded: a
+  // cheap early exit (before any R2 traffic) in the common case where the
+  // workspace was already locked before this request started.
   const versionId = crypto.randomUUID()
-  await env.DB.prepare(
+  const archiveResult = await env.DB.prepare(
     `INSERT INTO file_versions (id, file_id, version_number, r2_key, size_bytes, content_type, uploaded_by, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+     SELECT ?, ?, ?, ?, ?, ?, ?, datetime('now')
+     WHERE EXISTS (SELECT 1 FROM workspaces WHERE id = ? AND deleting_at IS NULL)`,
   ).bind(
     versionId, fileId, file.version || 1, file.r2_key,
-    file.size_bytes, file.content_type, file.uploaded_by,
+    file.size_bytes, file.content_type, file.uploaded_by, file.workspace_id,
   ).run()
+
+  if (archiveResult.meta.changes === 0) {
+    return errorResponse('Workspace is being deleted', 409)
+  }
 
   // 2. Upload new file to R2 with new key
   const sanitized = (newFile.name || file.filename).replace(/[/\\]/g, '_').slice(0, 200)
@@ -304,13 +329,24 @@ export async function handleReplaceFile(request, env, user, params, ctx) {
     },
   })
 
-  // 3. Update files record — new r2_key, size, content_type, version, filename
+  // 3. Update files record — new r2_key, size, content_type, version,
+  // filename. Atomically guarded again: this is the true gate, since it's
+  // what makes the new r2_key discoverable at all. If the workspace was
+  // locked in the moment between step 1 and this R2 put, roll back the new
+  // object — the archive row from step 1 is left in place; it accurately
+  // records the pre-replace version and doesn't become incorrect just
+  // because this replace didn't ultimately commit (ADR-0005).
   const uploadedBy = user.dbUserId || user.userId
-  await env.DB.prepare(
+  const updateResult = await env.DB.prepare(
     `UPDATE files SET r2_key = ?, size_bytes = ?, content_type = ?, filename = ?,
             version = ?, uploaded_by = ?, created_at = datetime('now')
-     WHERE id = ?`,
+     WHERE id = ? AND workspace_id IN (SELECT id FROM workspaces WHERE deleting_at IS NULL)`,
   ).bind(newR2Key, newFile.size, newFile.type, sanitized, newVersion, uploadedBy, fileId).run()
+
+  if (updateResult.meta.changes === 0) {
+    try { await env.FILES.delete(newR2Key) } catch { /* best effort */ }
+    return errorResponse('Workspace is being deleted', 409)
+  }
 
   // 4. Optionally delete old R2 object (keep for now — archived versions remain accessible)
   // Old R2 key preserved in file_versions for rollback capability
