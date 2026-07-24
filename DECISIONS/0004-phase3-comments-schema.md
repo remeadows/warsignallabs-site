@@ -103,6 +103,18 @@ Same regression-test harness as above: three new tests in
 archived-R2-key cleanup), each watched failing with `FOREIGN KEY constraint
 failed` against the real migrations before the fix.
 
+**Known limitation, tracked not fixed here** (review finding on PR #37): the R2
+key cleanup reads `files`/`file_versions.r2_key` via `SELECT` before the D1
+batch runs. A file uploaded or replaced into the workspace in that window has
+its D1 row swept up by the workspace-scoped `DELETE FROM files` without its
+`r2_key` ever having been captured — the R2 object leaks with no DB reference
+left to find it. Pre-existing (the original single-key R2 loop had the same
+SELECT-then-later-DELETE window), not introduced by this amendment. A full fix
+needs a "workspace is being deleted" lock state — its own schema change and
+ADR — enforced in the upload/replace-file path (`routes/files.js`); out of
+scope for a FK-gap fix. Documented in code at the R2 SELECT in
+`handleDeleteWorkspace`.
+
 ## References
 
 - `portal-app/worker/migrations/007_comments_notifications.sql`

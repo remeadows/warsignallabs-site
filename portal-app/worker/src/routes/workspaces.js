@@ -236,6 +236,17 @@ export async function handleDeleteWorkspace(request, env, user, params) {
   // Delete files from R2 — current objects plus the archived version objects
   // handleReplaceFile keeps around for rollback (file_versions.r2_key); once the
   // DB rows go, nothing references those keys and they'd leak in R2 forever.
+  //
+  // KNOWN LIMITATION (pre-existing, not introduced here): this SELECT is a
+  // snapshot. If a file is uploaded or replaced into this workspace between
+  // this query and the `DELETE FROM files` below, that row's r2_key was never
+  // captured here, yet the workspace-scoped DELETE removes the row anyway —
+  // the R2 object leaks with no DB reference left to find it. Closing this
+  // fully needs a "workspace is being deleted" lock state (schema change,
+  // its own ADR under DECISIONS/) enforced in the upload/replace-file path
+  // (routes/files.js), which is out of scope for this FK-gap fix. Admin
+  // workspace deletion racing an in-flight upload is a real but narrow
+  // window in practice; tracked as follow-up, not fixed here.
   const files = await env.DB.prepare('SELECT r2_key FROM files WHERE workspace_id = ?')
     .bind(workspace.id).all()
   const versions = await env.DB.prepare(
